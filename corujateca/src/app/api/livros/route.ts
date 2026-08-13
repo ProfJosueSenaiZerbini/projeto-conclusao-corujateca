@@ -1,26 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/app/db';
 
-export async function GET() {
-  try {
-    const livros = await db.livro.findMany({
-      where: { inativo_livro: false },
-      include: {
-        exemplar: true, // Já traz a lista de exemplares/cópias atrelados
-      },
-    });
-
-    return NextResponse.json(livros, { status: 200 });
-  } catch (error) {
-    console.error('Erro ao buscar livros:', error);
-    return NextResponse.json(
-      { erro: 'Erro interno ao buscar livros no banco de dados.' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
 
@@ -36,47 +17,29 @@ export async function POST(request: NextRequest) {
       sinopse_livro,
     } = body;
 
-    if (
-      !isbn ||
-      !titulo_livro ||
-      !autor_livro ||
-      !editora_livro ||
-      !anopub_livro ||
-      !genero_livro ||
-      !localizacao_livro ||
-      !imgcapa_livro
-    ) {
+    // Apenas os campos realmente essenciais continuam obrigatórios
+    if (!isbn || !titulo_livro) {
       return NextResponse.json(
-        {
-          erro: 'Campos obrigatórios ausentes. Verifique: isbn, titulo_livro, autor_livro, editora_livro, anopub_livro, genero_livro, localizacao_livro e imgcapa_livro.',
-        },
+        { erro: 'O ISBN e o Título do livro são obrigatórios.' },
         { status: 400 }
       );
     }
 
-    const livroExistente = await db.livro.findUnique({
-      where: { isbn },
-    });
-
-    if (livroExistente) {
-      return NextResponse.json(
-        { erro: 'Já existe um livro cadastrado com este ISBN.' },
-        { status: 409 }
-      );
-    }
+    // Converte textos vazios em null para salvar adequadamente no banco
+    const valorOuNull = (val: any) =>
+      val && String(val).trim() !== '' ? String(val).trim() : null;
 
     const novoLivro = await db.livro.create({
       data: {
-        isbn,
-        titulo_livro,
-        autor_livro,
-        editora_livro,
-        anopub_livro: Number(anopub_livro),
-        genero_livro,
-        localizacao_livro,
-        imgcapa_livro,
-        sinopse_livro: sinopse_livro || null,
-        inativo_livro: false,
+        isbn: String(isbn).trim(),
+        titulo_livro: String(titulo_livro).trim(),
+        autor_livro: valorOuNull(autor_livro) ?? 'Autor Não Informado',
+        editora_livro: valorOuNull(editora_livro) ?? 'Editora Não Informada',
+        anopub_livro: Number(anopub_livro) || new Date().getFullYear(),
+        genero_livro: valorOuNull(genero_livro) ?? 'Geral',
+        localizacao_livro: valorOuNull(localizacao_livro),
+        imgcapa_livro: valorOuNull(imgcapa_livro), 
+        sinopse_livro: valorOuNull(sinopse_livro),
       },
     });
 
@@ -87,7 +50,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Erro ao cadastrar livro:', error);
     return NextResponse.json(
-      { erro: 'Erro interno ao salvar o livro no banco de dados.' },
+      { erro: 'Erro interno no servidor ao tentar salvar o livro.' },
       { status: 500 }
     );
   }
