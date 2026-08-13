@@ -12,7 +12,7 @@ export default function NavBibliotecario() {
     return (
         <nav className="
             fixed left-0 top-27
-            flex h-screen w-64 flex-col
+            flex h-screen w-20 md:w-64 flex-col
             bg-[var(--brand-800)]
             px-4 py-6
         ">
@@ -20,7 +20,9 @@ export default function NavBibliotecario() {
             <Link
                 href="/bibliotecario/home"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -35,7 +37,9 @@ export default function NavBibliotecario() {
             <Link
                 href="/bibliotecario/acervo"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -50,7 +54,9 @@ export default function NavBibliotecario() {
             <Link
                 href="/bibliotecario/emprestimos"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -65,7 +71,9 @@ export default function NavBibliotecario() {
             <Link
                 href="/bibliotecario/usuarios"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -80,7 +88,9 @@ export default function NavBibliotecario() {
             <Link
                 href="/bibliotecario/multas"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -95,7 +105,9 @@ export default function NavBibliotecario() {
             <Link
                 href="/bibliotecario/ajuda"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
