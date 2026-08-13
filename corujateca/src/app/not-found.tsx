@@ -12,17 +12,17 @@ export default function NotFound() {
                     height={500}
                     className="rounded-lg"
                     />
-            <h1 className="text-4xl font-bold">
+            <h1 className="text-4xl text-black font-bold">
                 404
             </h1>
 
-            <p className="mb-4">
+            <p className="mb-4 text-black">
                 Essa página não existe.
             </p>
 
             <Link
                 href="/"
-                className="rounded bg-[var(--color-brand-300)] px-4 py-2 text-white hover:bg-[var(--color-brand-400)] transition duration-300"
+                className="rounded bg-[var(--brand-800)] px-4 py-2 text-white hover:bg-[var(--brand-700)] transition duration-300"
             >
                 Voltar ao início
             </Link>
