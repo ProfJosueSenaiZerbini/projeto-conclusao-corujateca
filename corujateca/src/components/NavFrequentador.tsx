@@ -12,7 +12,7 @@ export default function NavFrequentador() {
     return (
         <nav className="
             fixed left-0 top-27
-            flex h-screen w-64 flex-col
+            flex h-screen w-20 md:w-64 flex-col
             bg-[var(--brand-800)]
             px-4 py-6
         ">
@@ -20,7 +20,9 @@ export default function NavFrequentador() {
             <Link
                 href="/frequentador/home"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -29,13 +31,15 @@ export default function NavFrequentador() {
                 "
             >
                 <Home size={20} />
-                <span>Início</span>
+                <span className="hidden md:inline">Início</span>
             </Link>
 
             <Link
                 href="/frequentador/acervo"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -44,13 +48,15 @@ export default function NavFrequentador() {
                 "
             >
                 <LibraryBig size={20} />
-                <span>Acervo</span>
+                <span className="hidden md:inline">Acervo</span>
             </Link>
 
             <Link
                 href="/frequentador/emprestimos"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -59,13 +65,15 @@ export default function NavFrequentador() {
                 "
             >
                 <Stamp size={20} />
-                <span>Empréstimos</span>
+                <span className="hidden md:inline">Empréstimos</span>
             </Link>
 
             <Link
                 href="/frequentador/multas"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -74,13 +82,15 @@ export default function NavFrequentador() {
                 "
             >
                 <ClockAlert size={20} />
-                <span>Multas</span>
+                <span className="hidden md:inline">Multas</span>
             </Link>
 
             <Link
                 href="/frequentador/ajuda"
                 className="
-                    flex items-center gap-3
+                    flex items-center 
+                    justify-center md:justify-start 
+                    gap-3
                     rounded-md
                     px-4 py-3
                     text-[var(--color-brand-300)]
@@ -89,7 +99,7 @@ export default function NavFrequentador() {
                 "
             >
                 <MessageCircleQuestionMark size={20} />
-                <span>Ajuda</span>
+                <span className="hidden md:inline">Ajuda</span>
             </Link>
 
         </nav>
