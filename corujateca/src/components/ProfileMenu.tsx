@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+    LogOut,
+    Settings
+} from "lucide-react";
 import Image from "next/image";
 
 export default function ProfileMenu() {
@@ -56,7 +60,7 @@ export default function ProfileMenu() {
                             hover:bg-gray-100
                         "
                     >
-                        <span>⚙</span>
+                        <Settings size={20}/>
                         <span>Configurações Perfil</span>
                     </a>
 
@@ -69,7 +73,7 @@ export default function ProfileMenu() {
                             text-left text-gray-700
                             hover:bg-gray-100
                         ">
-                        <span>↪</span>
+                        <LogOut size={20}/>
                         <span>Log out</span>
                     </button>
 
