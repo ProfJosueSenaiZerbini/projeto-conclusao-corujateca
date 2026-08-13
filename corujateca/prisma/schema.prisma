@@ -58,10 +58,10 @@ model livro {
   sinopse_livro     String?
   editora_livro     String     @db.VarChar(255)
   anopub_livro      Int        @db.SmallInt
-  imgcapa_livro     String     @db.VarChar(130)
+  imgcapa_livro     String?
   genero_livro      String     @db.VarChar(30)
   inativo_livro     Boolean    @default(false)
-  localizacao_livro String     @db.VarChar(130)
+  localizacao_livro String?
   exemplar          exemplar[]
 }
 
