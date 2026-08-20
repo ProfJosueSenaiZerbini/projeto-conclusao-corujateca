@@ -9,6 +9,7 @@
     --brand-400: #C8995D;
     --brand-300: #E1BB8C;
     --brand-200: #DBDAD2;
+    --brand-100: #D0CBBF;
 }
 
 @theme inline {
@@ -17,7 +18,7 @@
 
     /* Text */
     --color-text-primary: #634B2B;
-    --color-text-inverse: #E4E4D2;
+    --color-text-inverse: #DBDAD2;
 
     /* Button */
     --color-button-primary: #6B7A4B;
@@ -31,6 +32,7 @@
     --color-brand-400: var(--brand-400);
     --color-brand-300: var(--brand-300);
     --color-brand-200: var(--brand-200);
+    --color-brand-100: var(--brand-100);
 
     /* Book Categories */
     --color-romance: #ffb8de;
