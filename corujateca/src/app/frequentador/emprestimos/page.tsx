@@ -41,7 +41,7 @@ export default function EmprestimosPage() {
       <div className="flex flex-1 min-w-0">
         <Nav />
 
-        <main className="flex-1 min-w-0 p-4 md:p-8 md:ml-8">
+        <main className="flex-1 min-w-0 p-4 md:p-10">
           <div className="mx-auto w-full max-w-6xl space-y-8">
 
             {/* Cards superiores */}

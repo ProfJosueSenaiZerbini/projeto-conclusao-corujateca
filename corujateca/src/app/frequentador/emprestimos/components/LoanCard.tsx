@@ -1,5 +1,3 @@
-import { CalendarDays } from "lucide-react";
-
 type Loan = {
   title: string;
   author: string;
@@ -31,14 +29,12 @@ export default function LoanCard({ loan }: { loan: Loan }) {
         {/* Direita */}
         <div className="space-y-2 text-sm text-text-inverse">
           <div className="flex items-center gap-2">
-            <CalendarDays size={18} />
             <p>
-              <strong>Data de Expiração:</strong> {loan.expiration}
+              <strong>Data de Expiração</strong> {loan.expiration}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <CalendarDays size={18} />
             <p>
               <strong>Data do Empréstimo:</strong> {loan.loanDate}
             </p>
