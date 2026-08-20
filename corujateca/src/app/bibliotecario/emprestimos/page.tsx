@@ -1,4 +1,4 @@
-export default function EmprestimosBibli() {
+export default function EmprestimosFreq() {
     return (
         <>
         
