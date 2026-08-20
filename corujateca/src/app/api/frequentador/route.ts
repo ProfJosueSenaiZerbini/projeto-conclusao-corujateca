@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import bcrypt from "bcrypt"; // Import do bcrypt (ou 'bcryptjs' se preferir)
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -10,21 +11,28 @@ const pool = new Pool({
 
 export async function GET() {
   try {
-    // Busca apenas usuários ativos e ordena pelo nome correto
+    // Traz o nome, status e também o telefone cadastrado (se houver) via LEFT JOIN
     const queryText = `
-      SELECT id_freq, nome_freq, inativo_freq, suspensao_freq 
-      FROM frequentador 
-      WHERE inativo_freq = false 
-      ORDER BY nome_freq ASC
+      SELECT 
+        f.id_freq, 
+        f.nome_freq, 
+        f.inativo_freq, 
+        f.suspensao_freq,
+        t.ddd_freq,
+        t.numtel_freq
+      FROM frequentador f
+      LEFT JOIN tel_freq t ON f.id_freq = t.fk_frequentador_id_freq
+      WHERE f.inativo_freq = false 
+      ORDER BY f.nome_freq ASC
     `;
     const result = await pool.query(queryText);
 
-    // Mapeia para corresponder às propriedades esperadas no front (id e nome)
     const usuariosFormatados = result.rows.map((user) => ({
       id: user.id_freq,
       nome: user.nome_freq,
       inativo: user.inativo_freq,
       suspenso: user.suspensao_freq,
+      telefone: user.numtel_freq ? `(${user.ddd_freq}) ${user.numtel_freq}` : null,
     }));
 
     return NextResponse.json(usuariosFormatados, { status: 200 });
@@ -38,29 +46,47 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Pega um cliente do pool para gerenciar a transação
+  const client = await pool.connect();
+
   try {
     const body = await request.json();
-    const { nome, senha } = body;
+    const { nome, senha, ddd, telefone } = body;
 
-    if (!nome) {
+    // Validação de campos obrigatórios
+    if (!nome || !senha) {
       return NextResponse.json(
-        { erro: "O nome é obrigatório." },
+        { erro: "Nome e senha são obrigatórios." },
         { status: 400 }
       );
     }
 
-    // Insere utilizando as colunas do schema (nome_freq e senha_freq)
-    const queryText = `
+    // Gerando o hash da senha usando o bcrypt com salt rounds = 10
+    const senhaHash = await bcrypt.hash(senha, 10);
+
+    // Inicia a transação no banco
+    await client.query("BEGIN");
+
+    // 1. Insere na tabela 'frequentador' salvando o HASH da senha
+    const queryFrequentador = `
       INSERT INTO frequentador (nome_freq, senha_freq) 
       VALUES ($1, $2) 
       RETURNING id_freq, nome_freq
     `;
-    
-    // Define uma senha padrão caso o front-end não envie uma no cadastro rápido
-    const senhaFinal = senha || "123456"; 
+    const resFrequentador = await client.query(queryFrequentador, [nome, senhaHash]);
+    const novoUsuario = resFrequentador.rows[0];
 
-    const result = await pool.query(queryText, [nome, senhaFinal]);
-    const novoUsuario = result.rows[0];
+    // 2. Insere na tabela 'tel_freq' caso ddd e telefone tenham sido enviados
+    if (ddd && telefone) {
+      const queryTelefone = `
+        INSERT INTO tel_freq (ddd_freq, numtel_freq, fk_frequentador_id_freq) 
+        VALUES ($1, $2, $3)
+      `;
+      await client.query(queryTelefone, [ddd, telefone, novoUsuario.id_freq]);
+    }
+
+    // Confirma as duas inserções
+    await client.query("COMMIT");
 
     return NextResponse.json(
       {
@@ -70,10 +96,18 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    // Se der qualquer erro, desfaz a inserção do usuário
+    await client.query("ROLLBACK");
     console.error("Erro ao cadastrar frequentador:", error);
     return NextResponse.json(
       { erro: "Erro ao cadastrar frequentador no banco de dados." },
       { status: 500 }
     );
+  } finally {
+    // Libera a conexão de volta para o pool
+    client.release();
   }
+
+  
 }
+

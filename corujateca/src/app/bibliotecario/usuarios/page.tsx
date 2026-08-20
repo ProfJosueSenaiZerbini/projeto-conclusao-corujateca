@@ -16,14 +16,22 @@ export default function UsuariosBibli() {
   const [totalUsuarios, setTotalUsuarios] = useState<number>(5);
 
   const [modalAberto, setModalAberto] = useState(false);
+
+  // Campos do novo usuário
   const [novoNome, setNovoNome] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [novoDdd, setNovoDdd] = useState("");
+  const [novoTelefone, setNovoTelefone] = useState("");
+
   const [carregando, setCarregando] = useState(false);
 
   async function carregarUsuarios() {
     try {
       const resposta = await fetch("/api/frequentador");
+
       if (resposta.ok) {
         const dados = await resposta.json();
+
         setUsuarios(dados);
         setTotalUsuarios(dados.length);
       }
@@ -38,32 +46,72 @@ export default function UsuariosBibli() {
 
   async function handleCadastrar(e: React.FormEvent) {
     e.preventDefault();
-    if (!novoNome.trim()) return;
+
+    // Nome e senha são obrigatórios
+    if (!novoNome.trim() || !novaSenha.trim()) {
+      alert("Nome e senha são obrigatórios.");
+      return;
+    }
 
     setCarregando(true);
+
     try {
       const res = await fetch("/api/frequentador", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome: novoNome }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: novoNome,
+          senha: novaSenha,
+          ddd: novoDdd,
+          telefone: novoTelefone,
+        }),
       });
 
       if (res.ok) {
+        // Limpa os campos
         setNovoNome("");
+        setNovaSenha("");
+        setNovoDdd("");
+        setNovoTelefone("");
+
+        // Fecha o modal
         setModalAberto(false);
-        carregarUsuarios();
+
+        // Atualiza a lista
+        await carregarUsuarios();
       } else {
-        alert("Erro ao cadastrar usuário.");
+        const erro = await res.json();
+
+        alert(
+          erro.erro || "Erro ao cadastrar usuário."
+        );
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao cadastrar:", err);
+      alert("Erro ao cadastrar usuário.");
     } finally {
       setCarregando(false);
     }
   }
 
+  function fecharModal() {
+    if (carregando) return;
+
+    setModalAberto(false);
+
+    // Limpa os campos ao fechar
+    setNovoNome("");
+    setNovaSenha("");
+    setNovoDdd("");
+    setNovoTelefone("");
+  }
+
   const usuariosFiltrados = usuarios.filter((user) =>
-    user.nome.toLowerCase().includes(termoPesquisa.toLowerCase())
+    user.nome
+      .toLowerCase()
+      .includes(termoPesquisa.toLowerCase())
   );
 
   return (
@@ -73,29 +121,34 @@ export default function UsuariosBibli() {
       <div className="flex flex-1">
         <Nav />
 
-        {/* Main com flex, justify-center e items-center para centralizar perfeitamente */}
         <main className="flex-1 min-w-0 p-8 flex justify-center items-center">
-          
-          {/* Bloco central com largura média controlada */}
           <div className="w-full max-w-3xl space-y-6">
-            
+
             {/* Card Contagem de Usuários */}
             <div className="bg-brand-500 text-text-inverse p-6 rounded-2xl flex justify-between items-center shadow-md">
               <h2 className="text-2xl font-normal leading-snug">
-                Quantidade de<br />Usuários:
+                Quantidade de
+                <br />
+                Usuários:
               </h2>
-              <span className="text-6xl font-bold">{totalUsuarios}</span>
+
+              <span className="text-6xl font-bold">
+                {totalUsuarios}
+              </span>
             </div>
 
             {/* Ações */}
             <div className="flex gap-6">
-              <button 
+              <button
                 onClick={() => setModalAberto(true)}
                 className="flex-1 bg-button-primary text-text-inverse font-medium py-3 px-6 rounded-2xl hover:brightness-110 transition shadow-sm text-center"
               >
                 Cadastrar Novo Usuário
               </button>
-              <button className="flex-1 bg-button-secondary text-text-inverse font-medium py-3 px-6 rounded-2xl hover:brightness-110 transition shadow-sm text-center">
+
+              <button
+                className="flex-1 bg-button-secondary text-text-inverse font-medium py-3 px-6 rounded-2xl hover:brightness-110 transition shadow-sm text-center"
+              >
                 Reativar Usuário
               </button>
             </div>
@@ -105,11 +158,14 @@ export default function UsuariosBibli() {
               <label className="block font-bold text-text-primary text-lg">
                 Pesquisar por Usuário
               </label>
+
               <input
                 type="text"
                 placeholder="Nome do Usuário"
                 value={termoPesquisa}
-                onChange={(e) => setTermoPesquisa(e.target.value)}
+                onChange={(e) =>
+                  setTermoPesquisa(e.target.value)
+                }
                 className="w-full bg-white border border-brand-400 rounded-xl px-4 py-2 text-brand-800 placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-button-primary"
               />
             </div>
@@ -122,36 +178,55 @@ export default function UsuariosBibli() {
                     <th className="p-3 border-r border-brand-700 font-bold text-lg w-1/2">
                       Nome do Usuário
                     </th>
+
                     <th className="p-3 font-bold text-lg text-center w-1/2">
                       Ações
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-brand-300">
                   {usuariosFiltrados.length > 0 ? (
                     usuariosFiltrados.map((usuario) => (
-                      <tr key={usuario.id} className="hover:bg-brand-200/40 transition">
+                      <tr
+                        key={usuario.id}
+                        className="hover:bg-brand-200/40 transition"
+                      >
                         <td className="p-3 border-r border-brand-300 uppercase font-medium text-brand-800">
                           {usuario.nome}
                         </td>
+
                         <td className="p-2">
                           <div className="flex justify-center gap-2">
-                            <button className="bg-button-primary text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium">
+
+                            <button
+                              className="bg-button-primary text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium"
+                            >
                               Detalhes
                             </button>
-                            <button className="bg-brand-500 text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium">
+
+                            <button
+                              className="bg-brand-500 text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium"
+                            >
                               Atualizar
                             </button>
-                            <button className="bg-button-secondary text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium">
+
+                            <button
+                              className="bg-button-secondary text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium"
+                            >
                               Deletar
                             </button>
+
                           </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={2} className="p-4 text-center text-gray-500">
+                      <td
+                        colSpan={2}
+                        className="p-4 text-center text-gray-500"
+                      >
                         Nenhum usuário encontrado.
                       </td>
                     </tr>
@@ -161,47 +236,136 @@ export default function UsuariosBibli() {
             </div>
 
           </div>
-
         </main>
       </div>
 
-      {/* Modal de Cadastrar Frequentador */}
+      {/* ================================================= */}
+      {/* MODAL DE CADASTRO */}
+      {/* ================================================= */}
+
       {modalAberto && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
-            <h3 className="text-xl font-bold text-brand-800">Cadastrar Novo Frequentador</h3>
-            
-            <form onSubmit={handleCadastrar} className="space-y-4">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={fecharModal}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+
+            {/* Título */}
+            <h3 className="text-xl font-bold text-brand-800">
+              Cadastrar Novo Frequentador
+            </h3>
+
+            <form
+              onSubmit={handleCadastrar}
+              className="space-y-4"
+            >
+
+              {/* Nome */}
               <div>
                 <label className="block text-sm font-medium text-brand-800 mb-1">
                   Nome Completo
                 </label>
+
                 <input
                   type="text"
                   required
                   value={novoNome}
-                  onChange={(e) => setNovoNome(e.target.value)}
+                  onChange={(e) =>
+                    setNovoNome(e.target.value)
+                  }
                   placeholder="Ex: Ana Souza"
                   className="w-full border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
                 />
               </div>
 
+              {/* Senha */}
+              <div>
+                <label className="block text-sm font-medium text-brand-800 mb-1">
+                  Senha
+                </label>
+
+                <input
+                  type="password"
+                  required
+                  value={novaSenha}
+                  onChange={(e) =>
+                    setNovaSenha(e.target.value)
+                  }
+                  placeholder="Digite a senha"
+                  className="w-full border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
+                />
+              </div>
+
+              {/* Telefone */}
+              <div>
+                <label className="block text-sm font-medium text-brand-800 mb-1">
+                  Telefone
+                </label>
+
+                <div className="flex gap-2">
+
+                  {/* DDD */}
+                  <input
+                    type="text"
+                    value={novoDdd}
+                    onChange={(e) =>
+                      setNovoDdd(
+                        e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 2)
+                      )
+                    }
+                    placeholder="DDD"
+                    maxLength={2}
+                    className="w-20 border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
+                  />
+
+                  {/* Número */}
+                  <input
+                    type="text"
+                    value={novoTelefone}
+                    onChange={(e) =>
+                      setNovoTelefone(
+                        e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 9)
+                      )
+                    }
+                    placeholder="999999999"
+                    maxLength={9}
+                    className="flex-1 border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
+                  />
+
+                </div>
+              </div>
+
+              {/* Botões */}
               <div className="flex gap-3 justify-end pt-2">
+
                 <button
                   type="button"
-                  onClick={() => setModalAberto(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100"
+                  onClick={fecharModal}
+                  disabled={carregando}
+                  className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                 >
                   Cancelar
                 </button>
+
                 <button
                   type="submit"
                   disabled={carregando}
                   className="px-4 py-2 rounded-xl bg-button-primary text-white hover:brightness-110 disabled:opacity-50"
                 >
-                  {carregando ? "Salvando..." : "Cadastrar"}
+                  {carregando
+                    ? "Salvando..."
+                    : "Cadastrar"}
                 </button>
+
               </div>
+
             </form>
           </div>
         </div>
