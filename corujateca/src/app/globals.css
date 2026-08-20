@@ -19,6 +19,10 @@
     --color-text-primary: #634B2B;
     --color-text-inverse: #E4E4D2;
 
+    /* Button */
+    --color-button-primary: #6B7A4B;
+    --color-button-secondary: #98462B;
+
     /* Brand */
     --color-brand-800: var(--brand-800);
     --color-brand-700: var(--brand-700);
