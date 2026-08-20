@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import Link from "next/link";
 
 import {
     LibraryBig,
@@ -211,8 +212,7 @@ export default function HomeBibli() {
               "
             >
 
-              <button
-                className="
+            <Link href="/bibliotecario/acervo" className="
                 cursor-pointer
                 shadow-md
                   w-full
@@ -229,16 +229,14 @@ export default function HomeBibli() {
                   text-[var(--color-text-primary)]
                   hover:bg-[var(--color-brand-100)]
                   transition-colors
-                "
-              >
+                ">
+                
                 <LibraryBig size={20} className="mr-2"/>
                 <span>Acervo</span>
-              </button>
+            </Link>
 
 
-
-              <button
-                className="
+            <Link href="/bibliotecario/emprestimos" className="
                 shadow-md
                 cursor-pointer  
                 w-full
@@ -255,17 +253,14 @@ export default function HomeBibli() {
                   text-[var(--color-text-primary)]
                   hover:bg-[var(--color-brand-100)]
                   transition-colors
-                "
-              >
+                ">
                 <Stamp size={20} className="mr-2"/>
                 <span>Empréstimos</span>
-              </button>
+            </Link>
 
             </div>
 
-
-            <button
-              className="
+        <Link href="/bibliotecario/ajuda" className="
                cursor-pointer
                shadow-md
                 min-h-28
@@ -283,8 +278,7 @@ export default function HomeBibli() {
                 text-[var(--color-text-primary)]
                 hover:bg-[var(--color-brand-100)]
                 transition-colors
-              "
-            >
+              ">
               <span>
                 Precisa
                 <br />
@@ -292,7 +286,7 @@ export default function HomeBibli() {
                 <br />
                 Ajuda?
               </span>
-            </button>
+        </Link>
 
           </section>
 
