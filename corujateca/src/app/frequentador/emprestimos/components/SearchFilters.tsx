@@ -7,7 +7,7 @@ export default function SearchFilters() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      {/* Input de Data */}
+
       <input
         type="text"
         placeholder="Por data"
@@ -16,7 +16,6 @@ export default function SearchFilters() {
         className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 placeholder:text-brand-600/50 outline-none focus:ring-2 focus:ring-brand-500"
       />
 
-      {/* Select de Status com ponteiro customizado via SVG embutido */}
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}

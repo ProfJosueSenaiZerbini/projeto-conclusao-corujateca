@@ -44,7 +44,6 @@ export default function EmprestimosPage() {
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
           <div className="mx-auto w-full max-w-6xl space-y-8">
 
-            {/* Cards superiores */}
             <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
               <DashboardCard
                 title="Empréstimos em Andamento:"
@@ -57,7 +56,6 @@ export default function EmprestimosPage() {
               />
             </section>
 
-            {/* Pesquisa */}
             <section className="rounded-3xl bg-brand-200 p-4 shadow-sm md:p-6">
               <h2 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl">
                 Pesquisar por Empréstimos
