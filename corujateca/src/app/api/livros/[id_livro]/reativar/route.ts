@@ -18,14 +18,14 @@ export async function PATCH(
     });
 
     return NextResponse.json({
-      mensagem: 'Livro desativado com sucesso!',
+      mensagem: 'Livro reativado com sucesso!',
       livro: livroAtualizado,
     });
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      { erro: 'Erro ao desativar o livro.' },
+      { erro: 'Erro ao reativar o livro.' },
       { status: 500 }
     );
   }
