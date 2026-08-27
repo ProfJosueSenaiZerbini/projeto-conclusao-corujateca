@@ -10,13 +10,13 @@ const pool = new Pool({
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id_freq: string }> }
 ) {
   const client = await pool.connect();
 
   try {
-    const { id } = await params;
-    const idFreq = parseInt(id, 10);
+    const { id_freq } = await params;
+    const idFreq = parseInt(id_freq, 10);
 
     if (isNaN(idFreq)) {
       return NextResponse.json({ erro: "ID inválido." }, { status: 400 });
