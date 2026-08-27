@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react'; // 👈 Deixamos apenas o useState, direto e sem avisos do editor!
+import { useState } from 'react';
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -27,7 +27,7 @@ const perguntasFrequentes = [
 
 ];
 
-export default function AjudaFreq() {
+export default function AjudaBibli() {
     
     const [indexAberto, setIndexAberto] = useState<number | null>(null);
 
