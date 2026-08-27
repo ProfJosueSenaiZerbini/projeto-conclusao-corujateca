@@ -10,19 +10,17 @@ const pool = new Pool({
 
 export async function PUT(
   request: Request,
-  // 1. O nome aqui precisa bater exatamente com o nome da pasta [id_bibliotecario]
-  { params }: { params: { id_bibliotecario: string } }
+  { params }: { params: Promise<{ id_bibliotecario: string }> }
 ) {
-  // Desestrutura usando o mesmo nome da pasta
-  const idBibliotecario = params.id_bibliotecario;
+  const { id_bibliotecario } = await params;
   const client = await pool.connect();
 
   try {
     const body = await request.json();
     const { nome, ddd, telefone } = body;
 
-    // Validação do ID e Nome
-    if (!idBibliotecario || isNaN(Number(idBibliotecario))) {
+    // 1. Validação de ID e Nome
+    if (!id_bibliotecario || isNaN(Number(id_bibliotecario))) {
       return NextResponse.json(
         { erro: "ID do bibliotecário inválido." },
         { status: 400 }
@@ -38,17 +36,17 @@ export async function PUT(
 
     await client.query("BEGIN");
 
-    // Atualiza os dados na tabela 'bibliotecario'
+    // 2. Atualiza os dados na tabela 'bibliotecario'
     const queryBibliotecario = `
       UPDATE bibliotecario 
-      SET nome_biblio = $1 
-      WHERE id_biblio = $2 AND inativo_biblio = false
-      RETURNING id_biblio, nome_biblio
+      SET nome_bibliotecario = $1 
+      WHERE id_bibliotecario = $2 AND inativo_bibliotecario = false
+      RETURNING id_bibliotecario, nome_bibliotecario
     `;
 
     const resBibliotecario = await client.query(queryBibliotecario, [
       nome.trim(),
-      idBibliotecario,
+      Number(id_bibliotecario),
     ]);
 
     if (resBibliotecario.rowCount === 0) {
@@ -59,29 +57,40 @@ export async function PUT(
       );
     }
 
-    // Atualiza ou insere o telefone na tabela 'tel_biblio'
+    // 3. Atualiza ou insere o telefone na tabela 'tel_bibliotecario'
     const dddLimpo = ddd ? String(ddd).replace(/\D/g, "") : "";
     const telLimpo = telefone ? String(telefone).replace(/\D/g, "") : "";
 
     if (dddLimpo && telLimpo) {
       const queryVerificaTel = `
-        SELECT id_telbiblio FROM tel_biblio WHERE fk_bibliotecario_id_biblio = $1
+        SELECT id_tel_bibliotecario FROM tel_bibliotecario 
+        WHERE fk_bibliotecario_id_bibliotecario = $1
       `;
-      const resTel = await client.query(queryVerificaTel, [idBibliotecario]);
+      const resTel = await client.query(queryVerificaTel, [Number(id_bibliotecario)]);
 
       if (resTel.rows.length > 0) {
+        // Se já existe registro de telefone, atualiza
         const queryUpdateTel = `
-          UPDATE tel_biblio 
-          SET ddd_biblio = $1, numtel_biblio = $2 
-          WHERE fk_bibliotecario_id_biblio = $3
+          UPDATE tel_bibliotecario 
+          SET ddd_bibliotecario = $1, numtel_bibliotecario = $2 
+          WHERE fk_bibliotecario_id_bibliotecario = $3
         `;
-        await client.query(queryUpdateTel, [dddLimpo, telLimpo, idBibliotecario]);
+        await client.query(queryUpdateTel, [
+          dddLimpo,
+          telLimpo,
+          Number(id_bibliotecario),
+        ]);
       } else {
+        // Se não tinha telefone antes, insere
         const queryInsertTel = `
-          INSERT INTO tel_biblio (ddd_biblio, numtel_biblio, fk_bibliotecario_id_biblio) 
+          INSERT INTO tel_bibliotecario (ddd_bibliotecario, numtel_bibliotecario, fk_bibliotecario_id_bibliotecario) 
           VALUES ($1, $2, $3)
         `;
-        await client.query(queryInsertTel, [dddLimpo, telLimpo, idBibliotecario]);
+        await client.query(queryInsertTel, [
+          dddLimpo,
+          telLimpo,
+          Number(id_bibliotecario),
+        ]);
       }
     }
 
@@ -94,14 +103,21 @@ export async function PUT(
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     await client.query("ROLLBACK");
-    console.error("Erro ao atualizar bibliotecário:", error);
+    console.error("Erro no servidor:", error?.message || error);
     return NextResponse.json(
-      { erro: "Erro ao atualizar dados do bibliotecário no banco de dados." },
+      { erro: `Erro no banco de dados: ${error?.message || "Consulte o log do servidor"}` },
       { status: 500 }
     );
   } finally {
     client.release();
   }
+}
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id_bibliotecario: string }> }
+) {
+  return PUT(request, context);
 }
