@@ -8,16 +8,19 @@ import Nav from "@/components/Nav";
 type Usuario = {
   id: number;
   nome: string;
+  ddd?: string;
+  telefone?: string;
 };
 
 export default function UsuariosBibli() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [termoPesquisa, setTermoPesquisa] = useState("");
-  const [totalUsuarios, setTotalUsuarios] = useState<number>(5);
+  const [totalUsuarios, setTotalUsuarios] = useState<number>(0);
 
   const [modalAberto, setModalAberto] = useState(false);
+  const [usuarioEmEdicao, setUsuarioEmEdicao] = useState<Usuario | null>(null);
 
-  // Campos do novo usuário
+  // Campos do formulário
   const [novoNome, setNovoNome] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [novoDdd, setNovoDdd] = useState("");
@@ -31,7 +34,6 @@ export default function UsuariosBibli() {
 
       if (resposta.ok) {
         const dados = await resposta.json();
-
         setUsuarios(dados);
         setTotalUsuarios(dados.length);
       }
@@ -44,53 +46,82 @@ export default function UsuariosBibli() {
     carregarUsuarios();
   }, []);
 
-  async function handleCadastrar(e: React.FormEvent) {
+  function abrirModalEdicao(usuario: Usuario) {
+    setUsuarioEmEdicao(usuario);
+    setNovoNome(usuario.nome || "");
+    setNovaSenha(""); 
+    setNovoDdd(usuario.ddd || "");
+    setNovoTelefone(usuario.telefone || "");
+    setModalAberto(true);
+  }
+
+  function abrirModalCadastro() {
+    setUsuarioEmEdicao(null);
+    setNovoNome("");
+    setNovaSenha("");
+    setNovoDdd("");
+    setNovoTelefone("");
+    setModalAberto(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Nome e senha são obrigatórios
-    if (!novoNome.trim() || !novaSenha.trim()) {
-      alert("Nome e senha são obrigatórios.");
+    if (!novoNome.trim()) {
+      alert("O nome é obrigatório.");
       return;
+    }
+
+    // Trava de validação da senha para cadastros novos
+    if (!usuarioEmEdicao) {
+      if (!novaSenha.trim()) {
+        alert("A senha é obrigatória.");
+        return;
+      }
+      if (novaSenha.trim().length < 8) {
+        alert("A senha precisa ter no mínimo 8 caracteres!");
+        return;
+      }
     }
 
     setCarregando(true);
 
     try {
-      const res = await fetch("/api/frequentador", {
-        method: "POST",
+      const url = usuarioEmEdicao
+        ? `/api/frequentador/${usuarioEmEdicao.id}`
+        : "/api/frequentador";
+
+      const method = usuarioEmEdicao ? "PUT" : "POST";
+
+      const bodyData: Record<string, any> = {
+        nome: novoNome.trim(),
+        ddd: novoDdd,
+        telefone: novoTelefone,
+      };
+
+      // Envia a senha somente se for um novo cadastro
+      if (!usuarioEmEdicao) {
+        bodyData.senha = novaSenha.trim();
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          nome: novoNome,
-          senha: novaSenha,
-          ddd: novoDdd,
-          telefone: novoTelefone,
-        }),
+        body: JSON.stringify(bodyData),
       });
 
       if (res.ok) {
-        // Limpa os campos
-        setNovoNome("");
-        setNovaSenha("");
-        setNovoDdd("");
-        setNovoTelefone("");
-
-        // Fecha o modal
-        setModalAberto(false);
-
-        // Atualiza a lista
+        fecharModal();
         await carregarUsuarios();
       } else {
         const erro = await res.json();
-
-        alert(
-          erro.erro || "Erro ao cadastrar usuário."
-        );
+        alert(erro.erro || "Erro ao salvar os dados do usuário.");
       }
     } catch (err) {
-      console.error("Erro ao cadastrar:", err);
-      alert("Erro ao cadastrar usuário.");
+      console.error("Erro ao salvar:", err);
+      alert("Erro de comunicação com o servidor.");
     } finally {
       setCarregando(false);
     }
@@ -100,8 +131,7 @@ export default function UsuariosBibli() {
     if (carregando) return;
 
     setModalAberto(false);
-
-    // Limpa os campos ao fechar
+    setUsuarioEmEdicao(null);
     setNovoNome("");
     setNovaSenha("");
     setNovoDdd("");
@@ -109,9 +139,7 @@ export default function UsuariosBibli() {
   }
 
   const usuariosFiltrados = usuarios.filter((user) =>
-    user.nome
-      .toLowerCase()
-      .includes(termoPesquisa.toLowerCase())
+    user.nome?.toLowerCase().includes(termoPesquisa.toLowerCase())
   );
 
   return (
@@ -124,7 +152,6 @@ export default function UsuariosBibli() {
         <main className="flex-1 min-w-0 p-8 flex justify-center items-center">
           <div className="w-full max-w-3xl space-y-6">
 
-            {/* Card Contagem de Usuários */}
             <div className="bg-brand-500 text-text-inverse p-6 rounded-2xl flex justify-between items-center shadow-md">
               <h2 className="text-2xl font-normal leading-snug">
                 Quantidade de
@@ -137,10 +164,9 @@ export default function UsuariosBibli() {
               </span>
             </div>
 
-            {/* Ações */}
             <div className="flex gap-6">
               <button
-                onClick={() => setModalAberto(true)}
+                onClick={abrirModalCadastro}
                 className="flex-1 bg-button-primary text-text-inverse font-medium py-3 px-6 rounded-2xl hover:brightness-110 transition shadow-sm text-center"
               >
                 Cadastrar Novo Usuário
@@ -153,7 +179,6 @@ export default function UsuariosBibli() {
               </button>
             </div>
 
-            {/* Campo de Busca */}
             <div className="space-y-2">
               <label className="block font-bold text-text-primary text-lg">
                 Pesquisar por Usuário
@@ -163,14 +188,11 @@ export default function UsuariosBibli() {
                 type="text"
                 placeholder="Nome do Usuário"
                 value={termoPesquisa}
-                onChange={(e) =>
-                  setTermoPesquisa(e.target.value)
-                }
+                onChange={(e) => setTermoPesquisa(e.target.value)}
                 className="w-full bg-white border border-brand-400 rounded-xl px-4 py-2 text-brand-800 placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-button-primary"
               />
             </div>
 
-            {/* Tabela de Usuários */}
             <div className="border border-brand-800 rounded-t-xl overflow-hidden bg-white shadow-md">
               <table className="w-full border-collapse">
                 <thead>
@@ -206,6 +228,7 @@ export default function UsuariosBibli() {
                             </button>
 
                             <button
+                              onClick={() => abrirModalEdicao(usuario)}
                               className="bg-brand-500 text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium"
                             >
                               Atualizar
@@ -240,7 +263,7 @@ export default function UsuariosBibli() {
       </div>
 
       {/* ================================================= */}
-      {/* MODAL DE CADASTRO */}
+      {/* MODAL DE CADASTRO / EDIÇÃO */}
       {/* ================================================= */}
 
       {modalAberto && (
@@ -253,13 +276,14 @@ export default function UsuariosBibli() {
             onClick={(e) => e.stopPropagation()}
           >
 
-            {/* Título */}
             <h3 className="text-xl font-bold text-brand-800">
-              Cadastrar Novo Frequentador
+              {usuarioEmEdicao
+                ? `Atualizar Frequentador #${usuarioEmEdicao.id}`
+                : "Cadastrar Novo Frequentador"}
             </h3>
 
             <form
-              onSubmit={handleCadastrar}
+              onSubmit={handleSubmit}
               className="space-y-4"
             >
 
@@ -273,31 +297,30 @@ export default function UsuariosBibli() {
                   type="text"
                   required
                   value={novoNome}
-                  onChange={(e) =>
-                    setNovoNome(e.target.value)
-                  }
+                  onChange={(e) => setNovoNome(e.target.value)}
                   placeholder="Ex: Ana Souza"
                   className="w-full border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
                 />
               </div>
 
-              {/* Senha */}
-              <div>
-                <label className="block text-sm font-medium text-brand-800 mb-1">
-                  Senha
-                </label>
+              {/* Senha (Exibida APENAS na criação) */}
+              {!usuarioEmEdicao && (
+                <div>
+                  <label className="block text-sm font-medium text-brand-800 mb-1">
+                    Senha (mínimo de 8 caracteres)
+                  </label>
 
-                <input
-                  type="password"
-                  required
-                  value={novaSenha}
-                  onChange={(e) =>
-                    setNovaSenha(e.target.value)
-                  }
-                  placeholder="Digite a senha"
-                  className="w-full border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
-                />
-              </div>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    value={novaSenha}
+                    onChange={(e) => setNovaSenha(e.target.value)}
+                    placeholder="Digite a senha"
+                    className="w-full border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
+                  />
+                </div>
+              )}
 
               {/* Telefone */}
               <div>
@@ -307,7 +330,6 @@ export default function UsuariosBibli() {
 
                 <div className="flex gap-2">
 
-                  {/* DDD */}
                   <input
                     type="text"
                     value={novoDdd}
@@ -323,7 +345,6 @@ export default function UsuariosBibli() {
                     className="w-20 border border-brand-400 rounded-xl p-2 text-brand-800 focus:outline-none focus:ring-2 focus:ring-button-primary"
                   />
 
-                  {/* Número */}
                   <input
                     type="text"
                     value={novoTelefone}
@@ -361,6 +382,8 @@ export default function UsuariosBibli() {
                 >
                   {carregando
                     ? "Salvando..."
+                    : usuarioEmEdicao
+                    ? "Atualizar"
                     : "Cadastrar"}
                 </button>
 
