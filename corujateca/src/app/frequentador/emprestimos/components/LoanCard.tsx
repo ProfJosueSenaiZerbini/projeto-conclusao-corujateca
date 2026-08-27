@@ -30,7 +30,6 @@ export default function LoanCard({ loan }: { loan: Loan }) {
     <div className="rounded-2xl bg-brand-400 p-4 shadow-sm transition hover:shadow-md sm:p-6">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
 
-        {/* Esquerda */}
         <div>
           <h3 className="text-2xl font-bold text-text-inverse">
             {loan.title}
@@ -45,7 +44,6 @@ export default function LoanCard({ loan }: { loan: Loan }) {
           </span>
         </div>
 
-        {/* Direita */}
         <div className="min-w-0 space-y-2 text-sm text-text-inverse sm:text-base">
           <div className="flex items-start gap-2 sm:items-center sm:gap-4">
             <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
