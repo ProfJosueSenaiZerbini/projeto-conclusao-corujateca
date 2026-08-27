@@ -35,31 +35,31 @@ const loans = [
 
 export default function EmprestimosPage() {
   return (
-    <div className="min-h-screen bg-[var(--color-background)] flex flex-col">
+    <div className="flex min-h-screen flex-col bg-(--color-background)">
       <Header />
 
       <div className="flex flex-1 min-w-0">
         <Nav />
 
-        <main className="flex-1 min-w-0 p-4 md:p-8 md:ml-8">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
           <div className="mx-auto w-full max-w-6xl space-y-8">
 
             {/* Cards superiores */}
-            <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
               <DashboardCard
-                title="Empréstimos em Andamento"
+                title="Empréstimos em Andamento:"
                 value={2}
               />
 
               <DashboardCard
-                title="Quantidade de Livros que Expiram Hoje"
+                title="Quantidade de Livros que Expiram Hoje:"
                 value={2}
               />
             </section>
 
             {/* Pesquisa */}
             <section className="rounded-3xl bg-brand-200 p-4 shadow-sm md:p-6">
-              <h2 className="mb-5 text-2xl font-bold text-[var(--color-text-primary)]">
+              <h2 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl">
                 Pesquisar por Empréstimos
               </h2>
 
