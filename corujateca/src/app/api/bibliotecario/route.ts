@@ -1,107 +1,20 @@
 import { NextResponse } from "next/server";
-import { Pool } from "pg";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+import { db } from "@/app/db";
 
-export async function PUT(
-  request: Request,
-  // 1. O nome aqui precisa bater exatamente com o nome da pasta [id_bibliotecario]
-  { params }: { params: { id_bibliotecario: string } }
-) {
-  // Desestrutura usando o mesmo nome da pasta
-  const idBibliotecario = params.id_bibliotecario;
-  const client = await pool.connect();
-
+export async function GET() {
   try {
-    const body = await request.json();
-    const { nome, ddd, telefone } = body;
+    const bibliotecarios = await db.bibliotecario.findMany({
+      where: { inativo_bibliotecario: false },
+      orderBy: { nome_bibliotecario: "asc" },
+    });
 
-    // Validação do ID e Nome
-    if (!idBibliotecario || isNaN(Number(idBibliotecario))) {
-      return NextResponse.json(
-        { erro: "ID do bibliotecário inválido." },
-        { status: 400 }
-      );
-    }
-
-    if (!nome || typeof nome !== "string" || !nome.trim()) {
-      return NextResponse.json(
-        { erro: "O nome do bibliotecário é obrigatório." },
-        { status: 400 }
-      );
-    }
-
-    await client.query("BEGIN");
-
-    // Atualiza os dados na tabela 'bibliotecario'
-    const queryBibliotecario = `
-      UPDATE bibliotecario 
-      SET nome_biblio = $1 
-      WHERE id_biblio = $2 AND inativo_biblio = false
-      RETURNING id_biblio, nome_biblio
-    `;
-
-    const resBibliotecario = await client.query(queryBibliotecario, [
-      nome.trim(),
-      idBibliotecario,
-    ]);
-
-    if (resBibliotecario.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return NextResponse.json(
-        { erro: "Bibliotecário não encontrado ou inativo." },
-        { status: 404 }
-      );
-    }
-
-    // Atualiza ou insere o telefone na tabela 'tel_biblio'
-    const dddLimpo = ddd ? String(ddd).replace(/\D/g, "") : "";
-    const telLimpo = telefone ? String(telefone).replace(/\D/g, "") : "";
-
-    if (dddLimpo && telLimpo) {
-      const queryVerificaTel = `
-        SELECT id_telbiblio FROM tel_biblio WHERE fk_bibliotecario_id_biblio = $1
-      `;
-      const resTel = await client.query(queryVerificaTel, [idBibliotecario]);
-
-      if (resTel.rows.length > 0) {
-        const queryUpdateTel = `
-          UPDATE tel_biblio 
-          SET ddd_biblio = $1, numtel_biblio = $2 
-          WHERE fk_bibliotecario_id_biblio = $3
-        `;
-        await client.query(queryUpdateTel, [dddLimpo, telLimpo, idBibliotecario]);
-      } else {
-        const queryInsertTel = `
-          INSERT INTO tel_biblio (ddd_biblio, numtel_biblio, fk_bibliotecario_id_biblio) 
-          VALUES ($1, $2, $3)
-        `;
-        await client.query(queryInsertTel, [dddLimpo, telLimpo, idBibliotecario]);
-      }
-    }
-
-    await client.query("COMMIT");
-
-    return NextResponse.json(
-      {
-        mensagem: "Bibliotecário atualizado com sucesso!",
-        bibliotecario: resBibliotecario.rows[0],
-      },
-      { status: 200 }
-    );
+    return NextResponse.json(bibliotecarios, { status: 200 });
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Erro ao atualizar bibliotecário:", error);
+    console.error("Erro ao buscar bibliotecários:", error);
     return NextResponse.json(
-      { erro: "Erro ao atualizar dados do bibliotecário no banco de dados." },
+      { erro: "Erro ao buscar bibliotecários no banco de dados." },
       { status: 500 }
     );
-  } finally {
-    client.release();
   }
 }
