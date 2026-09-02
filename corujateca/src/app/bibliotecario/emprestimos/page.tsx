@@ -194,10 +194,10 @@ export default async function EmprestimosPage() {
   }).length;
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Header />
 
-      <div className="flex flex-1 min-w-0">
+      <div className="flex flex-1">
         <Nav />
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">

@@ -41,12 +41,11 @@ export default function AjudaFreq() {
     /*Parte da Maria */
     return (
         <>
-            <div>
+            <div className="min-h-screen flex flex-col">
                 <Header />
 
-                <div className="flex">
-
-                    <Nav />
+                <div className="flex flex-1">
+                  <Nav />
 
                     <main className="
                         flex-1

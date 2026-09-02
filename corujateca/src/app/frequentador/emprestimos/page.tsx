@@ -35,10 +35,10 @@ const loans = [
 
 export default function EmprestimosPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-(--color-background)">
+    <div className="min-h-screen flex flex-col">
       <Header />
 
-      <div className="flex flex-1 min-w-0">
+      <div className="flex flex-1">
         <Nav />
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">

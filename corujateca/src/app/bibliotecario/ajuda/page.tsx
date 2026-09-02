@@ -41,12 +41,11 @@ export default function AjudaBibli() {
     /*Parte da Maria */
     return (
         <>
-            <div>
-                <Header />
+            <div className="min-h-screen flex flex-col">
+              <Header />
 
-                <div className="flex">
-
-                    <Nav />
+              <div className="flex flex-1">
+                <Nav />
 
                     <main className="
                         flex-1
