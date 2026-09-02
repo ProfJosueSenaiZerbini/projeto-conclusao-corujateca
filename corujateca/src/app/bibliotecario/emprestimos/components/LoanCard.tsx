@@ -1,4 +1,5 @@
 type Loan = {
+  id: number;
   title: string;
   author: string;
   userName: string;
@@ -7,7 +8,6 @@ type Loan = {
   loanDate: string;
 };
 
-// Ícone SVG do Calendário mantendo o padrão sem dependências externas
 function CalendarIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg
@@ -27,12 +27,18 @@ function CalendarIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-export default function LoanCard({ loan }: { loan: Loan }) {
+export default function LoanCard({
+  loan,
+  onConcluir,
+}: {
+  loan: Loan;
+  onConcluir?: (formData: FormData) => Promise<void> | void;
+}) {
   return (
     <div className="rounded-2xl border border-brand-400 bg-brand-400 p-4 shadow-sm sm:p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
-        
-        {/* Coluna Esquerda: Título, Autor e Usuário */}
+      <form action={onConcluir} className="grid grid-cols-1 gap-y-4 gap-x-6 md:grid-cols-2">
+        <input type="hidden" name="id_emprestimo" value={loan.id} />
+
         <div className="flex flex-col justify-between gap-1">
           <div>
             <h3 className="text-2xl font-bold text-text-inverse leading-tight">
@@ -48,11 +54,8 @@ export default function LoanCard({ loan }: { loan: Loan }) {
           </p>
         </div>
 
-        {/* Coluna Direita: Datas e Status */}
         <div className="flex flex-col justify-between text-left gap-1">
           <div className="text-sm md:text-base text-text-inverse space-y-2">
-            
-            {/* Data de Expiração */}
             <div className="flex items-start gap-2 sm:items-center sm:gap-4">
               <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
               <p>
@@ -61,7 +64,6 @@ export default function LoanCard({ loan }: { loan: Loan }) {
               </p>
             </div>
 
-            {/* Data do Empréstimo */}
             <div className="flex items-start gap-2 sm:items-center sm:gap-4">
               <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
               <p>
@@ -69,7 +71,6 @@ export default function LoanCard({ loan }: { loan: Loan }) {
                 <span className="font-normal">{loan.loanDate}</span>
               </p>
             </div>
-
           </div>
 
           <p className="mt-3 text-base font-semibold text-text-inverse">
@@ -77,10 +78,9 @@ export default function LoanCard({ loan }: { loan: Loan }) {
           </p>
         </div>
 
-        {/* Linha Inferior: Botões de Ação */}
-        <div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+        <div className="col-span-1 md:col-span-2 grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
           <button
-            type="button"
+            type="submit"
             className="w-full bg-[var(--color-button-primary)] hover:brightness-110 text-brand-200 font-semibold py-2.5 px-4 rounded-xl transition duration-150 text-sm shadow-sm cursor-pointer"
           >
             Concluir devolução do livro
@@ -93,8 +93,7 @@ export default function LoanCard({ loan }: { loan: Loan }) {
             Cancelar
           </button>
         </div>
-
-      </div>
+      </form>
     </div>
   );
 }
