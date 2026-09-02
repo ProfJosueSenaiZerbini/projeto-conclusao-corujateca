@@ -20,7 +20,6 @@ O sistema foi desenvolvido com foco em facilitar o gerenciamento das atividades 
 * [Atualizando o Prisma Client](#atualizando-o-prisma-client)
 * [Migrations](#migrations)
 * [Executando o projeto](#executando-o-projeto)
-* [Estrutura do projeto](#estrutura-do-projeto)
 * [Comandos úteis](#comandos-úteis)
 * [Solução de problemas](#solução-de-problemas)
 * [Equipe](#equipe)
