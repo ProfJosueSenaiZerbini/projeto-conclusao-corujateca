@@ -6,10 +6,10 @@ O sistema foi desenvolvido com foco em facilitar o gerenciamento das atividades 
 
 ---
 
-## 📋 Sumário
+## Sumário
 
-* [Sobre o projeto](#-sobre-o-projeto)
-* [Tecnologias utilizadas](#-tecnologias-utilizadas)
+* [Sobre o projeto](#sobre-o-projeto)
+* [Tecnologias utilizadas](#tecnologias-utilizadas)
 * [Pré-requisitos](#-pré-requisitos)
 * [Instalação](#-instalação)
 * [Configuração do arquivo `.env`](#-configuração-do-arquivo-env)
@@ -27,27 +27,27 @@ O sistema foi desenvolvido com foco em facilitar o gerenciamento das atividades 
 
 ---
 
-# 📖 Sobre o projeto
+# Sobre o projeto
 
 O **Corujateca** foi desenvolvido para informatizar o gerenciamento de uma biblioteca, centralizando informações relacionadas ao acervo e aos usuários.
 
 Entre as principais funcionalidades do sistema estão:
 
-* 📚 Gerenciamento de livros;
-* 👤 Gerenciamento de frequentadores;
-* 👨‍💼 Gerenciamento de bibliotecários;
-* 🔄 Controle de empréstimos;
-* 📅 Controle de devoluções;
-* 💰 Gerenciamento de multas;
-* 🔎 Pesquisa de informações;
-* 📊 Visualização de dados do sistema;
-* 🔐 Controle de acesso de usuários.
+* Gerenciamento de livros;
+* Gerenciamento de frequentadores;
+* Gerenciamento de bibliotecários;
+* Controle de empréstimos;
+* Controle de devoluções;
+* Gerenciamento de multas;
+* Pesquisa de informações;
+* Visualização de dados do sistema;
+* Controle de acesso de usuários.
 
 O sistema possui diferentes áreas de acordo com o tipo de usuário, permitindo que cada perfil tenha acesso às funcionalidades necessárias para suas atividades.
 
 ---
 
-# 🛠️ Tecnologias utilizadas
+# Tecnologias utilizadas
 
 O projeto utiliza as seguintes tecnologias:
 
@@ -64,7 +64,7 @@ O projeto utiliza as seguintes tecnologias:
 
 ---
 
-# 📦 Pré-requisitos
+# Pré-requisitos
 
 Antes de iniciar a instalação, certifique-se de possuir as seguintes ferramentas instaladas:
 
@@ -99,7 +99,7 @@ git --version
 
 ---
 
-# 🚀 Instalação
+# Instalação
 
 ## 1. Clonar o repositório
 
@@ -131,7 +131,7 @@ Esse comando instala todas as dependências necessárias para executar o projeto
 
 ---
 
-# 🔐 Configuração do arquivo `.env`
+# Configuração do arquivo `.env`
 
 O projeto utiliza variáveis de ambiente para armazenar informações de configuração, principalmente os dados necessários para conexão com o banco de dados.
 
@@ -147,7 +147,7 @@ Exemplo:
 DATABASE_URL="postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO"
 ```
 
-# 🗄️ Configuração do banco de dados
+# Configuração do banco de dados
 
 O Corujateca utiliza **PostgreSQL** como banco de dados e **Prisma ORM** para realizar a comunicação entre a aplicação e o banco.
 
@@ -182,7 +182,7 @@ Os principais componentes são:
 
 ---
 
-# 💻 Banco de dados local
+# Banco de dados local
 
 Para utilizar um banco PostgreSQL localmente, primeiro é necessário instalar o PostgreSQL.
 
@@ -218,7 +218,7 @@ npx prisma migrate dev
 
 ---
 
-# ☁️ Banco de dados remoto/online
+# Banco de dados remoto/online
 
 Também é possível utilizar um banco PostgreSQL hospedado remotamente.
 
@@ -256,7 +256,7 @@ npx prisma migrate deploy
 
 ---
 
-# 🔷 Configuração do Prisma
+# Configuração do Prisma
 
 O projeto utiliza o **Prisma ORM** para realizar a comunicação com o PostgreSQL.
 
@@ -278,7 +278,7 @@ O Prisma utiliza a variável `DATABASE_URL` definida no `.env` para realizar a c
 
 ---
 
-# 🔄 Atualizando o Prisma Client
+# Atualizando o Prisma Client
 
 Sempre que houver alterações no arquivo:
 
@@ -318,7 +318,7 @@ Dessa forma, o Prisma Client passa a reconhecer as alterações realizadas.
 
 ---
 
-# 🧬 Migrations
+# Migrations
 
 Quando uma alteração no `schema.prisma` também precisa ser aplicada ao banco de dados, deve ser criada uma migration.
 
@@ -343,7 +343,7 @@ Esse comando:
 
 ---
 
-## 🚀 Aplicando migrations em produção
+## Aplicando migrations em produção
 
 Em ambientes de produção, utilize:
 
@@ -355,7 +355,7 @@ Esse comando aplica as migrations existentes que ainda não foram executadas no 
 
 ---
 
-# 🔄 Fluxo recomendado após alterar o Prisma
+# Fluxo recomendado após alterar o Prisma
 
 Sempre que modificar o:
 
@@ -391,7 +391,7 @@ npx prisma migrate deploy
 
 ---
 
-# ▶️ Executando o projeto
+# Executando o projeto
 
 Depois de configurar o `.env`, instalar as dependências e preparar o banco de dados, execute:
 
@@ -407,7 +407,7 @@ Por padrão, o sistema estará disponível em:
 http://localhost:3000
 ```
 
-# 🧰 Comandos úteis
+# Comandos úteis
 
 ## Instalar dependências
 
@@ -455,7 +455,7 @@ npx prisma --version
 
 ---
 
-# ⚠️ Solução de problemas
+# Solução de problemas
 
 ## Erro: `DATABASE_URL não foi definida`
 
@@ -530,7 +530,7 @@ npx prisma migrate deploy
 
 ---
 
-# 🔒 Segurança
+# Segurança
 
 Nunca compartilhe informações sensíveis do banco de dados.
 
@@ -566,7 +566,7 @@ e preencher os valores de acordo com o banco utilizado.
 
 ---
 
-# 📌 Fluxo completo de instalação
+# Fluxo completo de instalação
 
 Para configurar o projeto em uma máquina nova:
 
@@ -614,7 +614,7 @@ http://localhost:3000
 
 ---
 
-# 👥 Equipe
+# Equipe
 
 Projeto desenvolvido por:
 
@@ -632,7 +632,7 @@ Desenvolvido como projeto acadêmico do curso Técnico em Desenvolvimento de Sis
 
 ---
 
-# 📄 Licença
+# Licença
 
 Este projeto foi desenvolvido para fins acadêmicos.
 
