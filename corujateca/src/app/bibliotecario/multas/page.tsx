@@ -1,92 +1,145 @@
-import { revalidatePath } from "next/cache";
+"use client";
 
-import { db } from "@/app/db";
+import { useEffect, useState } from "react";
+
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 
-async function cancelarMulta(formData: FormData) {
-  "use server";
+type MultaView = {
+  id: number;
+  usuario: string;
+  diasPunicao: number;
+  status: string;
+  tipo: string;
+  data: string;
+};
 
-  const idMulta = Number(formData.get("id_multa"));
-
-  if (!idMulta) {
-    return;
-  }
-
-  const multa = await db.multa.findUnique({
-    where: { id_multa: idMulta },
-    include: { frequentador: true },
-  });
-
-  if (!multa) {
-    return;
-  }
-
-  await db.multa.update({
-    where: { id_multa: idMulta },
-    data: { inativo_multa: true },
-  });
-
-  await db.frequentador.update({
-    where: { id_freq: multa.fk_frequentador_id_frequentador },
-    data: { suspensao_freq: false },
-  });
-
-  revalidatePath("/bibliotecario/multas");
-}
-
-function formatarData(data: Date | string | null) {
-  if (!data) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(data));
-}
-
-export default async function MultasPage() {
-  const multas = await db.multa.findMany({
-    where: { inativo_multa: false },
-    include: {
-      frequentador: true,
-    },
-    orderBy: {
-      dta_inicio_multa: "desc",
-    },
-  });
-
-  type MultaView = {
-    id: number;
-    usuario: string;
-    diasPunicao: number;
-    status: string;
-    tipo: string;
-    data: string;
+type MultasResponse = {
+  multas: MultaView[];
+  frequentadores: { id_freq: number; nome_freq: string }[];
+  bibliotecarios: {
+    id_bibliotecario: number;
+    nome_bibliotecario: string;
+  }[];
+  tipos: string[];
+  totais: {
+    atraso: number;
+    depredacao: number;
+    extravio: number;
   };
+};
 
-  const multasFormatadas: MultaView[] = multas.map((multa) => ({
-    id: multa.id_multa,
-    usuario: multa.frequentador.nome_freq,
-    diasPunicao: Math.max(
-      1,
-      Math.ceil(
-        (new Date(multa.dta_termino_multa).getTime() -
-          new Date(multa.dta_inicio_multa).getTime()) /
-          (1000 * 60 * 60 * 24),
-      ),
-    ),
-    status: multa.inativo_multa ? "Cancelada" : "Pendente",
-    tipo: multa.tipomulta,
-    data: formatarData(multa.dta_inicio_multa),
-  }));
+export default function MultasPage() {
+  const [dados, setDados] = useState<MultasResponse | null>(null);
+  const [erro, setErro] = useState("");
+  const [mostrarCadastro, setMostrarCadastro] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [formulario, setFormulario] = useState({
+    frequentadorId: "",
+    bibliotecarioId: "",
+    tipo: "",
+    inicio: "",
+    termino: "",
+  });
 
-  const atrasosAtivos = multas.filter((multa) => multa.tipomulta.toUpperCase() === "ATRASO").length;
-  const depredacoesAtivas = multas.filter((multa) => multa.tipomulta.toUpperCase() === "DEPREDAÇÃO").length;
-  const extraviosAtivos = multas.filter((multa) => multa.tipomulta.toUpperCase() === "EXTRAVIO").length;
+  function obterDataAtual() {
+    const dataAtual = new Date();
+    const ano = dataAtual.getFullYear();
+    const mes = String(dataAtual.getMonth() + 1).padStart(2, "0");
+    const dia = String(dataAtual.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  function obterDataFinal(dataInicial: string, dias: number) {
+    const dataFinal = new Date(`${dataInicial}T00:00:00`);
+    dataFinal.setDate(dataFinal.getDate() + dias);
+    const ano = dataFinal.getFullYear();
+    const mes = String(dataFinal.getMonth() + 1).padStart(2, "0");
+    const dia = String(dataFinal.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  function atualizarTipo(tipo: string) {
+    const inicio = obterDataAtual();
+    const prazo = tipo === "DEPREDAÇÃO" ? 15 : tipo === "EXTRAVIO" ? 30 : 0;
+
+    setFormulario({
+      ...formulario,
+      tipo,
+      inicio,
+      termino: prazo ? obterDataFinal(inicio, prazo) : "",
+    });
+  }
+
+  async function carregarMultas() {
+    try {
+      const resposta = await fetch("/api/multas");
+      if (!resposta.ok) throw new Error("Não foi possível carregar as multas.");
+      setDados(await resposta.json());
+    } catch (error) {
+      console.error(error);
+      setErro("Não foi possível carregar as multas.");
+    }
+  }
+
+  useEffect(() => {
+    void (async () => {
+      await carregarMultas();
+    })();
+  }, []);
+
+  async function cancelarMulta(idMulta: number) {
+    const resposta = await fetch("/api/multas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_multa: idMulta }),
+    });
+
+    if (!resposta.ok) {
+      const resultado = await resposta.json().catch(() => null);
+      alert(resultado?.erro ?? "Erro ao cancelar a multa.");
+      return;
+    }
+
+    await carregarMultas();
+  }
+
+  async function cadastrarMulta(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSalvando(true);
+
+    try {
+      const resposta = await fetch("/api/multas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dta_inicio_multa: formulario.inicio,
+          dta_termino_multa: formulario.termino,
+          tipomulta: formulario.tipo,
+          fk_bibliotecario_id_bibliotecario: formulario.bibliotecarioId,
+          fk_frequentador_id_frequentador: formulario.frequentadorId,
+        }),
+      });
+
+      const resultado = await resposta.json().catch(() => null);
+      if (!resposta.ok) {
+        alert(resultado?.erro ?? "Erro ao cadastrar a multa.");
+        return;
+      }
+
+      setFormulario({ frequentadorId: "", bibliotecarioId: "", tipo: "", inicio: "", termino: "" });
+      setMostrarCadastro(false);
+      await carregarMultas();
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  const multasFormatadas = dados?.multas ?? [];
+  const atrasosAtivos = dados?.totais.atraso ?? 0;
+  const depredacoesAtivas = dados?.totais.depredacao ?? 0;
+  const extraviosAtivos = dados?.totais.extravio ?? 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -161,11 +214,88 @@ export default async function MultasPage() {
             <div className="flex justify-center">
               <button
                 type="button"
+                onClick={() => {
+                  const inicio = obterDataAtual();
+                  setFormulario({
+                    frequentadorId: "",
+                    bibliotecarioId: "",
+                    tipo: "",
+                    inicio,
+                    termino: "",
+                  });
+                  setMostrarCadastro(true);
+                }}
                 className="w-full max-w-md rounded-2xl bg-[var(--color-button-primary)] px-6 py-3 text-base font-bold text-text-inverse shadow-md transition hover:brightness-110 hover:shadow-lg active:scale-[0.98] sm:py-4 sm:text-lg"
               >
                 Cadastrar Nova Multa
               </button>
             </div>
+
+            {mostrarCadastro && (
+              <div className="rounded-3xl bg-brand-200 p-4 shadow-sm sm:p-5 md:p-6 lg:p-8">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <h2 className="text-xl font-bold text-(--color-text-primary) sm:text-2xl">
+                    Cadastrar Nova Multa
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarCadastro(false)}
+                    className="rounded-xl px-3 py-2 font-bold text-brand-600 hover:bg-brand-100"
+                  >
+                    Fechar
+                  </button>
+                </div>
+
+                <form onSubmit={cadastrarMulta} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="flex flex-col gap-2 font-semibold text-brand-600">
+                    Usuário
+                    <select required value={formulario.frequentadorId} onChange={(event) => setFormulario({ ...formulario, frequentadorId: event.target.value })} className="rounded-xl border border-gray-300 bg-white px-4 py-3">
+                      <option value="">Selecione o usuário</option>
+                      {dados?.frequentadores.map((frequentador) => (
+                        <option key={frequentador.id_freq} value={frequentador.id_freq}>{frequentador.nome_freq}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-2 font-semibold text-brand-600">
+                    Bibliotecário
+                    <select required value={formulario.bibliotecarioId} onChange={(event) => setFormulario({ ...formulario, bibliotecarioId: event.target.value })} className="rounded-xl border border-gray-300 bg-white px-4 py-3">
+                      <option value="">Selecione o bibliotecário</option>
+                      {dados?.bibliotecarios.map((bibliotecario) => (
+                        <option key={bibliotecario.id_bibliotecario} value={bibliotecario.id_bibliotecario}>{bibliotecario.nome_bibliotecario}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-2 font-semibold text-brand-600">
+                    Tipo da multa
+                    <select required value={formulario.tipo} onChange={(event) => atualizarTipo(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-4 py-3">
+                      <option value="">Selecione o tipo</option>
+                      {(dados?.tipos ?? []).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-2 font-semibold text-brand-600">
+                    Data de início
+                    <input required readOnly type="date" value={formulario.inicio} className="rounded-xl border border-gray-300 bg-gray-100 px-4 py-3" />
+                  </label>
+
+                  <label className="flex flex-col gap-2 font-semibold text-brand-600">
+                    Data de término
+                    <input required readOnly={formulario.tipo === "DEPREDAÇÃO" || formulario.tipo === "EXTRAVIO"} type="date" value={formulario.termino} onChange={(event) => setFormulario({ ...formulario, termino: event.target.value })} className={`rounded-xl border border-gray-300 px-4 py-3 ${formulario.tipo === "DEPREDAÇÃO" || formulario.tipo === "EXTRAVIO" ? "bg-gray-100" : "bg-white"}`} />
+                    {(formulario.tipo === "DEPREDAÇÃO" || formulario.tipo === "EXTRAVIO") && (
+                      <span className="text-sm font-normal text-brand-600">
+                        Prazo automático: {formulario.tipo === "DEPREDAÇÃO" ? "15" : "30"} dias.
+                      </span>
+                    )}
+                  </label>
+
+                  <button type="submit" disabled={salvando} className="self-end rounded-xl bg-[var(--color-button-primary)] px-4 py-3 font-bold text-text-inverse disabled:opacity-60">
+                    {salvando ? "Cadastrando..." : "Cadastrar multa"}
+                  </button>
+                </form>
+              </div>
+            )}
 
             <section className="rounded-3xl bg-brand-200 p-4 shadow-sm sm:p-5 md:p-6 lg:p-8">
               <h1 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl lg:text-3xl">
@@ -200,9 +330,14 @@ export default async function MultasPage() {
               </div>
 
               <div className="mt-6 flex flex-col gap-4">
-                {multasFormatadas.map((multa: MultaView) => (
-                  <form key={multa.id} action={cancelarMulta} className="grid grid-cols-1 gap-5 rounded-2xl bg-brand-400 px-4 py-4 text-sm font-bold text-text-inverse sm:px-5 sm:py-5 sm:text-base lg:px-8 lg:py-6 md:grid-cols-2 md:gap-8 lg:gap-12">
-                    <input type="hidden" name="id_multa" value={multa.id} />
+                {erro && (
+                  <div className="py-8 text-center text-base text-text-inverse">
+                    {erro}
+                  </div>
+                )}
+
+                {multasFormatadas.map((multa) => (
+                  <div key={multa.id} className="grid grid-cols-1 gap-5 rounded-2xl bg-brand-400 px-4 py-4 text-sm font-bold text-text-inverse sm:px-5 sm:py-5 sm:text-base lg:px-8 lg:py-6 md:grid-cols-2 md:gap-8 lg:gap-12">
 
                     <div className="space-y-2">
                       <p className="text-lg">{multa.usuario}</p>
@@ -216,12 +351,13 @@ export default async function MultasPage() {
                     </div>
 
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={() => cancelarMulta(multa.id)}
                       className="col-span-1 w-full rounded-xl bg-[var(--color-button-secondary)] px-4 py-3 text-sm font-bold text-text-inverse transition hover:brightness-110 active:scale-[0.99] md:col-span-2 sm:py-4 sm:text-base"
                     >
                       Cancelar
                     </button>
-                  </form>
+                  </div>
                 ))}
 
                 {multasFormatadas.length === 0 && (
