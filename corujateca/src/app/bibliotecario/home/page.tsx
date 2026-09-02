@@ -10,10 +10,10 @@ import {
 
 export default function HomeBibli() {
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
       <Header />
 
-      <div className="flex">
+      <div className="flex flex-1">
         <Nav />
 
         <main className="flex-1 min-w-0 p-10 md:p-10">

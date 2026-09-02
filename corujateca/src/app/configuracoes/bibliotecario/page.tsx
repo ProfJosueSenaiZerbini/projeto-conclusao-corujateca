@@ -6,12 +6,11 @@ import Image from "next/image";
 export default function ConfiguracoesBibli() {
     return(
         <>
-             <div>
-                  <Header />
-            
-                    <div className="flex">
-            
-                      <Nav />
+             <div className="min-h-screen flex flex-col">
+                <Header />
+
+                <div className="flex flex-1">
+                  <Nav />
             
                       <main className="
                         flex-1

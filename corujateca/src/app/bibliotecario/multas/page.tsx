@@ -89,10 +89,10 @@ export default async function MultasPage() {
   const extraviosAtivos = multas.filter((multa) => multa.tipomulta.toUpperCase() === "EXTRAVIO").length;
 
   return (
-    <div className="flex min-h-screen flex-col bg-(--color-background)">
+    <div className="min-h-screen flex flex-col">
       <Header />
 
-      <div className="flex min-w-0 flex-1">
+      <div className="flex flex-1">
         <Nav />
 
         <main
