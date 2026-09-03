@@ -36,11 +36,13 @@ export default function LoansSection({ loans }: { loans: LoanView[] }) {
 
     router.refresh();
   }
+ 
 
   return (
     <div className="mt-8 space-y-5">
       {loans.map((loan) => (
         <LoanCard key={loan.id} loan={loan} onConcluir={concluirEmprestimo} />
+        
       ))}
     </div>
   );
