@@ -26,6 +26,34 @@ const estadoInicial: LivroForm = {
   sinopse_livro: "",
 };
 
+const generos = [
+  { value: "Romance", label: "Romance" },
+  { value: "Religião e Mitologia", label: "Religião e Mitologia" },
+  { value: "Ficção Científica", label: "Ficção Científica" },
+  { value: "Arte e Cultura", label: "Arte e Cultura" },
+  { value: "Fantasia", label: "Fantasia" },
+  { value: "Biografias e Memórias", label: "Biografias e Memórias" },
+  { value: "Thriller e Mistério", label: "Thriller e Mistério" },
+  { value: "Quadrinhos e Mangá", label: "Quadrinhos e Mangá" },
+  { value: "Terror", label: "Terror" },
+  { value: "Infantojuvenil", label: "Infantojuvenil" },
+  { value: "Aventura", label: "Aventura" },
+  { value: "Ciência e Conhecimento", label: "Ciência e Conhecimento" },
+  { value: "Poesia e Crônicas", label: "Poesia e Crônicas" },
+  { value: "História", label: "História" },
+  {
+    value: "Guia, Manual e Gastronomia",
+    label: "Guia, Manual e Gastronomia",
+  },
+  { value: "Política", label: "Política" },
+  {
+    value: "Autoajuda e Desenvolvimento Pessoal",
+    label: "Autoajuda e Desenvolvimento Pessoal",
+  },
+  { value: "Economia", label: "Economia" },
+  { value: "Literatura", label: "Literatura" },
+];
+
 export default function CadastrarLivroPage() {
   const [form, setForm] = useState<LivroForm>(estadoInicial);
   const [carregando, setCarregando] = useState(false);
@@ -33,15 +61,20 @@ export default function CadastrarLivroPage() {
   const [mensagem, setMensagem] = useState("");
 
   const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   // 🔍 Função para buscar dados do livro na API do Google Books
   const buscarDadosPorIsbn = async () => {
-    // Limpa pontuações ou traços do ISBN
     const isbnLimpo = form.isbn.replace(/[^0-9X]/gi, "");
 
     if (!isbnLimpo) {
@@ -60,7 +93,6 @@ export default function CadastrarLivroPage() {
         throw new Error(dados.erro || "Erro ao buscar dados do livro.");
       }
 
-      // Preenche os campos do formulário automaticamente com os dados retornados
       setForm((prev) => ({
         ...prev,
         isbn: isbnLimpo,
@@ -70,7 +102,6 @@ export default function CadastrarLivroPage() {
         anopub_livro: dados.anopub_livro
           ? String(dados.anopub_livro)
           : prev.anopub_livro,
-        genero_livro: dados.genero_livro || prev.genero_livro,
         imgcapa_livro: dados.imgcapa_livro || prev.imgcapa_livro,
         sinopse_livro: dados.sinopse_livro || prev.sinopse_livro,
       }));
@@ -79,13 +110,16 @@ export default function CadastrarLivroPage() {
     } catch (erro) {
       const msg =
         erro instanceof Error ? erro.message : "Falha ao buscar ISBN.";
+
       setMensagem(msg);
     } finally {
       setBuscandoIsbn(false);
     }
   };
 
-  const enviarLivroParaBackend = async (event: FormEvent<HTMLFormElement>) => {
+  const enviarLivroParaBackend = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     setCarregando(true);
     setMensagem("");
@@ -113,6 +147,7 @@ export default function CadastrarLivroPage() {
     } catch (erro) {
       const mensagemErro =
         erro instanceof Error ? erro.message : "Falha ao cadastrar livro.";
+
       setMensagem(mensagemErro);
     } finally {
       setCarregando(false);
@@ -145,6 +180,7 @@ export default function CadastrarLivroPage() {
           >
             ISBN
           </label>
+
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <input
               type="text"
@@ -160,6 +196,7 @@ export default function CadastrarLivroPage() {
                 border: "1px solid #ccc",
               }}
             />
+
             <button
               type="button"
               onClick={buscarDadosPorIsbn}
@@ -182,7 +219,8 @@ export default function CadastrarLivroPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(220px, 1fr))",
             gap: "1rem",
           }}
         >
@@ -194,7 +232,11 @@ export default function CadastrarLivroPage() {
               value={form.titulo_livro}
               onChange={handleChange}
               required
-              style={{ width: "100%", padding: "0.7rem", marginTop: "0.3rem" }}
+              style={{
+                width: "100%",
+                padding: "0.7rem",
+                marginTop: "0.3rem",
+              }}
             />
           </label>
 
@@ -206,7 +248,11 @@ export default function CadastrarLivroPage() {
               value={form.autor_livro}
               onChange={handleChange}
               required
-              style={{ width: "100%", padding: "0.7rem", marginTop: "0.3rem" }}
+              style={{
+                width: "100%",
+                padding: "0.7rem",
+                marginTop: "0.3rem",
+              }}
             />
           </label>
 
@@ -218,7 +264,11 @@ export default function CadastrarLivroPage() {
               value={form.editora_livro}
               onChange={handleChange}
               required
-              style={{ width: "100%", padding: "0.7rem", marginTop: "0.3rem" }}
+              style={{
+                width: "100%",
+                padding: "0.7rem",
+                marginTop: "0.3rem",
+              }}
             />
           </label>
 
@@ -230,20 +280,40 @@ export default function CadastrarLivroPage() {
               value={form.anopub_livro}
               onChange={handleChange}
               required
-              style={{ width: "100%", padding: "0.7rem", marginTop: "0.3rem" }}
+              style={{
+                width: "100%",
+                padding: "0.7rem",
+                marginTop: "0.3rem",
+              }}
             />
           </label>
 
           <label>
             Gênero
-            <input
-              type="text"
+            <select
               name="genero_livro"
               value={form.genero_livro}
               onChange={handleChange}
               required
-              style={{ width: "100%", padding: "0.7rem", marginTop: "0.3rem" }}
-            />
+              style={{
+                width: "100%",
+                padding: "0.7rem",
+                marginTop: "0.3rem",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                backgroundColor: "#fff",
+              }}
+            >
+              <option value="" disabled>
+                Selecione um gênero
+              </option>
+
+              {generos.map((genero) => (
+                <option key={genero.value} value={genero.value}>
+                  {genero.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label>
@@ -253,7 +323,11 @@ export default function CadastrarLivroPage() {
               name="localizacao_livro"
               value={form.localizacao_livro}
               onChange={handleChange}
-              style={{ width: "100%", padding: "0.7rem", marginTop: "0.3rem" }}
+              style={{
+                width: "100%",
+                padding: "0.7rem",
+                marginTop: "0.3rem",
+              }}
             />
           </label>
 
@@ -264,7 +338,11 @@ export default function CadastrarLivroPage() {
               name="imgcapa_livro"
               value={form.imgcapa_livro}
               onChange={handleChange}
-              style={{ width: "100%", padding: "0.7rem", marginTop: "0.3rem" }}
+              style={{
+                width: "100%",
+                padding: "0.7rem",
+                marginTop: "0.3rem",
+              }}
             />
           </label>
         </div>
