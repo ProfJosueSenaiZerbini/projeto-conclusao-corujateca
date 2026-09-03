@@ -9,20 +9,44 @@ import { ArrowRight } from 'lucide-react';
 
 const perguntasFrequentes = [
     {
-        pergunta: 'Como renovar um livro que está comigo pela internet?',
-        resposta: 'Acesse o catálogo online, faça login em sua conta, vá em "Meus Empréstimos" e clique em "Renovar".'
+        pergunta: 'O que faço quando o ISBN não encontra o livro?',
+        resposta: 'Provavelmente o livro não está disponível na ISBN ou ocorreu um erro de digitação do título. Você pode digitar as informações do livro manualmente ao cadastrar um novo livro.'
     },
     {
-        pergunta: 'Qual é o valor da multa por dia de atraso?',
-        resposta: 'A multa é de R$ 2,00 por dia útil para cada livro em atraso.'
+        pergunta: 'Como adiciono um novo exemplar de um livro que já está cadastrado?',
+        resposta: 'Abra a aba acervo, clique no botão “Novo Exemplar”, preencha com as informações e clique em salvar.'
     },
     {
-        pergunta: 'Como faço para indicar livros fora da biblioteca?',
-        resposta: 'Preencha o formulário de "Sugestão de Compra" no nosso site ou use a caixinha física na entrada.'
+        pergunta: 'Qual é a diferença entre cadastrar um livro e cadastrar um exemplar?',
+        resposta: 'Cadastrar um livro significa adicionar uma nova obra ao sistema. Já cadastrar um exemplar significa adicionar uma nova cópia física de uma obra que já está cadastrada. Assim, se a biblioteca possui vários exemplares de um mesmo livro, cada um pode ser emprestado individualmente.'
   },
   {
-        pergunta: 'Onde encontro a rede de Wi-Fi e as salas de estudo?',
-        resposta: 'Conecte na rede "Corujateca_Livre" (sem senha). As salas de estudo ficam no segundo andar.'
+        pergunta: 'Como altero as informações de um livro já cadastrado?',
+        resposta: 'Abra a aba acervo, procure pelo livro desejado e clique nele. Em seguida, na página do livro, pressione o botão atualizar. Altere as informações desejadas e clique em salvar.'
+    },
+  {
+        pergunta: 'O que acontece com os exemplares quando um livro é desativado?',
+        resposta: 'Os exemplares de um livro desativado também ficam desativados. Além disso, ao reativar o livro os seus exemplares também serão reativados.'
+    },
+  {
+        pergunta: 'O que devo fazer quando a capa ou outras informações preenchidas estão incorretas?',
+        resposta: 'Você pode atualizar o livro. Entre na aba acervo e escolha o livro com as informações incorretas. Após isso, clique em “atualizar livro”, apague e reescreva as informações incorretas.'
+    },
+  {
+        pergunta: 'Como reativo um livro que foi desativado?',
+        resposta: 'Abra a aba acervo e clique no botão “Reativar Livro”, assim o livro e suas cópias serão reativadas.'
+    },
+  {
+        pergunta: 'Como bibliotecário posso cancelar uma multa?',
+        resposta: 'Sim! Abra a aba de multas, procure a multa desejada e clique em cancelar.'
+    },
+  {
+        pergunta: 'Por que um livro pode estar cadastrado sem nenhum exemplar disponível?',
+        resposta: 'O cadastro de um livro representa a obra, independentemente de haver exemplares disponíveis para empréstimo. A biblioteca pode cadastrar uma obra antes que suas cópias estejam disponíveis para circulação, como no caso de livros recém-chegados ao acervo. Assim, o livro pode permanecer cadastrado mesmo quando não há nenhum exemplar disponível.'
+    },
+  {
+        pergunta: 'O que faço quando um livro emprestado foi extraviado?',
+        resposta: 'Em caso de extravio, o sistema aplica uma penalidade mínima de 30 dias, durante a qual o frequentador não poderá realizar novos empréstimos. O bibliotecário deve comunicar a gerência ou coordenação do estabelecimento para avaliar as medidas cabíveis e uma possível compensação pela perda da obra.'
     },
 
 ];

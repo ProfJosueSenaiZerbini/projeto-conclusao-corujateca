@@ -9,22 +9,45 @@ import { ArrowRight } from 'lucide-react';
 
 const perguntasFrequentes = [
     {
-        pergunta: 'Como renovar um livro que está comigo pela internet?',
-        resposta: 'Acesse o catálogo online, faça login em sua conta, vá em "Meus Empréstimos" e clique em "Renovar".'
+        pergunta: 'Por que um livro que eu procuro não aparece no acervo?',
+        resposta: 'Provavelmente ele não foi cadastrado ou ele foi desativado. Para verificar se o livro está desativado, abra a ala acervo, clique em “Reativar Livro” e pesquise pelo livro, caso não encontre, ele possivelmente não existe.'
     },
     {
-        pergunta: 'Qual é o valor da multa por dia de atraso?',
-        resposta: 'A multa é de R$ 2,00 por dia útil para cada livro em atraso.'
+        pergunta: 'Como sei quando preciso devolver um livro?',
+        resposta: 'Na aba “Empréstimos”, você pode consultar empréstimos em andamento e verificar a data de devolução de cada livro. A página também informa o título, autor, status e a data de início do empréstimo. Use os filtros para localizar empréstimos por datas específicas caso esse seja o seu desejo.'
     },
     {
-        pergunta: 'Como faço para indicar livros fora da biblioteca?',
-        resposta: 'Preencha o formulário de "Sugestão de Compra" no nosso site ou use a caixinha física na entrada.'
+        pergunta: 'O que acontece se eu não devolver um livro dentro do prazo?',
+        resposta: 'A devolução após o prazo gera uma multa a partir do primeiro dia de atraso. O período da penalidade corresponde ao dobro dos dias em atraso, durante o qual não será possível realizar novos empréstimos.'
   },
   {
-        pergunta: 'Onde encontro a rede de Wi-Fi e as salas de estudo?',
-        resposta: 'Conecte na rede "Corujateca_Livre" (sem senha). As salas de estudo ficam no segundo andar.'
+        pergunta: 'Posso consultar as informações de um livro mesmo quando não há exemplares disponíveis?',
+        resposta: 'Sim! Basta escolher um livro na aba acervo e clicar. Após isso, as informações básicas, como título, autor, editora, gênero, sinopse e número de páginas estarão disponíveis, inclusive se há exemplares a disposição.'
     },
-
+  {
+        pergunta: 'Por que estou impedido de realizar um empréstimo?',
+        resposta: 'Provavelmente você está com uma multa ativa. Uma multa ativa te penaliza proibindo de realizar um empréstimo. Para maiores consultas, verifique sua aba de multas e filtre pelas multas ativas.'
+    },
+  {
+        pergunta: 'Como eu posso encontrar as informações da minha conta?',
+        resposta: 'Você pode acessar as informações da sua conta pelas Configurações, disponíveis ao clicar na sua foto de perfil, no canto superior direito da tela. Nessa página, é possível consultar seus dados e alterar algumas informações pessoais.'
+    },
+  {
+        pergunta: 'Posso devolver um livro antes da data prevista?',
+        resposta: 'Sim! Você pode devolver o livro antes da data prevista. Assim, ele fica disponível para outros leitores mais rapidamente e você evita possíveis multas por atraso.'
+    },
+  {
+        pergunta: 'O que são os livros destacados na seção "Gênero da semana"?',
+        resposta: 'A seção “Gênero da semana” destaca os livros mais emprestados de um gênero sorteado aleatoriamente. O gênero é definido a cada domingo, e tem como objetivo apresentar aos usuários novas opções de leitura e incentivar a descoberta de diferentes tipos de literatura na biblioteca.'
+    },
+  {
+        pergunta: 'Por quantos dias eu posso pegar um livro emprestado?',
+        resposta: 'Um empréstimo tem três opções de prazo: 7 dias, 15 dias e 30 dias.'
+    },
+  {
+        pergunta: 'Como posso aumentar o meu tempo de empréstimo?',
+        resposta: 'Entre em contato com o bibliotecário e peça a ele um novo empréstimo.'
+    },
 ];
 
 export default function AjudaFreq() {
