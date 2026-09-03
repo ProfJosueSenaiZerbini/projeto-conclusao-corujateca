@@ -49,6 +49,11 @@
     --color-science-knowledge: #b8dbff;
     --color-poetry-chronicles: #b8fff4;
     --color-history: #ffc5b8;
+    --color-guide-manual-gastronomy: #ffc56f;
+    --color-politics: #6aa4d8;
+    --color-selfHelp-personal-development: #e76c98;
+    --color-economy: #9fe5bf;
+    --color-literature: #a160d4;
 }
 
 body {
