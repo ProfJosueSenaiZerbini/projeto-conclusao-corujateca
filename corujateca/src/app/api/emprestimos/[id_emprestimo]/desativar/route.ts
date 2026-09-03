@@ -17,6 +17,15 @@ export async function PATCH(
       },
     });
 
+    await db.exemplar.update({
+      where: {
+        id_exemplar: emprestimoAtualizado.fk_exemplar_id_exemplar,
+      },
+      data: {
+        status_exemplar: "Dispon_vel",
+      },
+    });
+
     return NextResponse.json({
       mensagem: 'Empréstimo desativado/cancelado com sucesso!',
       emprestimo: emprestimoAtualizado,
@@ -30,3 +39,4 @@ export async function PATCH(
     );
   }
 }
+
