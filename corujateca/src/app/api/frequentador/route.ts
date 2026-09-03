@@ -9,8 +9,23 @@ const pool = new Pool({
   },
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+
+    const buscarInativos = searchParams.get("inativos") === "true";
+    const buscarTodos = searchParams.get("todos") === "true";
+
+    let whereClause = "WHERE f.inativo_freq = false";
+
+    if (buscarInativos) {
+      whereClause = "WHERE f.inativo_freq = true";
+    }
+
+    if (buscarTodos) {
+      whereClause = "";
+    }
+
     const queryText = `
       SELECT 
         f.id_freq, 
@@ -20,10 +35,12 @@ export async function GET() {
         t.ddd_freq,
         t.numtel_freq
       FROM frequentador f
-      LEFT JOIN tel_freq t ON f.id_freq = t.fk_frequentador_id_freq
-      WHERE f.inativo_freq = false 
+      LEFT JOIN tel_freq t 
+        ON f.id_freq = t.fk_frequentador_id_freq
+      ${whereClause}
       ORDER BY f.nome_freq ASC
     `;
+
     const result = await pool.query(queryText);
 
     const usuariosFormatados = result.rows.map((user) => ({
@@ -38,8 +55,11 @@ export async function GET() {
     return NextResponse.json(usuariosFormatados, { status: 200 });
   } catch (error) {
     console.error("Erro ao buscar frequentadores:", error);
+
     return NextResponse.json(
-      { erro: "Erro ao buscar a lista de frequentadores no banco de dados." },
+      {
+        erro: "Erro ao buscar a lista de frequentadores no banco de dados.",
+      },
       { status: 500 }
     );
   }

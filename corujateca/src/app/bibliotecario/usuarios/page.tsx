@@ -31,6 +31,11 @@ export default function UsuariosBibli() {
   const [modalAberto, setModalAberto] = useState(false);
   const [usuarioEmEdicao, setUsuarioEmEdicao] = useState<Usuario | null>(null);
 
+  const [reativarModalAberto, setReativarModalAberto] = useState(false);
+  const [usuariosDesativados, setUsuariosDesativados] = useState<Usuario[]>([]);
+  const [usuarioSelecionadoReativar, setUsuarioSelecionadoReativar] = useState("");
+  const [carregandoReativacao, setCarregandoReativacao] = useState(false);
+
   // Campos do formulário
   const [novoNome, setNovoNome] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -215,6 +220,78 @@ export default function UsuariosBibli() {
     user.nome?.toLowerCase().includes(termoPesquisa.toLowerCase())
   );
 
+  async function carregarUsuariosDesativados() {
+    try {
+      const resposta = await fetch("/api/frequentador?inativos=true");
+
+      const dados = await resposta.json();
+
+      console.log("STATUS:", resposta.status);
+      console.log("DADOS DOS INATIVOS:", dados);
+
+      if (!resposta.ok) {
+        throw new Error("Erro ao carregar usuários desativados");
+      }
+
+      setUsuariosDesativados(dados);
+    } catch (erro) {
+      console.error("Erro ao carregar usuários desativados:", erro);
+      alert("Não foi possível carregar os usuários desativados.");
+    }
+  }
+
+  async function abrirModalReativar() {
+    setUsuarioSelecionadoReativar("");
+    setReativarModalAberto(true);
+
+    await carregarUsuariosDesativados();
+  }
+
+  async function reativarFrequentador() {
+    if (!usuarioSelecionadoReativar) {
+      alert("Selecione um frequentador.");
+      return;
+    }
+
+    const id = Number(usuarioSelecionadoReativar);
+
+    setCarregandoReativacao(true);
+
+    try {
+      const resposta = await fetch(
+        `/api/frequentador/${id}/reativar`,
+        {
+          method: "PATCH",
+        }
+      );
+
+      const resultado = await resposta.json().catch(() => null);
+
+      if (!resposta.ok) {
+        alert(
+          resultado?.erro ??
+          "Erro ao reativar o frequentador."
+        );
+        return;
+      }
+
+      alert(
+        resultado?.mensagem ??
+        "Frequentador reativado com sucesso."
+      );
+
+      setReativarModalAberto(false);
+      setUsuarioSelecionadoReativar("");
+
+      await carregarUsuarios();
+    } catch (erro) {
+      console.error("Erro ao reativar frequentador:", erro);
+      alert("Não foi possível reativar o frequentador.");
+    } finally {
+      setCarregandoReativacao(false);
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -246,6 +323,7 @@ export default function UsuariosBibli() {
               </button>
 
               <button
+                onClick={abrirModalReativar}
                 className="flex-1 bg-button-secondary text-text-inverse font-medium py-3 px-6 rounded-2xl hover:brightness-110 transition shadow-sm text-center"
               >
                 Reativar Usuário
@@ -561,6 +639,93 @@ export default function UsuariosBibli() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================= */}
+      {/* MODAL DE REATIVAÇÃO */}
+      {/* ================================================= */}
+
+      {reativarModalAberto && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            if (!carregandoReativacao) {
+              setReativarModalAberto(false);
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-brand-800">
+              Reativar Frequentador
+            </h3>
+
+            <p className="text-sm text-gray-600">
+              Selecione o frequentador que deseja reativar.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-brand-800 mb-1">
+                Frequentador
+              </label>
+
+              <select
+                value={usuarioSelecionadoReativar}
+                onChange={(e) =>
+                  setUsuarioSelecionadoReativar(e.target.value)
+                }
+                disabled={carregandoReativacao}
+                className="w-full border border-brand-400 rounded-xl p-2 text-brand-800 bg-white focus:outline-none focus:ring-2 focus:ring-button-primary"
+              >
+                <option value="">
+                  Selecione um frequentador
+                </option>
+
+                {usuariosDesativados.map((usuario) => (
+                  <option
+                    key={usuario.id}
+                    value={usuario.id}
+                  >
+                    {usuario.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {usuariosDesativados.length === 0 && (
+              <p className="text-sm text-gray-500">
+                Nenhum frequentador desativado encontrado.
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setReativarModalAberto(false)}
+                disabled={carregandoReativacao}
+                className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={reativarFrequentador}
+                disabled={
+                  carregandoReativacao ||
+                  !usuarioSelecionadoReativar
+                }
+                className="px-4 py-2 rounded-xl bg-button-secondary text-white hover:brightness-110 disabled:opacity-50"
+              >
+                {carregandoReativacao
+                  ? "Reativando..."
+                  : "Reativar"}
+              </button>
+            </div>
           </div>
         </div>
       )}
