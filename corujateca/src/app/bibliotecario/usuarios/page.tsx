@@ -138,6 +138,34 @@ export default function UsuariosBibli() {
     setNovoTelefone("");
   }
 
+   async function deletarFrequentador(id: number) {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja deletar este frequentador?",
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const resposta = await fetch(`/api/frequentador/${id}/desativar`, {
+        method: "PATCH",
+      });
+
+      const resultado = await resposta.json().catch(() => null);
+
+      if (!resposta.ok) {
+        alert(resultado?.erro ?? "Erro ao deletar o frequentador.");
+        return;
+      }
+
+      alert(resultado?.mensagem ?? "Frequentador deletado com sucesso.");
+
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível deletar o frequentador.");
+    }
+  }
+
   const usuariosFiltrados = usuarios.filter((user) =>
     user.nome?.toLowerCase().includes(termoPesquisa.toLowerCase())
   );
@@ -235,6 +263,7 @@ export default function UsuariosBibli() {
                             </button>
 
                             <button
+                              onClick={() => deletarFrequentador(usuario.id)}
                               className="bg-button-secondary text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium"
                             >
                               Deletar
