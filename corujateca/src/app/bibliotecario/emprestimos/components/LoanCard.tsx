@@ -34,6 +34,35 @@ export default function LoanCard({
   loan: Loan;
   onConcluir?: (formData: FormData) => Promise<void> | void;
 }) {
+
+  async function cancelarEmprestimo() {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja cancelar este empréstimo?",
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const resposta = await fetch(`/api/emprestimos/${loan.id}/desativar`, {
+        method: "PATCH",
+      });
+
+      const resultado = await resposta.json().catch(() => null);
+
+      if (!resposta.ok) {
+        alert(resultado?.erro ?? "Erro ao cancelar o empréstimo.");
+        return;
+      }
+
+      alert(resultado?.mensagem ?? "Empréstimo cancelado com sucesso.");
+
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível cancelar o empréstimo.");
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-brand-400 bg-brand-400 p-4 shadow-sm sm:p-6">
       <form action={onConcluir} className="grid grid-cols-1 gap-y-4 gap-x-6 md:grid-cols-2">
@@ -88,6 +117,7 @@ export default function LoanCard({
 
           <button
             type="button"
+            onClick={cancelarEmprestimo}
             className="w-full bg-[var(--color-button-secondary)] hover:brightness-110 text-brand-200 font-semibold py-2.5 px-4 rounded-xl transition duration-150 text-sm shadow-sm cursor-pointer"
           >
             Cancelar
