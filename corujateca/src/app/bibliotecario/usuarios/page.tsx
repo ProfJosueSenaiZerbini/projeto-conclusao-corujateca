@@ -12,6 +12,17 @@ type Usuario = {
   telefone?: string;
 };
 
+type UsuarioDetalhe = {
+  id: number;
+  nome: string;
+  inativo: boolean;
+  suspenso: boolean;
+  ddd?: string;
+  telefone?: string;
+  totalEmprestimos: number;
+  totalMultas: number;
+};
+
 export default function UsuariosBibli() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [termoPesquisa, setTermoPesquisa] = useState("");
@@ -27,6 +38,10 @@ export default function UsuariosBibli() {
   const [novoTelefone, setNovoTelefone] = useState("");
 
   const [carregando, setCarregando] = useState(false);
+
+  const [detalheAberto, setDetalheAberto] = useState(false);
+  const [usuarioDetalhe, setUsuarioDetalhe] = useState<UsuarioDetalhe | null>(null);
+  const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
 
   async function carregarUsuarios() {
     try {
@@ -166,6 +181,36 @@ export default function UsuariosBibli() {
     }
   }
 
+  async function abrirDetalhes(id: number) {
+    setDetalheAberto(true);
+    setCarregandoDetalhe(true);
+    setUsuarioDetalhe(null);
+
+    try {
+      const resposta = await fetch(`/api/frequentador/${id}`);
+
+      if (resposta.ok) {
+        const dados = await resposta.json();
+        setUsuarioDetalhe(dados);
+      } else {
+        alert("Não foi possível carregar os detalhes do frequentador.");
+        setDetalheAberto(false);
+      }
+    } catch (erro) {
+      console.error("Erro ao buscar detalhes:", erro);
+      alert("Erro de comunicação com o servidor.");
+      setDetalheAberto(false);
+    } finally {
+      setCarregandoDetalhe(false);
+    }
+  }
+
+  function fecharDetalhes() {
+    if (carregandoDetalhe) return;
+    setDetalheAberto(false);
+    setUsuarioDetalhe(null);
+  }
+
   const usuariosFiltrados = usuarios.filter((user) =>
     user.nome?.toLowerCase().includes(termoPesquisa.toLowerCase())
   );
@@ -250,6 +295,7 @@ export default function UsuariosBibli() {
                           <div className="flex justify-center gap-2">
 
                             <button
+                              onClick={() => abrirDetalhes(usuario.id)}
                               className="bg-button-primary text-text-inverse px-3 py-1 rounded-lg hover:brightness-110 transition text-sm font-medium"
                             >
                               Detalhes
@@ -290,6 +336,102 @@ export default function UsuariosBibli() {
           </div>
         </main>
       </div>
+
+      {/* ================================================= */}
+      {/* MODAL DE DETALHES */}
+      {/* ================================================= */}
+
+      {detalheAberto && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={fecharDetalhes}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-brand-800">
+              Detalhes do Frequentador
+            </h3>
+
+            {carregandoDetalhe ? (
+              <p className="text-brand-500 animate-pulse">Carregando...</p>
+            ) : usuarioDetalhe ? (
+              <div className="space-y-3">
+                <div>
+                  <span className="block text-sm font-medium text-brand-500">ID</span>
+                  <span className="text-brand-800">#{usuarioDetalhe.id}</span>
+                </div>
+
+                <div>
+                  <span className="block text-sm font-medium text-brand-500">Nome</span>
+                  <span className="text-brand-800 uppercase font-medium">{usuarioDetalhe.nome}</span>
+                </div>
+
+                <div>
+                  <span className="block text-sm font-medium text-brand-500">Telefone</span>
+                  <span className="text-brand-800">
+                    {usuarioDetalhe.ddd && usuarioDetalhe.telefone
+                      ? `(${usuarioDetalhe.ddd}) ${usuarioDetalhe.telefone}`
+                      : "Não informado"}
+                  </span>
+                </div>
+
+                <div className="flex gap-6">
+                  <div>
+                    <span className="block text-sm font-medium text-brand-500">Status</span>
+                    <span
+                      className={
+                        usuarioDetalhe.inativo
+                          ? "text-red-600 font-medium"
+                          : "text-green-600 font-medium"
+                      }
+                    >
+                      {usuarioDetalhe.inativo ? "Inativo" : "Ativo"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="block text-sm font-medium text-brand-500">Suspensão</span>
+                    <span
+                      className={
+                        usuarioDetalhe.suspenso
+                          ? "text-red-600 font-medium"
+                          : "text-green-600 font-medium"
+                      }
+                    >
+                      {usuarioDetalhe.suspenso ? "Suspenso" : "Regular"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-6 pt-2 border-t border-brand-200">
+                  <div>
+                    <span className="block text-sm font-medium text-brand-500">Empréstimos ativos</span>
+                    <span className="text-brand-800 font-bold text-lg">{usuarioDetalhe.totalEmprestimos}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-sm font-medium text-brand-500">Multas ativas</span>
+                    <span className="text-brand-800 font-bold text-lg">{usuarioDetalhe.totalMultas}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-red-600">Não foi possível carregar os dados.</p>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={fecharDetalhes}
+                className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================================================= */}
       {/* MODAL DE CADASTRO / EDIÇÃO */}

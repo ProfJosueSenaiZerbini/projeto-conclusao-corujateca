@@ -92,7 +92,7 @@ export default function CadastrarExemplarPage() {
             ))}
           </select>
         </label>
-
+ 
         <label>
           Status do Exemplar
           <select
@@ -101,8 +101,9 @@ export default function CadastrarExemplarPage() {
             style={{ width: '100%', padding: '0.7rem', marginTop: '0.3rem' }}
           >
             <option value="Dispon_vel">Disponível</option>
-            <option value="Em_posse">Em posse</option>
-            <option value="Danificado">Danificado</option>
+          </select>
+          <select name="" id="">
+            
           </select>
         </label>
 
