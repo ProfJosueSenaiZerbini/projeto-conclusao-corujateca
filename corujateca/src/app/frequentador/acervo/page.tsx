@@ -149,6 +149,7 @@ export default function AcervoFreq() {
             </p>
           </section>
 
+        <div className="bg-[var(--color-brand-100)] p-8 rounded-xl mb-6">
           <section className="mb-6">
             <p className="text-sm mb-2">
               Interessado em algum livro?
@@ -251,6 +252,7 @@ export default function AcervoFreq() {
               </div>
             </div>
           </section>
+        </div>
 
           {erro && (
             <p className="mb-4 text-[var(--color-text-primary)]">
