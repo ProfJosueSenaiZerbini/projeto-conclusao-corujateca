@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import LivroCarousel from "@/app/frequentador/acervo/components/LivroCarousel";
 import CadastrarLivroModal from "@/app/bibliotecario/acervo/components/CadastrarLivroModal";
 import ReativarLivroModal from "@/app/bibliotecario/acervo/components/ReativarLivroModal";
+import LivroGrid from "@/app/frequentador/acervo/components/LivroGrid";
 
 type Livro = {
   id_livro: number;
@@ -18,6 +19,8 @@ type Livro = {
   imgcapa_livro: string | null;
 };
 
+const LIVROS_POR_PAGINA = 20;
+
 export default function AcervoBib() {
   const [titulo, setTitulo] = useState("");
   const [genero, setGenero] = useState("");
@@ -25,15 +28,18 @@ export default function AcervoBib() {
   const [autor, setAutor] = useState("");
 
   const [modalReativarLivro, setModalReativarLivro] = useState(false);
-
   const [modalCadastrarLivro, setModalCadastrarLivro] = useState(false);
+  const [modalCadastrarExemplar, setModalCadastrarExemplar] =
+    useState(false);
 
   const [livros, setLivros] = useState<Livro[]>([]);
   const [livrosTodos, setLivrosTodos] = useState<Livro[]>([]);
   const [livrosGeneroSemana, setLivrosGeneroSemana] = useState<Livro[]>([]);
-  const [livrosMaisEmprestados, setLivrosMaisEmprestados] = useState<Livro[]>(
-    [],
-  );
+  const [livrosMaisEmprestados, setLivrosMaisEmprestados] =
+    useState<Livro[]>([]);
+
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
 
   const [quantidadeTitulos, setQuantidadeTitulos] = useState(0);
   const [quantidadeTotal, setQuantidadeTotal] = useState(0);
@@ -41,8 +47,6 @@ export default function AcervoBib() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [pesquisaRealizada, setPesquisaRealizada] = useState(false);
-
-  const [modalCadastrarExemplar, setModalCadastrarExemplar] = useState(false);
 
   useEffect(() => {
     async function carregarDadosAcervo() {
@@ -55,7 +59,9 @@ export default function AcervoBib() {
           respostaMaisEmprestados,
           respostaQuantidade,
         ] = await Promise.all([
-          fetch("/api/livros"),
+          fetch(
+            `/api/livros?page=${paginaAtual}&limit=${LIVROS_POR_PAGINA}`,
+          ),
           fetch("/api/livros/genero-semana"),
           fetch("/api/livros/mais-emprestados"),
           fetch("/api/livros/quantidade"),
@@ -82,7 +88,9 @@ export default function AcervoBib() {
         const dadosMaisEmprestados = await respostaMaisEmprestados.json();
         const dadosQuantidade = await respostaQuantidade.json();
 
-        setLivrosTodos(dadosTodos);
+        setLivrosTodos(dadosTodos.livros);
+        setTotalPaginas(dadosTodos.totalPaginas);
+
         setLivrosGeneroSemana(dadosGenero.livros);
         setLivrosMaisEmprestados(dadosMaisEmprestados.livros);
 
@@ -94,8 +102,10 @@ export default function AcervoBib() {
       }
     }
 
-    carregarDadosAcervo();
-  }, []);
+    if (!pesquisaRealizada) {
+      carregarDadosAcervo();
+    }
+  }, [paginaAtual, pesquisaRealizada]);
 
   async function buscarLivros() {
     try {
@@ -129,7 +139,7 @@ export default function AcervoBib() {
 
       const dados = await resposta.json();
 
-      setLivros(dados);
+      setLivros(dados.livros);
     } catch (error) {
       console.error(error);
 
@@ -148,7 +158,25 @@ export default function AcervoBib() {
 
     setLivros([]);
     setPesquisaRealizada(false);
+    setPaginaAtual(1);
     setErro("");
+  }
+
+  function atualizarTela() {
+    window.location.reload();
+  }
+
+  function mudarPagina(novaPagina: number) {
+    if (novaPagina < 1 || novaPagina > totalPaginas) {
+      return;
+    }
+
+    setPaginaAtual(novaPagina);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   return (
@@ -163,7 +191,8 @@ export default function AcervoBib() {
 
           <section className="mb-4">
             <p className="text-base sm:text-lg text-[var(--color-text-primary)]">
-              Bem-vindo, <strong className="font-bold">NOME DO USUÁRIO!</strong>
+              Bem-vindo,{" "}
+              <strong className="font-bold">NOME DO USUÁRIO!</strong>
             </p>
           </section>
 
@@ -270,7 +299,17 @@ export default function AcervoBib() {
               <button
                 type="button"
                 onClick={() => setModalReativarLivro(true)}
-                className="col-span-2 justify-self-center px-12 py-2.5 rounded-lg bg-[var(--color-button-primary)] text-[var(--color-text-inverse)] font-bold cursor-pointer"
+                className="
+                  col-span-2
+                  justify-self-center
+                  px-12
+                  py-2.5
+                  rounded-lg
+                  bg-[var(--color-button-primary)]
+                  text-[var(--color-text-inverse)]
+                  font-bold
+                  cursor-pointer
+                "
               >
                 Reativar Livro
               </button>
@@ -281,7 +320,9 @@ export default function AcervoBib() {
 
           <div className="bg-[var(--color-brand-100)] p-8 rounded-xl mb-6">
             <section className="mb-6">
-              <p className="text-sm mb-2">Interessado em algum livro?</p>
+              <p className="text-sm mb-2">
+                Interessado em algum livro?
+              </p>
 
               <div className="flex flex-col gap-2">
                 <input
@@ -290,27 +331,68 @@ export default function AcervoBib() {
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
                   className="
-                  w-full
-                  border
-                  rounded-lg
-                  px-3
-                  py-2
-                "
-                />
-
-                <div className="grid grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Gênero"
-                    value={genero}
-                    onChange={(e) => setGenero(e.target.value)}
-                    className="
+                    w-full
                     border
                     rounded-lg
                     px-3
                     py-2
                   "
-                  />
+                />
+
+                <div className="grid grid-cols-3 gap-2">
+                  <select
+                    value={genero}
+                    onChange={(e) => setGenero(e.target.value)}
+                    className="
+                      border
+                      rounded-lg
+                      px-3
+                      py-2
+                    "
+                  >
+                    <option value="">Todos os gêneros</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Religião e Mitologia">
+                      Religião e Mitologia
+                    </option>
+                    <option value="Ficção Científica">
+                      Ficção Científica
+                    </option>
+                    <option value="Arte e Cultura">
+                      Arte e Cultura
+                    </option>
+                    <option value="Fantasia">Fantasia</option>
+                    <option value="Biografias e Memórias">
+                      Biografias e Memórias
+                    </option>
+                    <option value="Thriller e Mistério">
+                      Thriller e Mistério
+                    </option>
+                    <option value="Quadrinhos e Mangá">
+                      Quadrinhos e Mangá
+                    </option>
+                    <option value="Terror">Terror</option>
+                    <option value="Infantojuvenil">
+                      Infantojuvenil
+                    </option>
+                    <option value="Aventura">Aventura</option>
+                    <option value="Ciência e Conhecimento">
+                      Ciência e Conhecimento
+                    </option>
+                    <option value="Poesia e Crônicas">
+                      Poesia e Crônicas
+                    </option>
+                    <option value="História">História</option>
+                    <option value="Guia, Manual e Gastronomia">
+                      Guia, Manual e Gastronomia
+                    </option>
+                    <option value="Política">Política</option>
+                    <option value="Autoajuda e Desenvolvimento Pessoal">
+                      Autoajuda e Desenvolvimento Pessoal
+                    </option>
+                    <option value="Economia">Economia</option>
+                    <option value="Literatura">Literatura</option>
+                  </select>
 
                   <input
                     type="number"
@@ -318,11 +400,11 @@ export default function AcervoBib() {
                     value={ano}
                     onChange={(e) => setAno(e.target.value)}
                     className="
-                    border
-                    rounded-lg
-                    px-3
-                    py-2
-                  "
+                      border
+                      rounded-lg
+                      px-3
+                      py-2
+                    "
                   />
 
                   <input
@@ -331,11 +413,11 @@ export default function AcervoBib() {
                     value={autor}
                     onChange={(e) => setAutor(e.target.value)}
                     className="
-                    border
-                    rounded-lg
-                    px-3
-                    py-2
-                  "
+                      border
+                      rounded-lg
+                      px-3
+                      py-2
+                    "
                   />
                 </div>
 
@@ -345,16 +427,16 @@ export default function AcervoBib() {
                     onClick={buscarLivros}
                     disabled={carregando}
                     className="
-                    mt-2
-                    px-6
-                    py-3
-                    rounded-lg
-                    bg-[var(--color-brand-500)]
-                    text-[var(--color-text-inverse)]
-                    font-bold
-                    hover:bg-[var(--color-brand-400)]
-                    transition-colors
-                  "
+                      mt-2
+                      px-6
+                      py-3
+                      rounded-lg
+                      bg-[var(--color-brand-500)]
+                      text-[var(--color-text-inverse)]
+                      font-bold
+                      hover:bg-[var(--color-brand-400)]
+                      transition-colors
+                    "
                   >
                     {carregando ? "Buscando..." : "Pesquisar"}
                   </button>
@@ -364,15 +446,15 @@ export default function AcervoBib() {
                       type="button"
                       onClick={limparPesquisa}
                       className="
-                      mt-2
-                      px-6
-                      py-3
-                      rounded-lg
-                      border
-                      border-[var(--color-brand-500)]
-                      text-[var(--color-brand-500)]
-                      font-bold
-                    "
+                        mt-2
+                        px-6
+                        py-3
+                        rounded-lg
+                        border
+                        border-[var(--color-brand-500)]
+                        text-[var(--color-brand-500)]
+                        font-bold
+                      "
                     >
                       Limpar
                     </button>
@@ -385,7 +467,9 @@ export default function AcervoBib() {
           {/* Erro */}
 
           {erro && (
-            <p className="mb-4 text-[var(--color-text-primary)]">{erro}</p>
+            <p className="mb-4 text-[var(--color-text-primary)]">
+              {erro}
+            </p>
           )}
 
           {/* Acervo */}
@@ -409,7 +493,72 @@ export default function AcervoBib() {
 
                 {/* Todos */}
 
-                <LivroCarousel titulo="Todos" livros={livrosTodos} />
+                <LivroGrid
+                  titulo="Todos"
+                  livros={livrosTodos}
+                />
+
+                {/* Paginação */}
+
+                {totalPaginas > 1 && (
+                  <div className="flex items-center justify-center gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        mudarPagina(paginaAtual - 1)
+                      }
+                      disabled={paginaAtual === 1}
+                      className="
+                        w-10
+                        h-10
+                        rounded-full
+                        bg-[var(--color-brand-500)]
+                        text-[var(--color-text-inverse)]
+                        flex
+                        items-center
+                        justify-center
+                        font-bold
+                        text-lg
+                        disabled:opacity-40
+                        disabled:cursor-not-allowed
+                        cursor-pointer
+                      "
+                      aria-label="Página anterior"
+                    >
+                      ←
+                    </button>
+
+                    <span className="font-bold text-[var(--color-text-primary)]">
+                      {paginaAtual} / {totalPaginas}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        mudarPagina(paginaAtual + 1)
+                      }
+                      disabled={paginaAtual === totalPaginas}
+                      className="
+                        w-10
+                        h-10
+                        rounded-full
+                        bg-[var(--color-brand-500)]
+                        text-[var(--color-text-inverse)]
+                        flex
+                        items-center
+                        justify-center
+                        font-bold
+                        text-lg
+                        disabled:opacity-40
+                        disabled:cursor-not-allowed
+                        cursor-pointer
+                      "
+                      aria-label="Próxima página"
+                    >
+                      →
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -438,16 +587,19 @@ export default function AcervoBib() {
       <CadastrarExemplarModal
         aberto={modalCadastrarExemplar}
         onFechar={() => setModalCadastrarExemplar(false)}
+        onSucesso={atualizarTela}
       />
 
       <CadastrarLivroModal
         aberto={modalCadastrarLivro}
         onFechar={() => setModalCadastrarLivro(false)}
+        onSucesso={atualizarTela}
       />
 
       <ReativarLivroModal
         aberto={modalReativarLivro}
         onFechar={() => setModalReativarLivro(false)}
+        onSucesso={atualizarTela}
       />
     </div>
   );
