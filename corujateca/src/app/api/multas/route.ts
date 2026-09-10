@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { db } from "@/app/db";
@@ -8,46 +9,58 @@ function formatarData(data: Date | string | null) {
     return "-";
   }
 
+  const dataObj = new Date(data);
+
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "UTC",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(new Date(data));
+  }).format(dataObj);
 }
 
 function obterDataAtual() {
   const dataAtual = new Date();
-  return new Date(
-    Date.UTC(
-      dataAtual.getFullYear(),
-      dataAtual.getMonth(),
-      dataAtual.getDate(),
-    ),
-  );
+  const ano = dataAtual.getFullYear();
+  const mes = String(dataAtual.getMonth() + 1).padStart(2, "0");
+  const dia = String(dataAtual.getDate()).padStart(2, "0");
+
+  return new Date(`${ano}-${mes}-${dia}T00:00:00.000Z`);
 }
 
 export async function GET(request: Request) {
   try {
     const searchParams = new URL(request.url).searchParams;
     const usuario = searchParams.get("usuario")?.trim();
-    const data = searchParams.get("data");
+    const data = searchParams.get("data")?.trim();
+    const status = searchParams.get("status")?.trim().toUpperCase();
+    const tipo = searchParams.get("tipo")?.trim().toUpperCase();
 
+    const statusNormalizado = status === "PAGA" ? "CANCELADA" : status;
+    const tipoNormalizado = tipo || undefined;
     const dataInicio = data ? new Date(`${data}T00:00:00.000Z`) : undefined;
     const dataFim = data ? new Date(`${data}T23:59:59.999Z`) : undefined;
 
-    const [multas, frequentadores, bibliotecarios] = await Promise.all([
+    const where: Prisma.multaWhereInput = {
+      ...(statusNormalizado
+        ? { inativo_multa: statusNormalizado === "CANCELADA" }
+        : { inativo_multa: false }),
+      ...(usuario
+        ? { frequentador: { nome_freq: { contains: usuario, mode: "insensitive" } } }
+        : {}),
+      ...(tipoNormalizado
+        ? { tipomulta: { equals: tipoNormalizado, mode: "insensitive" } }
+        : {}),
+      ...(dataInicio && dataFim
+        ? { dta_inicio_multa: { gte: dataInicio, lte: dataFim } }
+        : {}),
+    };
+
+    const [multas, frequentadores, bibliotecarios, totaisAtivos] = await Promise.all([
       db.multa.findMany({
-      where: {
-        inativo_multa: false,
-        ...(usuario
-          ? { frequentador: { nome_freq: { contains: usuario, mode: "insensitive" } } }
-          : {}),
-        ...(dataInicio && dataFim
-          ? { dta_inicio_multa: { gte: dataInicio, lte: dataFim } }
-          : {}),
-      },
-      include: { frequentador: true },
-      orderBy: { dta_inicio_multa: "desc" },
+        where,
+        include: { frequentador: true },
+        orderBy: { dta_inicio_multa: "desc" },
       }),
       db.frequentador.findMany({
         where: { inativo_freq: false },
@@ -58,6 +71,10 @@ export async function GET(request: Request) {
         where: { inativo_bibliotecario: false },
         select: { id_bibliotecario: true, nome_bibliotecario: true },
         orderBy: { nome_bibliotecario: "asc" },
+      }),
+      db.multa.findMany({
+        where: { inativo_multa: false },
+        select: { tipomulta: true },
       }),
     ]);
 
@@ -78,7 +95,7 @@ export async function GET(request: Request) {
     }));
 
     const contarPorTipo = (tipo: string) =>
-      multas.filter((multa) => multa.tipomulta.toUpperCase() === tipo).length;
+      totaisAtivos.filter((multa) => multa.tipomulta.toUpperCase() === tipo).length;
 
     return NextResponse.json({
       multas: multasFormatadas,
@@ -171,7 +188,9 @@ export async function POST(request: Request) {
     const tiposPermitidos = ["ATRASO", "DEPREDAÇÃO", "EXTRAVIO"];
     const tipoTratado = String(tipomulta || "").trim().toUpperCase();
     const inicio = obterDataAtual();
-    const terminoInformado = new Date(String(dta_termino_multa));
+    const terminoInformado = dta_termino_multa
+      ? new Date(`${String(dta_termino_multa)}T00:00:00.000Z`)
+      : null;
     const bibliotecarioId = Number(fk_bibliotecario_id_bibliotecario);
     const frequentadorId = Number(fk_frequentador_id_frequentador);
     const prazoAutomatico =
@@ -187,12 +206,12 @@ export async function POST(request: Request) {
     if (
       !tiposPermitidos.includes(tipoTratado) ||
       (tipoTratado === "ATRASO" &&
-        (!dta_termino_multa || Number.isNaN(terminoInformado.getTime()))) ||
+        (!terminoInformado || Number.isNaN(terminoInformado.getTime()))) ||
       !Number.isInteger(bibliotecarioId) ||
       bibliotecarioId <= 0 ||
       !Number.isInteger(frequentadorId) ||
       frequentadorId <= 0 ||
-      termino < inicio
+      !termino || termino < inicio
     ) {
       return NextResponse.json(
         { erro: "Informe dados válidos para a multa." },
