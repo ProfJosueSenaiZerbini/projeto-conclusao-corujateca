@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
@@ -35,6 +35,12 @@ export default function MultasPage() {
   const [erro, setErro] = useState("");
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [filtros, setFiltros] = useState({
+    usuario: "",
+    data: "",
+    status: "Pendente",
+    tipo: "",
+  });
   const [formulario, setFormulario] = useState({
     frequentadorId: "",
     bibliotecarioId: "",
@@ -72,22 +78,68 @@ export default function MultasPage() {
     });
   }
 
-  async function carregarMultas() {
+  const carregarMultas = useCallback(async (filtrosAtuais = { usuario: "", data: "", status: "Pendente", tipo: "" }) => {
     try {
-      const resposta = await fetch("/api/multas");
+      const params = new URLSearchParams();
+
+      if (filtrosAtuais.usuario.trim()) {
+        params.set("usuario", filtrosAtuais.usuario.trim());
+      }
+
+      if (filtrosAtuais.data) {
+        params.set("data", filtrosAtuais.data);
+      }
+
+      if (filtrosAtuais.status) {
+        params.set("status", filtrosAtuais.status);
+      }
+
+      if (filtrosAtuais.tipo) {
+        params.set("tipo", filtrosAtuais.tipo);
+      }
+
+      const queryString = params.toString();
+      const resposta = await fetch(`/api/multas${queryString ? `?${queryString}` : ""}`);
+
       if (!resposta.ok) throw new Error("Não foi possível carregar as multas.");
-      setDados(await resposta.json());
+
+      const resultado = await resposta.json();
+      setDados(resultado);
+      setErro("");
     } catch (error) {
       console.error(error);
       setErro("Não foi possível carregar as multas.");
     }
-  }
+  }, []);
 
   useEffect(() => {
-    void (async () => {
-      await carregarMultas();
-    })();
-  }, []);
+    const carregarDadosIniciais = () => {
+      void carregarMultas({ usuario: "", data: "", status: "Pendente", tipo: "" });
+    };
+
+    const timeoutId = setTimeout(carregarDadosIniciais, 0);
+    return () => clearTimeout(timeoutId);
+  }, [carregarMultas]);
+
+  async function atualizarFiltro(campo: "usuario" | "data" | "status" | "tipo", valor: string) {
+    const proximoFiltro = { ...filtros, [campo]: valor };
+    setFiltros(proximoFiltro);
+
+    if (campo === "data" || campo === "status" || campo === "tipo") {
+      await carregarMultas(proximoFiltro);
+    }
+  }
+
+  async function buscarMultas(event?: React.FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    await carregarMultas(filtros);
+  }
+
+  async function limparFiltros() {
+    const filtrosVazios = { usuario: "", data: "", status: "Pendente", tipo: "" };
+    setFiltros(filtrosVazios);
+    await carregarMultas(filtrosVazios);
+  }
 
   async function cancelarMulta(idMulta: number) {
     const resposta = await fetch("/api/multas", {
@@ -102,7 +154,7 @@ export default function MultasPage() {
       return;
     }
 
-    await carregarMultas();
+    await carregarMultas(filtros);
   }
 
   async function cadastrarMulta(event: React.FormEvent<HTMLFormElement>) {
@@ -130,7 +182,7 @@ export default function MultasPage() {
 
       setFormulario({ frequentadorId: "", bibliotecarioId: "", tipo: "", inicio: "", termino: "" });
       setMostrarCadastro(false);
-      await carregarMultas();
+      await carregarMultas(filtros);
     } finally {
       setSalvando(false);
     }
@@ -302,32 +354,68 @@ export default function MultasPage() {
                 Pesquisar por Multas
               </h1>
 
-              <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Nome do Usuário"
-                  className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 placeholder:text-brand-600/50 outline-none focus:ring-2 focus:ring-brand-500 sm:py-4"
-                />
-              </div>
+              <form onSubmit={buscarMultas} className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    value={filtros.usuario}
+                    onChange={(event) => atualizarFiltro("usuario", event.target.value)}
+                    placeholder="Nome do Usuário"
+                    className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 placeholder:text-brand-600/50 outline-none focus:ring-2 focus:ring-brand-500 sm:py-4"
+                  />
+                </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <input
-                  type="date"
-                  placeholder="Por data"
-                  className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 placeholder:text-brand-600/50 outline-none focus:ring-2 focus:ring-brand-500 sm:py-4"
-                />
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <input
+                    type="date"
+                    value={filtros.data}
+                    onChange={(event) => void atualizarFiltro("data", event.target.value)}
+                    placeholder="Por data"
+                    className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 placeholder:text-brand-600/50 outline-none focus:ring-2 focus:ring-brand-500 sm:py-4"
+                  />
 
-                <select
-                  defaultValue=""
-                  className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer sm:py-4"
-                >
-                  <option value="" disabled hidden>
-                    Por Status
-                  </option>
-                  <option value="Pendente">Pendente</option>
-                  <option value="Paga">Paga</option>
-                </select>
-              </div>
+                  <select
+                    value={filtros.tipo}
+                    onChange={(event) => void atualizarFiltro("tipo", event.target.value)}
+                    className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer sm:py-4"
+                    aria-label="Filtrar por tipo de multa"
+                  >
+                    <option value="" disabled hidden>
+                      Tipo de multas
+                    </option>
+                    <option value="ATRASO">Atrasado</option>
+                    <option value="DEPREDAÇÃO">Depreciação</option>
+                    <option value="EXTRAVIO">Extraviado</option>
+                  </select>
+
+                  <select
+                    value={filtros.status}
+                    onChange={(event) => void atualizarFiltro("status", event.target.value)}
+                    className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer sm:py-4"
+                    aria-label="Filtrar por status"
+                  >
+                    <option value="Pendente">Pendente</option>
+                    <option value="Cancelada">Cancelada</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="submit"
+                    className="rounded-2xl bg-[var(--color-button-primary)] px-5 py-3 font-bold text-text-inverse shadow-md transition hover:brightness-110 sm:py-4"
+                  >
+                    Pesquisar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={limparFiltros}
+                    className="rounded-2xl bg-[var(--color-button-secondary)] px-5 py-3 font-bold text-text-inverse shadow-md transition hover:brightness-110 sm:py-4"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </form>
 
               <div className="mt-6 flex flex-col gap-4">
                 {erro && (
@@ -350,13 +438,15 @@ export default function MultasPage() {
                       <p>Data da Multa: {multa.data}</p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => cancelarMulta(multa.id)}
-                      className="col-span-1 w-full rounded-xl bg-[var(--color-button-secondary)] px-4 py-3 text-sm font-bold text-text-inverse transition hover:brightness-110 active:scale-[0.99] md:col-span-2 sm:py-4 sm:text-base"
-                    >
-                      Cancelar
-                    </button>
+                    {multa.status !== "Cancelada" && (
+                      <button
+                        type="button"
+                        onClick={() => cancelarMulta(multa.id)}
+                        className="col-span-1 w-full rounded-xl bg-[var(--color-button-secondary)] px-4 py-3 text-sm font-bold text-text-inverse transition hover:brightness-110 active:scale-[0.99] md:col-span-2 sm:py-4 sm:text-base"
+                      >
+                        Cancelar
+                      </button>
+                    )}
                   </div>
                 ))}
 
