@@ -438,7 +438,7 @@ export default function UsuariosBibli() {
               <div className="space-y-3">
                 <div>
                   <span className="block text-sm font-medium text-brand-500">ID</span>
-                  <span className="text-brand-800">#{usuarioDetalhe.id}</span>
+                  <span className="text-brand-800">{usuarioDetalhe.id}</span>
                 </div>
 
                 <div>
