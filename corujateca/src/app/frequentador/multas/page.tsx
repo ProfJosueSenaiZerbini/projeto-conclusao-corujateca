@@ -209,7 +209,7 @@ export default function MultasPage() {
   sm:text-base
   font-bold
   text-text-inverse
-"   
+"
                   >
                     <div className="space-y-1 sm:space-y-2 lg:space-y-3">
                       <p>Dias de punição: {multa.diasPunicao} dias</p>
