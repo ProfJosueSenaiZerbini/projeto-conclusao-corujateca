@@ -12,11 +12,13 @@ type Livro = {
 type ReativarLivroModalProps = {
   aberto: boolean;
   onFechar: () => void;
+  onSucesso: () => void;
 };
 
 export default function ReativarLivroModal({
   aberto,
   onFechar,
+  onSucesso,
 }: ReativarLivroModalProps) {
   const [livros, setLivros] = useState<Livro[]>([]);
   const [livroSelecionado, setLivroSelecionado] = useState("");
@@ -107,17 +109,7 @@ export default function ReativarLivroModal({
         );
       }
 
-      setMensagem("Livro reativado com sucesso!");
-
-      setLivros((prev) =>
-        prev.filter(
-          (livro) =>
-            livro.id_livro !== Number(livroSelecionado),
-        ),
-      );
-
-      setLivroSelecionado("");
-      setConfirmacao(false);
+      onSucesso();
     } catch (error) {
       console.error(error);
 

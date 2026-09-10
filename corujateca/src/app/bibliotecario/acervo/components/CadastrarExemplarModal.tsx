@@ -11,15 +11,18 @@ type LivroOption = {
 type ModalCadastrarExemplarProps = {
   aberto: boolean;
   onFechar: () => void;
+  onSucesso: () => void;
 };
 
 export default function CadastrarExemplarModal({
   aberto,
   onFechar,
+  onSucesso,
 }: ModalCadastrarExemplarProps) {
   const [livros, setLivros] = useState<LivroOption[]>([]);
   const [livroSelecionado, setLivroSelecionado] = useState("");
   const [statusExemplar, setStatusExemplar] = useState("Dispon_vel");
+  const [quantidade, setQuantidade] = useState("1");
 
   const [carregandoLivros, setCarregandoLivros] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -65,6 +68,7 @@ export default function CadastrarExemplarModal({
 
     setLivroSelecionado("");
     setStatusExemplar("Dispon_vel");
+    setQuantidade("1");
     setMensagem("");
     setErro("");
 
@@ -76,41 +80,56 @@ export default function CadastrarExemplarModal({
   ) {
     event.preventDefault();
 
+    const quantidadeNumerica = Number(quantidade);
+
+    if (!livroSelecionado) {
+      setErro("Selecione um livro.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(quantidadeNumerica) ||
+      quantidadeNumerica < 1
+    ) {
+      setErro("A quantidade deve ser de pelo menos 1 cópia.");
+      return;
+    }
+
     try {
       setCarregando(true);
       setMensagem("");
       setErro("");
 
-      const resposta = await fetch("/api/exemplares", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fk_livro_id_livro: Number(livroSelecionado),
-          status_exemplar: statusExemplar,
-        }),
-      });
+      for (let i = 0; i < quantidadeNumerica; i++) {
+        const resposta = await fetch("/api/exemplares", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fk_livro_id_livro: Number(livroSelecionado),
+            status_exemplar: statusExemplar,
+          }),
+        });
 
-      const resultado = await resposta.json();
+        const resultado = await resposta.json();
 
-      if (!resposta.ok) {
-        throw new Error(
-          resultado.erro || "Erro ao cadastrar o exemplar.",
-        );
+        if (!resposta.ok) {
+          throw new Error(
+            resultado.erro ||
+              `Erro ao cadastrar a cópia ${i + 1}.`,
+          );
+        }
       }
 
-      setMensagem("Nova cópia cadastrada com sucesso!");
-
-      setLivroSelecionado("");
-      setStatusExemplar("Dispon_vel");
+      onSucesso();
     } catch (error) {
       console.error(error);
 
       setErro(
         error instanceof Error
           ? error.message
-          : "Falha ao cadastrar exemplar.",
+          : "Falha ao cadastrar as cópias.",
       );
     } finally {
       setCarregando(false);
@@ -149,8 +168,6 @@ export default function CadastrarExemplarModal({
           shadow-2xl
         "
       >
-        {/* Cabeçalho */}
-
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2
@@ -160,7 +177,7 @@ export default function CadastrarExemplarModal({
                 text-[var(--color-text-primary)]
               "
             >
-              Cadastrar Nova Cópia
+              Cadastrar Novas Cópias
             </h2>
 
             <p
@@ -170,7 +187,7 @@ export default function CadastrarExemplarModal({
                 text-[var(--color-text-secondary)]
               "
             >
-              Adicione um novo exemplar a um livro já cadastrado.
+              Adicione uma ou mais cópias a um livro já cadastrado.
             </p>
           </div>
 
@@ -196,8 +213,6 @@ export default function CadastrarExemplarModal({
             ×
           </button>
         </div>
-
-        {/* Formulário */}
 
         <form
           onSubmit={enviarExemplar}
@@ -257,6 +272,46 @@ export default function CadastrarExemplarModal({
 
           <div>
             <label
+              htmlFor="quantidade"
+              className="
+                mb-2
+                block
+                text-sm
+                font-bold
+                text-[var(--color-text-primary)]
+              "
+            >
+              Quantidade de cópias
+            </label>
+
+            <input
+              id="quantidade"
+              type="number"
+              min="1"
+              step="1"
+              value={quantidade}
+              onChange={(event) =>
+                setQuantidade(event.target.value)
+              }
+              disabled={carregando}
+              required
+              className="
+                w-full
+                rounded-lg
+                border
+                border-[var(--color-brand-300)]
+                bg-[var(--color-background)]
+                px-3
+                py-3
+                text-sm
+                text-[var(--color-text-primary)]
+                outline-none
+              "
+            />
+          </div>
+
+          <div>
+            <label
               htmlFor="status-exemplar"
               className="
                 mb-2
@@ -266,7 +321,7 @@ export default function CadastrarExemplarModal({
                 text-[var(--color-text-primary)]
               "
             >
-              Status da cópia
+              Status das cópias
             </label>
 
             <select
@@ -294,8 +349,6 @@ export default function CadastrarExemplarModal({
               </option>
             </select>
           </div>
-
-          {/* Mensagens */}
 
           {erro && (
             <div
@@ -330,8 +383,6 @@ export default function CadastrarExemplarModal({
               {mensagem}
             </div>
           )}
-
-          {/* Botões */}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
@@ -371,7 +422,7 @@ export default function CadastrarExemplarModal({
             >
               {carregando
                 ? "Cadastrando..."
-                : "Cadastrar Cópia"}
+                : "Cadastrar Cópias"}
             </button>
           </div>
         </form>

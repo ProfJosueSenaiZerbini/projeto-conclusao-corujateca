@@ -17,6 +17,7 @@ type LivroForm = {
 type CadastrarLivroModalProps = {
   aberto: boolean;
   onFechar: () => void;
+  onSucesso: () => void;
 };
 
 const estadoInicial: LivroForm = {
@@ -56,6 +57,7 @@ const generos = [
 export default function CadastrarLivroModal({
   aberto,
   onFechar,
+  onSucesso,
 }: CadastrarLivroModalProps) {
   const [form, setForm] = useState<LivroForm>(estadoInicial);
   const [carregando, setCarregando] = useState(false);
@@ -164,8 +166,7 @@ export default function CadastrarLivroModal({
         );
       }
 
-      setMensagem("Livro cadastrado com sucesso!");
-      setForm(estadoInicial);
+      onSucesso();
     } catch (error) {
       setErro(
         error instanceof Error

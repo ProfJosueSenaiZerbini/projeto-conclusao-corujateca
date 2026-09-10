@@ -1,48 +1,16 @@
 import { NextResponse } from "next/server";
+
 import { db } from "@/app/db";
-
-function obterInicioDaSemana() {
-  const agora = new Date();
-
-  const diaDaSemana = agora.getDay();
-
-  const inicio = new Date(agora);
-
-  inicio.setDate(agora.getDate() - diaDaSemana);
-  inicio.setHours(0, 0, 0, 0);
-
-  return inicio;
-}
-
-function obterFimDaSemana() {
-  const inicio = obterInicioDaSemana();
-
-  const fim = new Date(inicio);
-
-  fim.setDate(inicio.getDate() + 7);
-
-  return fim;
-}
 
 export async function GET() {
   try {
-    const inicioDaSemana = obterInicioDaSemana();
-    const fimDaSemana = obterFimDaSemana();
-
     const emprestimos = await db.emprestimo.findMany({
       where: {
         inativo_emprestimo: false,
-
-        dta_emprestimo: {
-          gte: inicioDaSemana,
-          lt: fimDaSemana,
-        },
-
         dta_devolucao_real: {
           not: null,
         },
       },
-
       include: {
         exemplar: {
           include: {
@@ -67,7 +35,9 @@ export async function GET() {
         continue;
       }
 
-      const livroExistente = contagemPorLivro.get(livro.id_livro);
+      const livroExistente = contagemPorLivro.get(
+        livro.id_livro,
+      );
 
       if (livroExistente) {
         livroExistente.quantidade += 1;
@@ -93,10 +63,15 @@ export async function GET() {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Erro ao buscar livros mais emprestados:", error);
+    console.error(
+      "Erro ao buscar livros mais emprestados:",
+      error,
+    );
 
     return NextResponse.json(
-      { erro: "Erro interno ao buscar livros mais emprestados." },
+      {
+        erro: "Erro interno ao buscar livros mais emprestados.",
+      },
       { status: 500 },
     );
   }
