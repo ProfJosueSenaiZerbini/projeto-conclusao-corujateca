@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-
+import bcrypt from "bcrypt";
 import { db } from "@/app/db";
-
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
     const fkFrequentador = Number(body.fk_frequentador_id_freq);
-    const fkExemplar = Number(body.fk_exemplar_id_exemplar);
+    const idEnviado = Number(body.fk_exemplar_id_exemplar); // ID do livro ou do exemplar
     const prazoDias = Number(body.prazo_dias) || 7;
+    const senhaInformada = body.senha;
 
-    if (!fkFrequentador || !fkExemplar) {
+    if (!fkFrequentador || !idEnviado || !senhaInformada) {
       return NextResponse.json(
-        { error: "Frequentador e exemplar são obrigatórios." },
+        { error: "Frequentador, exemplar e senha são obrigatórios." },
         { status: 400 },
       );
     }
@@ -30,18 +30,41 @@ export async function POST(request: Request) {
       );
     }
 
-    const exemplar = await db.exemplar.findUnique({
-      where: { id_exemplar: fkExemplar },
+    // Validação da senha criptografada (ajuste 'senha_freq' se no seu Prisma o campo tiver outro nome, ex: 'senha')
+    const senhaValida = await bcrypt.compare(senhaInformada, frequentador.senha_freq);
+
+    if (!senhaValida) {
+      return NextResponse.json(
+        { error: "Senha incorreta." },
+        { status: 401 },
+      );
+    }
+
+    // Tenta encontrar como exemplar direto
+    let exemplar = await db.exemplar.findFirst({
+      where: {
+        id_exemplar: idEnviado,
+        inativo_exemplar: false,
+        status_exemplar: "Dispon_vel",
+      },
       include: { livro: true },
     });
 
-    if (
-      !exemplar ||
-      exemplar.inativo_exemplar ||
-      exemplar.status_exemplar !== "Dispon_vel"
-    ) {
+    // Se não for exemplar direto, busca uma cópia disponível associada ao ID do livro
+    if (!exemplar) {
+      exemplar = await db.exemplar.findFirst({
+        where: {
+          fk_livro_id_livro: idEnviado,
+          inativo_exemplar: false,
+          status_exemplar: "Dispon_vel",
+        },
+        include: { livro: true },
+      });
+    }
+
+    if (!exemplar) {
       return NextResponse.json(
-        { error: "Este exemplar não está disponível para empréstimo." },
+        { error: "Não há cópias disponíveis deste livro para empréstimo no momento." },
         { status: 409 },
       );
     }
@@ -61,26 +84,24 @@ export async function POST(request: Request) {
     const dataDevolucao = new Date(dataEmprestimo);
     dataDevolucao.setDate(dataEmprestimo.getDate() + prazoDias);
 
-    // Criação do empréstimo e atualização do status do exemplar acontecem
-    // dentro de uma transação para evitar que dois pedidos simultâneos
-    // "peguem" o mesmo exemplar antes que o status seja atualizado.
     const [novoEmprestimo] = await db.$transaction([
       db.emprestimo.create({
         data: {
           dta_emprestimo: dataEmprestimo,
           dta_devolucao: dataDevolucao,
           fk_bibliotecario_id_bibliotecario: bibliotecario.id_bibliotecario,
-          fk_exemplar_id_exemplar: fkExemplar,
+          fk_exemplar_id_exemplar: exemplar.id_exemplar,
           fk_frequentador_id_freq: fkFrequentador,
         },
       }),
       db.exemplar.update({
-        where: { id_exemplar: fkExemplar },
+        where: { id_exemplar: exemplar.id_exemplar },
         data: { status_exemplar: "Em_posse" },
       }),
     ]);
 
     revalidatePath("/bibliotecario/emprestimos");
+    revalidatePath("/bibliotecario/acervo");
 
     return NextResponse.json({ emprestimo: novoEmprestimo }, { status: 201 });
   } catch (error) {

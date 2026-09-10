@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import LivroCard from "./LivroCard";
 
@@ -15,9 +16,14 @@ type Livro = {
 type LivroCarouselProps = {
   titulo: string;
   livros: Livro[];
+  baseUrl?: string; // Ex: "/bibliotecario/acervo" ou "/frequentador/acervo"
 };
 
-export default function LivroCarousel({ titulo, livros }: LivroCarouselProps) {
+export default function LivroCarousel({
+  titulo,
+  livros,
+  baseUrl = "/bibliotecario/acervo",
+}: LivroCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
 
   function voltar() {
@@ -70,6 +76,7 @@ export default function LivroCarousel({ titulo, livros }: LivroCarouselProps) {
               justify-center
               hover:bg-[var(--color-brand-400)]
               transition-colors
+              cursor-pointer
             "
           >
             <ChevronLeft size={20} />
@@ -91,6 +98,7 @@ export default function LivroCarousel({ titulo, livros }: LivroCarouselProps) {
               justify-center
               hover:bg-[var(--color-brand-400)]
               transition-colors
+              cursor-pointer
             "
           >
             <ChevronRight size={20} />
@@ -115,16 +123,20 @@ export default function LivroCarousel({ titulo, livros }: LivroCarouselProps) {
         "
       >
         {livros.map((livro) => (
-          <div
+          <Link
             key={livro.id_livro}
+            href={`${baseUrl}/${livro.id_livro}`}
             className="
-            shrink-0
-            snap-start
-            w-[255px]
+              shrink-0
+              snap-start
+              w-[255px]
+              block
+              transition-transform
+              hover:scale-[1.02]
             "
           >
             <LivroCard livro={livro} />
-          </div>
+          </Link>
         ))}
       </div>
     </section>
