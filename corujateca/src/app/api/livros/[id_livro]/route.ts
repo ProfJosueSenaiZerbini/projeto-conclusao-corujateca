@@ -130,3 +130,97 @@ export async function PUT(
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id_livro?: string; id?: string }> }
+) {
+  try {
+    const resolvedParams = await params;
+    const rawId = resolvedParams.id_livro || resolvedParams.id;
+
+    if (!rawId) {
+      return NextResponse.json(
+        { erro: 'ID do livro não informado.' },
+        { status: 400 }
+      );
+    }
+
+    const idLivro = Number(rawId);
+
+    if (Number.isNaN(idLivro)) {
+      return NextResponse.json(
+        { erro: 'O ID do livro informado é inválido.' },
+        { status: 400 }
+      );
+    }
+
+    // Busca o livro no PostgreSQL junto com os exemplares
+    const livro = await db.livro.findUnique({
+      where: {
+        id_livro: idLivro,
+      },
+      include: {
+        exemplar: {
+          where: {
+            inativo_exemplar: false,
+          },
+        },
+      },
+    });
+
+    if (!livro || livro.inativo_livro) {
+      return NextResponse.json(
+        { erro: 'Livro não encontrado ou inativo.' },
+        { status: 404 }
+      );
+    }
+
+    // Calculando a quantidade e status dos exemplares
+    const qtd_copias = livro.exemplar.length;
+
+    // Utilizando inferência automática do array do resultado
+    const temDisponivel = livro.exemplar.some(
+      (exp: (typeof livro.exemplar)[number]) => exp.status_exemplar === 'Dispon_vel'
+    );
+
+    const status_livro =
+      qtd_copias === 0
+        ? 'Sem Exemplares'
+        : temDisponivel
+        ? 'Disponível'
+        : 'Em posse';
+
+    return NextResponse.json({
+      id_livro: livro.id_livro,
+      isbn: livro.isbn,
+      titulo_livro: livro.titulo_livro,
+      autor_livro: livro.autor_livro,
+      sinopse_livro: livro.sinopse_livro,
+      editora_livro: livro.editora_livro,
+      anopub_livro: livro.anopub_livro,
+      imgcapa_livro: livro.imgcapa_livro,
+      genero_livro: livro.genero_livro,
+      localizacao_livro: livro.localizacao_livro,
+      qtd_copias,
+      status_livro,
+    });
+  } catch (error) {
+    console.error('Erro ao buscar livro no banco:', error);
+    return NextResponse.json(
+      { erro: 'Erro interno ao buscar as informações do livro.' },
+      { status: 500 }
+    );
+  }
+}
