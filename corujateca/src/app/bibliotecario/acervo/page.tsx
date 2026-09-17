@@ -6,6 +6,7 @@ import CadastrarExemplarModal from "@/app/bibliotecario/acervo/components/Cadast
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getSession } from "@/lib/auth";
 import LivroCarousel from "@/app/frequentador/acervo/components/LivroCarousel";
 import CadastrarLivroModal from "@/app/bibliotecario/acervo/components/CadastrarLivroModal";
 import ReativarLivroModal from "@/app/bibliotecario/acervo/components/ReativarLivroModal";
@@ -22,6 +23,7 @@ type Livro = {
 const LIVROS_POR_PAGINA = 20;
 
 export default function AcervoBib() {
+  const [nomeUsuario, setNomeUsuario] = useState("Visitante");
   const [titulo, setTitulo] = useState("");
   const [genero, setGenero] = useState("");
   const [ano, setAno] = useState("");
@@ -47,6 +49,13 @@ export default function AcervoBib() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [pesquisaRealizada, setPesquisaRealizada] = useState(false);
+
+  useEffect(() => {
+    const session = getSession();
+    if (session?.nome) {
+      setNomeUsuario(session.nome);
+    }
+  }, []);
 
   useEffect(() => {
     async function carregarDadosAcervo() {
@@ -192,7 +201,7 @@ export default function AcervoBib() {
           <section className="mb-4">
             <p className="text-base sm:text-lg text-[var(--color-text-primary)]">
               Bem-vindo,{" "}
-              <strong className="font-bold">NOME DO USUÁRIO!</strong>
+              <strong className="font-bold">{nomeUsuario}</strong>
             </p>
           </section>
 

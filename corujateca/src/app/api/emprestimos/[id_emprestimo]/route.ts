@@ -9,10 +9,11 @@ import { db } from "@/app/db";
 
 export async function PATCH(
   _request: Request,
-  { params }: { params: { id_emprestimo: string } },
+  { params }: { params: Promise<{ id_emprestimo: string }> },
 ) {
   try {
-    const idEmprestimo = Number(params.id_emprestimo);
+    const { id_emprestimo } = await params;
+    const idEmprestimo = Number(id_emprestimo);
 
     if (!idEmprestimo) {
       return NextResponse.json({ error: "ID inválido." }, { status: 400 });

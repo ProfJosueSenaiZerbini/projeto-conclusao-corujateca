@@ -9,9 +9,8 @@ if (!connectionString) {
 
 const adapter = new PrismaPg({ connectionString });
 
-// Previne instanciar múltiplos clientes Prisma em desenvolvimento (Hot Reload)
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const globalForPrisma = globalThis as typeof globalThis & {
+  prisma?: PrismaClient;
 };
 
 export const db =
@@ -21,4 +20,6 @@ export const db =
     log: ['query', 'error', 'warn'],
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
+if (process.env.NODE_ENV !== 'production') {
+  (globalThis as typeof globalThis & { prisma?: PrismaClient }).prisma = db;
+}

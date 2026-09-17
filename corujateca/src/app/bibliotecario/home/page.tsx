@@ -1,14 +1,39 @@
+"use client";
+
+import { LibraryBig, Stamp } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
-import Link from "next/link";
-
-import {
-    LibraryBig,
-    Stamp
-} from "lucide-react";
+import { getSession, UserSession } from "@/lib/auth";
 
 export default function HomeBibli() {
+  const router = useRouter();
+  const [session, setSession] = useState<UserSession | null>(null);
+
+  useEffect(() => {
+    const currentSession = getSession();
+
+    if (!currentSession) {
+      router.replace("/login");
+      return;
+    }
+
+    if (currentSession.role !== "bibliotecario") {
+      router.replace("/login?error=acesso-negado");
+      return;
+    }
+
+    setSession(currentSession);
+  }, [router]);
+
+  if (!session) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -22,8 +47,7 @@ export default function HomeBibli() {
             <p className="text-base sm:text-lg text-[var(--color-text-primary)]">
               Bem-vindo,{" "}
               <strong className="font-bold">
-                NOME DO USUÁRIO!
-                {/* parte que precisa puxar o nome do usuário do back e da autenticação */}
+                {session.nome}
               </strong>
             </p>
           </section>

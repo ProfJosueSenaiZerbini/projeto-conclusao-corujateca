@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
-import { Pool } from "pg";
+import bcrypt from "bcrypt";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+import { db } from "@/app/db";
 
 export async function POST(request: Request) {
-  const client = await pool.connect();
-
   try {
     const body = await request.json();
     const { senhaMaster, codigoIdentificacaoUsuario, novaSenhaUsuario } = body;
 
-    // 1. Validação dos campos do formulário
     if (!senhaMaster) {
       return NextResponse.json(
         { erro: "A senha master é obrigatória." },
@@ -23,7 +15,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validação restrita APENAS pela variável de ambiente do .env
     const senhaMasterEnv = process.env.MASTER_SECRET;
 
     if (!senhaMasterEnv) {
@@ -55,43 +46,28 @@ export async function POST(request: Request) {
       );
     }
 
-    await client.query("BEGIN");
+    const idBibliotecario = Number(codigoIdentificacaoUsuario);
+    const novaSenhaHash = await bcrypt.hash(novaSenhaUsuario.trim(), 10);
 
-    // 2. Atualiza a senha do bibliotecário pelo ID (id_bibliotecario)
-    const queryUpdate = `
-      UPDATE bibliotecario 
-      SET senha_bibliotecario = $1 
-      WHERE id_bibliotecario = $2 AND inativo_bibliotecario = false
-      RETURNING id_bibliotecario
-    `;
-
-    const res = await client.query(queryUpdate, [
-      novaSenhaUsuario.trim(),
-      Number(codigoIdentificacaoUsuario),
-    ]);
-
-    if (res.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return NextResponse.json(
-        { erro: "Bibliotecário não encontrado ou inativo." },
-        { status: 404 }
-      );
-    }
-
-    await client.query("COMMIT");
+    const bibliotecario = await db.bibliotecario.update({
+      where: {
+        id_bibliotecario: idBibliotecario,
+        inativo_bibliotecario: false,
+      },
+      data: {
+        senha_bibliotecario: novaSenhaHash,
+      },
+    });
 
     return NextResponse.json(
-      { mensagem: "Senha redefinida com sucesso!" },
+      { mensagem: "Senha redefinida com sucesso!", bibliotecarioId: bibliotecario.id_bibliotecario },
       { status: 200 }
     );
   } catch (error: any) {
-    await client.query("ROLLBACK");
     console.error("Erro ao redefinir senha:", error?.message || error);
     return NextResponse.json(
       { erro: `Erro no servidor: ${error?.message || "Consulte os logs"}` },
       { status: 500 }
     );
-  } finally {
-    client.release();
   }
 }

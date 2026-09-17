@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
-import { Pool } from "pg";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+import { db } from "@/app/db";
 
 export async function GET(
   request: Request,
@@ -14,58 +8,51 @@ export async function GET(
 ) {
   try {
     const { id_freq } = await params;
-    const idFreq = parseInt(id_freq, 10);
+    const idFreq = Number(id_freq);
 
-    if (isNaN(idFreq)) {
+    if (!Number.isInteger(idFreq) || idFreq <= 0) {
       return NextResponse.json({ erro: "ID inválido." }, { status: 400 });
     }
 
-    const queryText = `
-      SELECT
-        f.id_freq,
-        f.nome_freq,
-        f.inativo_freq,
-        f.suspensao_freq,
-        t.ddd_freq,
-        t.numtel_freq,
-        (
-          SELECT COUNT(*)
-          FROM emprestimo e
-          WHERE e.fk_frequentador_id_freq = f.id_freq
-            AND e.inativo_emprestimo = false
-        ) AS total_emprestimos,
-        (
-          SELECT COUNT(*)
-          FROM multa m
-          WHERE m.fk_frequentador_id_frequentador = f.id_freq
-            AND m.inativo_multa = false
-        ) AS total_multas
-      FROM frequentador f
-      LEFT JOIN tel_freq t ON t.fk_frequentador_id_freq = f.id_freq
-      WHERE f.id_freq = $1
-    `;
+    const frequentador = await db.frequentador.findUnique({
+      where: { id_freq: idFreq },
+      include: { tel_freq: true },
+    });
 
-    const result = await pool.query(queryText, [idFreq]);
-
-    if (result.rows.length === 0) {
+    if (!frequentador) {
       return NextResponse.json(
         { erro: "Frequentador não encontrado." },
         { status: 404 }
       );
     }
 
-    const user = result.rows[0];
+    const [totalEmprestimos, totalMultas] = await Promise.all([
+      db.emprestimo.count({
+        where: {
+          fk_frequentador_id_freq: idFreq,
+          inativo_emprestimo: false,
+        },
+      }),
+      db.multa.count({
+        where: {
+          fk_frequentador_id_frequentador: idFreq,
+          inativo_multa: false,
+        },
+      }),
+    ]);
+
+    const primeiroTelefone = frequentador.tel_freq[0];
 
     return NextResponse.json(
       {
-        id: user.id_freq,
-        nome: user.nome_freq,
-        inativo: user.inativo_freq,
-        suspenso: user.suspensao_freq,
-        ddd: user.ddd_freq || "",
-        telefone: user.numtel_freq || "",
-        totalEmprestimos: Number(user.total_emprestimos),
-        totalMultas: Number(user.total_multas),
+        id: frequentador.id_freq,
+        nome: frequentador.nome_freq,
+        inativo: frequentador.inativo_freq,
+        suspenso: frequentador.suspensao_freq,
+        ddd: primeiroTelefone?.ddd_freq || "",
+        telefone: primeiroTelefone?.numtel_freq || "",
+        totalEmprestimos,
+        totalMultas,
       },
       { status: 200 }
     );
@@ -82,77 +69,65 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id_freq: string }> }
 ) {
-  const client = await pool.connect();
-
   try {
     const { id_freq } = await params;
-    const idFreq = parseInt(id_freq, 10);
+    const idFreq = Number(id_freq);
 
-    if (isNaN(idFreq)) {
+    if (!Number.isInteger(idFreq) || idFreq <= 0) {
       return NextResponse.json({ erro: "ID inválido." }, { status: 400 });
     }
 
     const body = await request.json();
     const { nome, ddd, telefone } = body;
 
-    if (!nome || !nome.trim()) {
+    if (!nome || !String(nome).trim()) {
       return NextResponse.json(
         { erro: "O nome é obrigatório." },
         { status: 400 }
       );
     }
 
-    await client.query("BEGIN");
+    await db.frequentador.update({
+      where: { id_freq: idFreq },
+      data: { nome_freq: String(nome).trim() },
+    });
 
-    // 1. Atualiza Nome
-    await client.query(
-      `UPDATE frequentador 
-       SET nome_freq = $1 
-       WHERE id_freq = $2`,
-      [nome, idFreq]
-    );
-
-    // 2. Atualiza Telefone
     if (ddd !== undefined && telefone !== undefined && ddd !== "" && telefone !== "") {
       const dddLimpo = String(ddd).replace(/\D/g, "");
       const telLimpo = String(telefone).replace(/\D/g, "");
+      const telefoneAtual = await db.tel_freq.findFirst({
+        where: { fk_frequentador_id_freq: idFreq },
+      });
 
-      const checkTel = await client.query(
-        `SELECT id_tel_freq FROM tel_freq WHERE fk_frequentador_id_freq = $1`,
-        [idFreq]
-      );
-
-      if (checkTel.rows.length > 0) {
-        await client.query(
-          `UPDATE tel_freq 
-           SET ddd_freq = $1, numtel_freq = $2 
-           WHERE fk_frequentador_id_freq = $3`,
-          [dddLimpo, telLimpo, idFreq]
-        );
+      if (telefoneAtual) {
+        await db.tel_freq.update({
+          where: { id_tel_freq: telefoneAtual.id_tel_freq },
+          data: {
+            ddd_freq: dddLimpo,
+            numtel_freq: telLimpo,
+          },
+        });
       } else {
-        await client.query(
-          `INSERT INTO tel_freq (ddd_freq, numtel_freq, fk_frequentador_id_freq) 
-           VALUES ($1, $2, $3)`,
-          [dddLimpo, telLimpo, idFreq]
-        );
+        await db.tel_freq.create({
+          data: {
+            ddd_freq: dddLimpo,
+            numtel_freq: telLimpo,
+            fk_frequentador_id_freq: idFreq,
+          },
+        });
       }
     }
-
-    await client.query("COMMIT");
 
     return NextResponse.json(
       { mensagem: "Frequentador atualizado com sucesso!" },
       { status: 200 }
     );
   } catch (error: any) {
-    await client.query("ROLLBACK");
     console.error("ERRO DETALHADO DO BANCO:", error.message || error);
 
     return NextResponse.json(
       { erro: `Erro ao atualizar no banco: ${error.message || "Erro desconhecido"}` },
       { status: 500 }
     );
-  } finally {
-    client.release();
   }
 }
