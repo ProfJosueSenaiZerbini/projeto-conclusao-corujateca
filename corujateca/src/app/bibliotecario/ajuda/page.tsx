@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { ArrowRight } from 'lucide-react';
+import { getSession } from "@/lib/auth";
 
 
 const perguntasFrequentes = [
@@ -52,8 +53,15 @@ const perguntasFrequentes = [
 ];
 
 export default function AjudaBibli() {
-    
+    const [nomeUsuario, setNomeUsuario] = useState("Visitante");
     const [indexAberto, setIndexAberto] = useState<number | null>(null);
+
+    useEffect(() => {
+        const session = getSession();
+        if (session?.nome) {
+            setNomeUsuario(session.nome);
+        }
+    }, []);
 
     const alternarPergunta = (id: number) => {
         if (indexAberto === id) {
@@ -88,8 +96,7 @@ export default function AjudaBibli() {
                                     <p className="text-base sm:text-lg text-[var(--color-text-primary)]">
                                     Olá,{" "}
                                     <strong className="font-bold">
-                                        NOME DO USUÁRIO!
-                                        {/* parte que precisa puxar o nome do usuário do back e da autenticação */}
+                                        {nomeUsuario}
                                     </strong>
                                     </p>
                                 </section>

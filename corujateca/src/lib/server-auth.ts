@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 
 import { db } from "@/app/db";
-import type { UserRole, UserSession } from "@/lib/auth";
+import type { UserSession } from "@/lib/auth";
 
 export async function comparePassword(inputPassword: string, storedPassword: string): Promise<boolean> {
   if (!storedPassword) {
@@ -16,7 +16,6 @@ export async function comparePassword(inputPassword: string, storedPassword: str
 }
 
 export async function authenticateUser(
-  role: UserRole,
   id: number,
   password: string
 ): Promise<{ ok: true; user: UserSession } | { ok: false; message: string }> {
@@ -29,61 +28,60 @@ export async function authenticateUser(
   }
 
   try {
-    if (role === "bibliotecario") {
-      const bibliotecario = await db.bibliotecario.findUnique({
+    const [bibliotecario, frequentador] = await Promise.all([
+      db.bibliotecario.findUnique({
         where: { id_bibliotecario: id },
-      });
+      }),
+      db.frequentador.findUnique({
+        where: { id_freq: id },
+      }),
+    ]);
 
-      if (!bibliotecario) {
-        return { ok: false, message: "Bibliotecário não encontrado." };
-      }
+    const candidatos = await Promise.all([
+      bibliotecario && !bibliotecario.inativo_bibliotecario
+        ? comparePassword(password, bibliotecario.senha_bibliotecario).then((senhaCorreta) =>
+            senhaCorreta
+              ? {
+                  id: bibliotecario.id_bibliotecario,
+                  nome: bibliotecario.nome_bibliotecario,
+                  role: "bibliotecario" as const,
+                }
+              : null
+          )
+        : Promise.resolve(null),
+      frequentador && !frequentador.inativo_freq
+        ? comparePassword(password, frequentador.senha_freq).then((senhaCorreta) =>
+            senhaCorreta
+              ? {
+                  id: frequentador.id_freq,
+                  nome: frequentador.nome_freq,
+                  role: "frequentador" as const,
+                }
+              : null
+          )
+        : Promise.resolve(null),
+    ]);
 
-      if (bibliotecario.inativo_bibliotecario) {
-        return { ok: false, message: "Este bibliotecário está inativo." };
-      }
+    const usuariosAutenticados = candidatos.filter(
+      (candidato): candidato is NonNullable<typeof candidato> => candidato !== null
+    );
 
-      const senhaCorreta = await comparePassword(password, bibliotecario.senha_bibliotecario);
+    if (usuariosAutenticados.length === 1) {
+      return { ok: true, user: usuariosAutenticados[0] };
+    }
 
-      if (!senhaCorreta) {
-        return { ok: false, message: "Senha incorreta." };
-      }
-
+    if (usuariosAutenticados.length > 1) {
       return {
-        ok: true,
-        user: {
-          id: bibliotecario.id_bibliotecario,
-          nome: bibliotecario.nome_bibliotecario,
-          role: "bibliotecario",
-        },
+        ok: false,
+        message: "Não foi possível identificar unicamente o usuário. Procure a biblioteca.",
       };
     }
 
-    const frequentador = await db.frequentador.findUnique({
-      where: { id_freq: id },
-    });
-
-    if (!frequentador) {
-      return { ok: false, message: "Frequentador não encontrado." };
+    if (bibliotecario?.inativo_bibliotecario || frequentador?.inativo_freq) {
+      return { ok: false, message: "Este usuário está inativo." };
     }
 
-    if (frequentador.inativo_freq) {
-      return { ok: false, message: "Este frequentador está inativo." };
-    }
-
-    const senhaCorreta = await comparePassword(password, frequentador.senha_freq);
-
-    if (!senhaCorreta) {
-      return { ok: false, message: "Senha incorreta." };
-    }
-
-    return {
-      ok: true,
-      user: {
-        id: frequentador.id_freq,
-        nome: frequentador.nome_freq,
-        role: "frequentador",
-      },
-    };
+    return { ok: false, message: "ID ou senha incorretos." };
   } catch (error) {
     console.error("Erro ao autenticar usuário:", error);
     return { ok: false, message: "Erro ao validar login no servidor." };

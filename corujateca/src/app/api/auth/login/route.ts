@@ -6,18 +6,10 @@ import { authenticateUser } from "@/lib/server-auth";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const role = body?.role;
     const codigoIdentificacao = Number(body?.codigoIdentificacao);
     const senha = String(body?.senha ?? "");
 
-    if (role !== "bibliotecario" && role !== "frequentador") {
-      return NextResponse.json(
-        { erro: "Selecione um tipo de acesso válido." },
-        { status: 400 }
-      );
-    }
-
-    const resultado = await authenticateUser(role, codigoIdentificacao, senha);
+    const resultado = await authenticateUser(codigoIdentificacao, senha);
 
     if (!resultado.ok) {
       return NextResponse.json({ erro: resultado.message }, { status: 401 });

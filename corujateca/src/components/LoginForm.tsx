@@ -11,7 +11,6 @@ export default function LoginForm() {
   const router = useRouter();
   const [codigoIdentificacao, setCodigoIdentificacao] = useState("");
   const [senha, setSenha] = useState("");
-  const [role, setRole] = useState<"bibliotecario" | "frequentador">("frequentador");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
 
@@ -29,7 +28,6 @@ export default function LoginForm() {
         body: JSON.stringify({
           codigoIdentificacao,
           senha,
-          role,
         }),
       });
 
@@ -68,22 +66,6 @@ export default function LoginForm() {
         />
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col">
-          <div className="mb-4 flex w-full flex-col gap-2">
-            <label htmlFor="role" className="text-md font-medium text-gray-700">
-              Tipo de acesso:
-            </label>
-
-            <select
-              id="role"
-              value={role}
-              onChange={(event) => setRole(event.target.value as "bibliotecario" | "frequentador")}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 outline-none transition focus:border-[var(--color-brand-800)] focus:ring-2"
-            >
-              <option value="frequentador">Frequentador</option>
-              <option value="bibliotecario">Bibliotecário</option>
-            </select>
-          </div>
-
           <div className="mb-4 flex w-full flex-col gap-2">
             <label htmlFor="codigoIdentificacao" className="text-md font-medium text-gray-700">
               Código de Identificação:
