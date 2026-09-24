@@ -48,7 +48,12 @@ export default function CadastrarExemplarModal({
 
         const dados = await resposta.json();
 
-        setLivros(dados);
+        // Garante que pegamos a array corretamente, seja direta ou encapsulada num objeto
+        const listaLivros = Array.isArray(dados) 
+          ? dados 
+          : dados.livros || dados.data || [];
+
+        setLivros(listaLivros);
       } catch (error) {
         console.error(error);
 
@@ -259,7 +264,7 @@ export default function CadastrarExemplarModal({
                   : "Selecione um livro"}
               </option>
 
-              {livros.map((livro) => (
+              {(Array.isArray(livros) ? livros : []).map((livro) => (
                 <option
                   key={livro.id_livro}
                   value={livro.id_livro}
