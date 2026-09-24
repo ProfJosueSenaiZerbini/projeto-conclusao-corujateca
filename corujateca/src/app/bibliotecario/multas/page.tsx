@@ -23,6 +23,7 @@ type MultasResponse = {
     nome_bibliotecario: string;
   }[];
   tipos: string[];
+  tiposCadastro: string[];
   totais: {
     atraso: number;
     depredacao: number;
@@ -323,7 +324,7 @@ export default function MultasPage() {
                     Tipo da multa
                     <select required value={formulario.tipo} onChange={(event) => atualizarTipo(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-4 py-3">
                       <option value="">Selecione o tipo</option>
-                      {(dados?.tipos ?? []).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                      {(dados?.tiposCadastro ?? []).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
                     </select>
                   </label>
 

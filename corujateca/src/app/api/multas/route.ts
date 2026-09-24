@@ -102,6 +102,7 @@ export async function GET(request: Request) {
       frequentadores,
       bibliotecarios,
       tipos: ["ATRASO", "DEPREDAÇÃO", "EXTRAVIO"],
+      tiposCadastro: ["DEPREDAÇÃO", "EXTRAVIO"],
       totais: {
         atraso: contarPorTipo("ATRASO"),
         depredacao: contarPorTipo("DEPREDAÇÃO"),
@@ -187,6 +188,17 @@ export async function POST(request: Request) {
 
     const tiposPermitidos = ["ATRASO", "DEPREDAÇÃO", "EXTRAVIO"];
     const tipoTratado = String(tipomulta || "").trim().toUpperCase();
+
+    if (tipoTratado === "ATRASO") {
+      return NextResponse.json(
+        {
+          erro:
+            "Multas de atraso são criadas automaticamente após a devolução do empréstimo atrasado.",
+        },
+        { status: 409 },
+      );
+    }
+
     const inicio = obterDataAtual();
     const terminoInformado = dta_termino_multa
       ? new Date(`${String(dta_termino_multa)}T00:00:00.000Z`)
@@ -205,8 +217,6 @@ export async function POST(request: Request) {
 
     if (
       !tiposPermitidos.includes(tipoTratado) ||
-      (tipoTratado === "ATRASO" &&
-        (!terminoInformado || Number.isNaN(terminoInformado.getTime()))) ||
       !Number.isInteger(bibliotecarioId) ||
       bibliotecarioId <= 0 ||
       !Number.isInteger(frequentadorId) ||

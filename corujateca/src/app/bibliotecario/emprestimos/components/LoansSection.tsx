@@ -28,10 +28,25 @@ export default function LoansSection({ loans }: { loans: LoanView[] }) {
       method: "PATCH",
     });
 
+    const data = await response.json().catch(() => null);
+
     if (!response.ok) {
-      const data = await response.json().catch(() => null);
       alert(data?.error ?? "Erro ao concluir empréstimo.");
       return;
+    }
+
+    if (data?.multa) {
+      const inicio = new Date(data.multa.dta_inicio_multa);
+      const termino = new Date(data.multa.dta_termino_multa);
+      const diasMulta = Math.round(
+        (termino.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      alert(
+        `Devolução concluída. Uma multa de atraso de ${diasMulta} ${
+          diasMulta === 1 ? "dia" : "dias"
+        } foi aplicada.`,
+      );
     }
 
     router.refresh();
