@@ -31,15 +31,44 @@ export default function CreateEmprestimoForm({
 
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const frequentador = String(formData.get("fk_frequentador_id_freq") ?? "");
+    const exemplar = String(formData.get("fk_exemplar_id_exemplar") ?? "");
+    const senha = String(formData.get("senha") ?? "").trim();
+    const prazoDias = String(formData.get("prazo_dias") ?? "");
+
+    if (!frequentador) {
+      setErro("Selecione o frequentador.");
+      setEnviando(false);
+      return;
+    }
+
+    if (!exemplar) {
+      setErro("Selecione o exemplar.");
+      setEnviando(false);
+      return;
+    }
+
+    if (!senha) {
+      setErro("Informe a senha do frequentador.");
+      setEnviando(false);
+      return;
+    }
+
+    if (!prazoDias) {
+      setErro("Informe a quantidade de dias do empréstimo.");
+      setEnviando(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/emprestimos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fk_frequentador_id_freq: formData.get("fk_frequentador_id_freq"),
-          fk_exemplar_id_exemplar: formData.get("fk_exemplar_id_exemplar"),
-          prazo_dias: formData.get("prazo_dias"),
+          fk_frequentador_id_freq: frequentador,
+          fk_exemplar_id_exemplar: exemplar,
+          prazo_dias: prazoDias,
+          senha,
         }),
       });
 
@@ -124,6 +153,15 @@ export default function CreateEmprestimoForm({
         >
           {enviando ? "Criando..." : "Criar Empréstimo"}
         </button>
+
+        <input
+          type="password"
+          name="senha"
+          placeholder="Senha do frequentador"
+          autoComplete="current-password"
+          required
+          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500 md:col-span-3"
+        />
       </form>
     </div>
   );

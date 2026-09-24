@@ -48,7 +48,7 @@ export default function LoanCard({ loan }: { loan: Loan }) {
           <div className="flex items-start gap-2 sm:items-center sm:gap-4">
             <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
             <p className="min-w-0">
-              <strong>Data de Expiração</strong> {loan.expiration}
+              <strong>Data de Devolução:</strong> {loan.expiration}
             </p>
           </div>
 

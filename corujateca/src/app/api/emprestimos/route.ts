@@ -9,14 +9,27 @@ export async function POST(request: Request) {
 
     const fkFrequentador = Number(body.fk_frequentador_id_freq);
     const idEnviado = Number(body.fk_exemplar_id_exemplar);
-    const prazoDias = Number(body.prazo_dias) || 7;
-    const senhaInformada = body.senha;
+    const prazoDias = Number(body.prazo_dias);
+    const senhaInformada =
+      typeof body.senha === "string" ? body.senha.trim() : "";
     
     let bibliotecarioId = Number(body.fk_bibliotecario_id_bibliotecario);
 
-    if (!fkFrequentador || !idEnviado || !senhaInformada) {
+    if (!fkFrequentador) {
+      return NextResponse.json({ error: "Selecione o frequentador." }, { status: 400 });
+    }
+
+    if (!idEnviado) {
+      return NextResponse.json({ error: "Selecione o exemplar." }, { status: 400 });
+    }
+
+    if (!senhaInformada) {
+      return NextResponse.json({ error: "Informe a senha do frequentador." }, { status: 400 });
+    }
+
+    if (!Number.isInteger(prazoDias) || prazoDias <= 0) {
       return NextResponse.json(
-        { error: "Frequentador, exemplar e senha são obrigatórios." },
+        { error: "Informe a quantidade de dias do empréstimo." },
         { status: 400 },
       );
     }
