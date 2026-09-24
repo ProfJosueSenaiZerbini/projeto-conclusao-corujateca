@@ -131,17 +131,6 @@ export async function PUT(
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id_livro?: string; id?: string }> }
@@ -166,7 +155,7 @@ export async function GET(
       );
     }
 
-    // Busca o livro no PostgreSQL junto com os exemplares
+    // Busca o livro junto com todos os exemplares ativos
     const livro = await db.livro.findUnique({
       where: {
         id_livro: idLivro,
@@ -187,16 +176,18 @@ export async function GET(
       );
     }
 
-    // Calculando a quantidade e status dos exemplares
-    const qtd_copias = livro.exemplar.length;
-
-    // Utilizando inferência automática do array do resultado
-    const temDisponivel = livro.exemplar.some(
-      (exp: (typeof livro.exemplar)[number]) => exp.status_exemplar === 'Dispon_vel'
+    // Filtra apenas os exemplares que estão disponíveis para empréstimo
+    const exemplaresDisponiveis = livro.exemplar.filter(
+      (exp) => exp.status_exemplar === 'Dispon_vel'
     );
 
+    const qtd_copias = exemplaresDisponiveis.length;
+    const totalCadastrados = livro.exemplar.length;
+
+    const temDisponivel = qtd_copias > 0;
+
     const status_livro =
-      qtd_copias === 0
+      totalCadastrados === 0
         ? 'Sem Exemplares'
         : temDisponivel
         ? 'Disponível'
@@ -213,7 +204,7 @@ export async function GET(
       imgcapa_livro: livro.imgcapa_livro,
       genero_livro: livro.genero_livro,
       localizacao_livro: livro.localizacao_livro,
-      qtd_copias,
+      qtd_copias, // Agora reflete exatamente a quantidade de cópias livres para emprestar!
       status_livro,
     });
   } catch (error) {
