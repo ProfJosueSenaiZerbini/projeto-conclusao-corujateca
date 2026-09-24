@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS livro (
 	editora_livro VARCHAR(255) NOT NULL,
 	anoPub_livro SMALLINT NOT NULL,
 	imgCapa_livro VARCHAR(130) NOT NULL,
-	genero_livro VARCHAR(30) NOT NULL,
+	genero_livro VARCHAR(75) NOT NULL,
 	inativo_livro BOOLEAN NOT NULL DEFAULT FALSE,
 	localizacao_livro VARCHAR(130) NOT NULL
 );
