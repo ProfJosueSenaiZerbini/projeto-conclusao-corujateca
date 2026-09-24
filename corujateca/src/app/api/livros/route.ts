@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-
 import { db } from "@/app/db";
 
 export async function GET(request: Request) {
@@ -144,13 +143,13 @@ export async function POST(request: Request) {
       localizacao_livro,
       imgcapa_livro,
       sinopse_livro,
+      fk_bibliotecario_id_bibliotecario, // Captura o ID vindo do front-end
     } = body;
 
     if (!isbn || !titulo_livro) {
       return NextResponse.json(
         {
-          erro:
-            "O ISBN e o Título do livro são obrigatórios.",
+          erro: "O ISBN e o Título do livro são obrigatórios.",
         },
         { status: 400 },
       );
@@ -182,6 +181,10 @@ export async function POST(request: Request) {
           valorOuNull(imgcapa_livro),
         sinopse_livro:
           valorOuNull(sinopse_livro),
+        // Passa o ID correto do bibliotecario (converte para número se for enviado)
+        ...(fk_bibliotecario_id_bibliotecario && {
+          fk_bibliotecario_id_bibliotecario: Number(fk_bibliotecario_id_bibliotecario),
+        }),
       },
     });
 
@@ -200,8 +203,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        erro:
-          "Erro interno no servidor ao tentar salvar o livro.",
+        erro: "Erro interno no servidor ao tentar salvar o livro.",
       },
       { status: 500 },
     );

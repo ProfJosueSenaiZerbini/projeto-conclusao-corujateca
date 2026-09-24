@@ -8,9 +8,11 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const fkFrequentador = Number(body.fk_frequentador_id_freq);
-    const idEnviado = Number(body.fk_exemplar_id_exemplar); // ID do livro ou do exemplar
+    const idEnviado = Number(body.fk_exemplar_id_exemplar);
     const prazoDias = Number(body.prazo_dias) || 7;
     const senhaInformada = body.senha;
+    
+    let bibliotecarioId = Number(body.fk_bibliotecario_id_bibliotecario);
 
     if (!fkFrequentador || !idEnviado || !senhaInformada) {
       return NextResponse.json(
@@ -30,7 +32,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validação da senha criptografada (ajuste 'senha_freq' se no seu Prisma o campo tiver outro nome, ex: 'senha')
     const senhaValida = await bcrypt.compare(senhaInformada, frequentador.senha_freq);
 
     if (!senhaValida) {
@@ -40,7 +41,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Tenta encontrar como exemplar direto
     let exemplar = await db.exemplar.findFirst({
       where: {
         id_exemplar: idEnviado,
@@ -50,7 +50,6 @@ export async function POST(request: Request) {
       include: { livro: true },
     });
 
-    // Se não for exemplar direto, busca uma cópia disponível associada ao ID do livro
     if (!exemplar) {
       exemplar = await db.exemplar.findFirst({
         where: {
@@ -69,27 +68,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const bibliotecario = await db.bibliotecario.findFirst({
-      where: { inativo_bibliotecario: false },
-    });
-
-    if (!bibliotecario) {
-      return NextResponse.json(
-        { error: "Nenhum bibliotecário ativo encontrado." },
-        { status: 404 },
-      );
+    if (!bibliotecarioId || isNaN(bibliotecarioId)) {
+      bibliotecarioId = 7;
     }
 
     const dataEmprestimo = new Date();
     const dataDevolucao = new Date(dataEmprestimo);
     dataDevolucao.setDate(dataEmprestimo.getDate() + prazoDias);
 
+    // Transação limpa apenas com as tabelas reais do seu schema
     const [novoEmprestimo] = await db.$transaction([
       db.emprestimo.create({
         data: {
           dta_emprestimo: dataEmprestimo,
           dta_devolucao: dataDevolucao,
-          fk_bibliotecario_id_bibliotecario: bibliotecario.id_bibliotecario,
+          fk_bibliotecario_id_bibliotecario: bibliotecarioId,
           fk_exemplar_id_exemplar: exemplar.id_exemplar,
           fk_frequentador_id_freq: fkFrequentador,
         },
@@ -102,6 +95,7 @@ export async function POST(request: Request) {
 
     revalidatePath("/bibliotecario/emprestimos");
     revalidatePath("/bibliotecario/acervo");
+    revalidatePath(`/bibliotecario/acervo/${exemplar.fk_livro_id_livro}`);
 
     return NextResponse.json({ emprestimo: novoEmprestimo }, { status: 201 });
   } catch (error) {
