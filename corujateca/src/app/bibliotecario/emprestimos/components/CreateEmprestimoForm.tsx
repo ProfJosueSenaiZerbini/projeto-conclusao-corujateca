@@ -92,6 +92,9 @@ export default function CreateEmprestimoForm({
       <h3 className="mb-3 text-lg font-bold text-[var(--color-text-primary)]">
         Criar Empréstimo
       </h3>
+      <p className="mb-3 text-sm text-brand-600">
+        Cada frequentador pode manter até 2 empréstimos ativos por vez.
+      </p>
 
       {erro && (
         <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">

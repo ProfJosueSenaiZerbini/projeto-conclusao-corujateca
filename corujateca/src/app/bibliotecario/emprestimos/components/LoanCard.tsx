@@ -4,6 +4,7 @@ type Loan = {
   author: string;
   userName: string;
   status: string;
+  daysOverdue: number;
   expiration: string;
   loanDate: string;
 };
@@ -103,7 +104,11 @@ export default function LoanCard({
           </div>
 
           <p className="mt-3 text-base font-semibold text-text-inverse">
-            {loan.status}
+            {loan.status === "Atrasado"
+              ? `Atrasado há ${loan.daysOverdue} ${
+                  loan.daysOverdue === 1 ? "dia" : "dias"
+                }`
+              : loan.status}
           </p>
         </div>
 

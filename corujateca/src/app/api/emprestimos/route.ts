@@ -89,9 +89,40 @@ export async function POST(request: Request) {
     const dataDevolucao = new Date(dataEmprestimo);
     dataDevolucao.setDate(dataEmprestimo.getDate() + prazoDias);
 
-    // Transação limpa apenas com as tabelas reais do seu schema
-    const [novoEmprestimo] = await db.$transaction([
-      db.emprestimo.create({
+    const resultado = await db.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT id_freq
+        FROM frequentador
+        WHERE id_freq = ${fkFrequentador}
+        FOR UPDATE
+      `;
+
+      const emprestimosAtivos = await tx.emprestimo.count({
+        where: {
+          fk_frequentador_id_freq: fkFrequentador,
+          inativo_emprestimo: false,
+          dta_devolucao_real: null,
+        },
+      });
+
+      if (emprestimosAtivos >= 2) {
+        return { tipo: "limite-atingido" as const };
+      }
+
+      const exemplarAtualizado = await tx.exemplar.updateMany({
+        where: {
+          id_exemplar: exemplar.id_exemplar,
+          inativo_exemplar: false,
+          status_exemplar: "Dispon_vel",
+        },
+        data: { status_exemplar: "Em_posse" },
+      });
+
+      if (exemplarAtualizado.count === 0) {
+        return { tipo: "exemplar-indisponivel" as const };
+      }
+
+      const novoEmprestimo = await tx.emprestimo.create({
         data: {
           dta_emprestimo: dataEmprestimo,
           dta_devolucao: dataDevolucao,
@@ -99,18 +130,33 @@ export async function POST(request: Request) {
           fk_exemplar_id_exemplar: exemplar.id_exemplar,
           fk_frequentador_id_freq: fkFrequentador,
         },
-      }),
-      db.exemplar.update({
-        where: { id_exemplar: exemplar.id_exemplar },
-        data: { status_exemplar: "Em_posse" },
-      }),
-    ]);
+      });
+
+      return { tipo: "criado" as const, emprestimo: novoEmprestimo };
+    });
+
+    if (resultado.tipo === "limite-atingido") {
+      return NextResponse.json(
+        { error: "Cada frequentador pode ter no máximo 2 empréstimos ativos." },
+        { status: 409 },
+      );
+    }
+
+    if (resultado.tipo === "exemplar-indisponivel") {
+      return NextResponse.json(
+        { error: "Este exemplar não está mais disponível para empréstimo." },
+        { status: 409 },
+      );
+    }
 
     revalidatePath("/bibliotecario/emprestimos");
     revalidatePath("/bibliotecario/acervo");
     revalidatePath(`/bibliotecario/acervo/${exemplar.fk_livro_id_livro}`);
 
-    return NextResponse.json({ emprestimo: novoEmprestimo }, { status: 201 });
+    return NextResponse.json(
+      { emprestimo: resultado.emprestimo },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Erro ao criar empréstimo:", error);
     return NextResponse.json(

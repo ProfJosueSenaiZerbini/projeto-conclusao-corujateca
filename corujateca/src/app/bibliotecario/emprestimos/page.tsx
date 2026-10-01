@@ -131,13 +131,29 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
 
   const loans: LoanView[] = emprestimosProcessados.map((emprestimo) => {
     let statusCalculado = "Em andamento";
-    
+    let daysOverdue = 0;
+
     if (emprestimo.dta_devolucao_real) {
       const real = new Date(emprestimo.dta_devolucao_real);
       const prevista = new Date(emprestimo.dta_devolucao);
       statusCalculado = real <= prevista ? "Devolvido no prazo" : "Devolvido com atraso";
     } else if (new Date(emprestimo.dta_devolucao) < hoje) {
       statusCalculado = "Atrasado";
+      const dataPrevista = new Date(emprestimo.dta_devolucao);
+      const vencimento = Date.UTC(
+        dataPrevista.getUTCFullYear(),
+        dataPrevista.getUTCMonth(),
+        dataPrevista.getUTCDate(),
+      );
+      const hojeSemHorario = Date.UTC(
+        hoje.getFullYear(),
+        hoje.getMonth(),
+        hoje.getDate(),
+      );
+      daysOverdue = Math.max(
+        1,
+        Math.floor((hojeSemHorario - vencimento) / (1000 * 60 * 60 * 24)),
+      );
     }
 
     return {
@@ -146,6 +162,7 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
       author: emprestimo.exemplar.livro.autor_livro,
       userName: emprestimo.frequentador.nome_freq,
       status: statusCalculado,
+      daysOverdue,
       expiration: formatarData(emprestimo.dta_devolucao),
       loanDate: formatarData(emprestimo.dta_emprestimo),
     };
@@ -206,4 +223,3 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     </div>
   );
 }
-

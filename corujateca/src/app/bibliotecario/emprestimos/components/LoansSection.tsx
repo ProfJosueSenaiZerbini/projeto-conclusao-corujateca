@@ -10,6 +10,7 @@ export type LoanView = {
   author: string;
   userName: string;
   status: string;
+  daysOverdue: number;
   expiration: string;
   loanDate: string;
 };
