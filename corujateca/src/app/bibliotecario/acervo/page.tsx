@@ -487,24 +487,24 @@ export default function AcervoBib() {
             {!pesquisaRealizada ? (
               <>
                 {/* Gênero da Semana */}
-
                 <LivroCarousel
                   titulo="Gênero da Semana"
                   livros={livrosGeneroSemana}
+                  baseUrl="/bibliotecario/acervo"
                 />
 
                 {/* Mais Emprestados */}
-
                 <LivroCarousel
                   titulo="Mais Emprestados"
                   livros={livrosMaisEmprestados}
+                  baseUrl="/bibliotecario/acervo"
                 />
 
                 {/* Todos */}
-
                 <LivroGrid
                   titulo="Todos"
                   livros={livrosTodos}
+                  baseUrl="/bibliotecario/acervo"
                 />
 
                 {/* Paginação */}
@@ -577,6 +577,7 @@ export default function AcervoBib() {
                   <LivroCarousel
                     titulo="Resultados da pesquisa"
                     livros={livros}
+                    baseUrl="/bibliotecario/acervo"
                   />
                 ) : (
                   !carregando && (
