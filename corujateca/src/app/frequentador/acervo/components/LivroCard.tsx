@@ -5,6 +5,7 @@ type LivroCardProps = {
     autor_livro: string;
     genero_livro: string;
     imgcapa_livro: string | null;
+    possui_exemplar_disponivel: boolean;
   };
 };
 
@@ -17,8 +18,7 @@ const coresGenero: Record<string, string> = {
   "religião e mitologia": "var(--color-religion-mythology)",
   "religiao e mitologia": "var(--color-religion-mythology)",
 
-  "ficção científica": "var(--color-science-fiction)",
-  "ficcao cientifica": "var(--color-science-fiction)",
+  "ficção": "var(--color-science-fiction)",
 
   "arte e cultura": "var(--color-art-culture)",
 
@@ -27,10 +27,11 @@ const coresGenero: Record<string, string> = {
   biografias: "var(--color-biographies-memoirs)",
   memórias: "var(--color-biographies-memoirs)",
   memorias: "var(--color-biographies-memoirs)",
+  "biografias e memórias": "var(--color-biographies-memoirs)",
 
   thriller: "var(--color-thriller-mystery)",
   mistério: "var(--color-thriller-mystery)",
-  misterio: "var(--color-thriller-mystery)",
+  "thriller e mistério": "var(--color-thriller-mystery)",
 
   "quadrinhos e mangá": "var(--color-comics-manga)",
   "quadrinhos e manga": "var(--color-comics-manga)",
@@ -80,13 +81,14 @@ export default function LivroCard({ livro }: LivroCardProps) {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-sm text-center text-[var(--color-text-primary)] px-2">
-              Sem capa
-            </span>
-          </div>
+          <img
+            src="/images/placeholder_capaNaoCatalogada.png"
+            alt="Capa não disponível"
+            className="w-full h-full object-cover"
+          />
         )}
       </div>
+
 
       {/* Gênero */}
       <div className="mt-2">
@@ -136,6 +138,22 @@ export default function LivroCard({ livro }: LivroCardProps) {
       >
         {livro.autor_livro}
       </p>
+
+      {/* Aviso de falta de exemplar para empréstimo */}
+      {!livro.possui_exemplar_disponivel && (
+        <p
+          className="
+      mt-2
+      text-xs
+      font-semibold
+      leading-tight
+      text-red-600
+    "
+        >
+          Sem exemplares disponíveis
+        </p>
+      )}
+
 
     </article>
   );
