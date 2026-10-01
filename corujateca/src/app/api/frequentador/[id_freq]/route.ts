@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-
 import { db } from "@/app/db";
 
 export async function GET(
@@ -127,6 +126,52 @@ export async function PUT(
 
     return NextResponse.json(
       { erro: `Erro ao atualizar no banco: ${error.message || "Erro desconhecido"}` },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id_freq: string }> }
+) {
+  try {
+    const { id_freq } = await params;
+    const idFreq = Number(id_freq);
+
+    if (!Number.isInteger(idFreq) || idFreq <= 0) {
+      return NextResponse.json({ erro: "ID inválido." }, { status: 400 });
+    }
+
+    // Validação: Verifica se existem empréstimos ativos para este frequentador
+    const emprestimosAtivos = await db.emprestimo.count({
+      where: {
+        fk_frequentador_id_freq: idFreq,
+        inativo_emprestimo: false,
+      },
+    });
+
+    if (emprestimosAtivos > 0) {
+      return NextResponse.json(
+        { erro: "Não é permitido excluir o usuário pois ele possui empréstimos ativos." },
+        { status: 400 }
+      );
+    }
+
+    // Realiza a desativação lógica do frequentador
+    await db.frequentador.update({
+      where: { id_freq: idFreq },
+      data: { inativo_freq: true },
+    });
+
+    return NextResponse.json(
+      { mensagem: "Frequentador excluído com sucesso!" },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("Erro ao excluir frequentador:", error.message || error);
+    return NextResponse.json(
+      { erro: "Erro ao excluir o frequentador." },
       { status: 500 }
     );
   }
