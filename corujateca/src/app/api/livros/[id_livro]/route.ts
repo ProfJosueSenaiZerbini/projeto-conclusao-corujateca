@@ -3,11 +3,20 @@ import { db } from '@/app/db';
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id_livro: string }> }
+  { params }: { params: Promise<{ id_livro?: string; id?: string }> }
 ) {
   try {
-    const { id_livro } = await params;
-    const idLivro = Number(id_livro);
+    const resolvedParams = await params;
+    const rawId = resolvedParams.id_livro || resolvedParams.id;
+
+    if (!rawId) {
+      return NextResponse.json(
+        { erro: 'ID do livro não informado.' },
+        { status: 400 }
+      );
+    }
+
+    const idLivro = Number(rawId);
 
     if (Number.isNaN(idLivro)) {
       return NextResponse.json(
@@ -204,7 +213,7 @@ export async function GET(
       imgcapa_livro: livro.imgcapa_livro,
       genero_livro: livro.genero_livro,
       localizacao_livro: livro.localizacao_livro,
-      qtd_copias, // Agora reflete exatamente a quantidade de cópias livres para emprestar!
+      qtd_copias,
       status_livro,
     });
   } catch (error) {

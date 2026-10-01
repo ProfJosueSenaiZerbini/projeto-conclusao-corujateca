@@ -51,7 +51,7 @@ export default function EmprestimosPage() {
               />
 
               <DashboardCard
-                title="Quantidade de Livros que Expiram Hoje:"
+                title="Quantidade de emprétimos que Expiram Hoje:"
                 value={2}
               />
             </section>

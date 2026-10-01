@@ -105,6 +105,7 @@ export async function POST(request: Request) {
         FOR UPDATE
       `;
 
+      // Validação: Verifica se o frequentador possui multas ativas
       const multasAtivas = await tx.multa.count({
         where: {
           fk_frequentador_id_frequentador: fkFrequentador,
@@ -159,7 +160,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "O frequentador possui uma multa ativa e não pode realizar empréstimos até a conclusão do prazo.",
+            "O frequentador possui uma multa ativa.",
         },
         { status: 409 },
       );
