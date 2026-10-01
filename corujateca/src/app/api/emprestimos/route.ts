@@ -97,6 +97,18 @@ export async function POST(request: Request) {
         FOR UPDATE
       `;
 
+      // Validação: Verifica se o frequentador possui multas ativas
+      const multasAtivas = await tx.multa.count({
+        where: {
+          fk_frequentador_id_frequentador: fkFrequentador,
+          inativo_multa: false,
+        },
+      });
+
+      if (multasAtivas > 0) {
+        return { tipo: "multa-ativa" as const };
+      }
+
       const emprestimosAtivos = await tx.emprestimo.count({
         where: {
           fk_frequentador_id_freq: fkFrequentador,
@@ -134,6 +146,13 @@ export async function POST(request: Request) {
 
       return { tipo: "criado" as const, emprestimo: novoEmprestimo };
     });
+
+    if (resultado.tipo === "multa-ativa") {
+      return NextResponse.json(
+        { error: "Não é permitido realizar empréstimo para frequentadores com multas ativas." },
+        { status: 409 },
+      );
+    }
 
     if (resultado.tipo === "limite-atingido") {
       return NextResponse.json(
