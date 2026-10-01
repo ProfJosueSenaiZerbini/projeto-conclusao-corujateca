@@ -28,8 +28,57 @@ function obterDataAtual() {
   return new Date(`${ano}-${mes}-${dia}T00:00:00.000Z`);
 }
 
+async function concluirMultasVencidas(dataAtual: Date) {
+  const multasVencidas = await db.multa.findMany({
+    where: {
+      inativo_multa: false,
+      tipomulta: "ATRASO",
+      dta_termino_multa: { lte: dataAtual },
+    },
+    select: { fk_frequentador_id_frequentador: true },
+  });
+
+  if (multasVencidas.length === 0) {
+    return;
+  }
+
+  const frequentadoresAfetados = new Set(
+    multasVencidas.map((multa) => multa.fk_frequentador_id_frequentador),
+  );
+
+  await db.$transaction(async (tx) => {
+    await tx.multa.updateMany({
+      where: {
+        inativo_multa: false,
+        tipomulta: "ATRASO",
+        dta_termino_multa: { lte: dataAtual },
+      },
+      data: { inativo_multa: true },
+    });
+
+    for (const frequentadorId of frequentadoresAfetados) {
+      const multasAtivas = await tx.multa.count({
+        where: {
+          fk_frequentador_id_frequentador: frequentadorId,
+          inativo_multa: false,
+        },
+      });
+
+      if (multasAtivas === 0) {
+        await tx.frequentador.update({
+          where: { id_freq: frequentadorId },
+          data: { suspensao_freq: false },
+        });
+      }
+    }
+  });
+}
+
 export async function GET(request: Request) {
   try {
+    const dataAtual = obterDataAtual();
+    await concluirMultasVencidas(dataAtual);
+
     const searchParams = new URL(request.url).searchParams;
     const usuario = searchParams.get("usuario")?.trim();
     const data = searchParams.get("data")?.trim();
@@ -40,11 +89,25 @@ export async function GET(request: Request) {
     const tipoNormalizado = tipo || undefined;
     const dataInicio = data ? new Date(`${data}T00:00:00.000Z`) : undefined;
     const dataFim = data ? new Date(`${data}T23:59:59.999Z`) : undefined;
+    const filtroStatus: Prisma.multaWhereInput =
+      statusNormalizado === "CONCLUÍDA" || statusNormalizado === "CONCLUIDA"
+        ? {
+            inativo_multa: true,
+            tipomulta: "ATRASO",
+            dta_termino_multa: { lte: dataAtual },
+          }
+        : statusNormalizado === "CANCELADA"
+          ? {
+              inativo_multa: true,
+              NOT: {
+                tipomulta: "ATRASO",
+                dta_termino_multa: { lte: dataAtual },
+              },
+            }
+          : { inativo_multa: false };
 
     const where: Prisma.multaWhereInput = {
-      ...(statusNormalizado
-        ? { inativo_multa: statusNormalizado === "CANCELADA" }
-        : { inativo_multa: false }),
+      ...filtroStatus,
       ...(usuario
         ? { frequentador: { nome_freq: { contains: usuario, mode: "insensitive" } } }
         : {}),
@@ -89,7 +152,12 @@ export async function GET(request: Request) {
             (1000 * 60 * 60 * 24),
         ),
       ),
-      status: multa.inativo_multa ? "Cancelada" : "Pendente",
+      status: multa.inativo_multa
+        ? multa.tipomulta.toUpperCase() === "ATRASO" &&
+          multa.dta_termino_multa <= dataAtual
+          ? "Concluída"
+          : "Cancelada"
+        : "Pendente",
       tipo: multa.tipomulta,
       data: formatarData(multa.dta_inicio_multa),
     }));
@@ -136,20 +204,43 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ erro: "Multa não encontrada." }, { status: 404 });
     }
 
-    await db.$transaction([
-      db.multa.update({
+    if (multa.inativo_multa) {
+      return NextResponse.json(
+        { erro: "Esta multa já foi encerrada." },
+        { status: 409 },
+      );
+    }
+
+    const dataAtual = obterDataAtual();
+    await db.$transaction(async (tx) => {
+      await tx.multa.update({
         where: { id_multa: idMulta },
         data: { inativo_multa: true },
-      }),
-      db.frequentador.update({
-        where: { id_freq: multa.fk_frequentador_id_frequentador },
-        data: { suspensao_freq: false },
-      }),
-    ]);
+      });
+
+      const multasAtivas = await tx.multa.count({
+        where: {
+          fk_frequentador_id_frequentador: multa.fk_frequentador_id_frequentador,
+          inativo_multa: false,
+        },
+      });
+      if (multasAtivas === 0) {
+        await tx.frequentador.update({
+          where: { id_freq: multa.fk_frequentador_id_frequentador },
+          data: { suspensao_freq: false },
+        });
+      }
+    });
 
     revalidatePath("/bibliotecario/multas");
 
-    return NextResponse.json({ mensagem: "Multa cancelada com sucesso." });
+    return NextResponse.json({
+      mensagem:
+        multa.tipomulta.toUpperCase() === "ATRASO" &&
+        multa.dta_termino_multa <= dataAtual
+          ? "Multa concluída com sucesso."
+          : "Multa cancelada com sucesso.",
+    });
   } catch (error) {
     console.error("Erro ao cancelar multa:", error);
     return NextResponse.json(
