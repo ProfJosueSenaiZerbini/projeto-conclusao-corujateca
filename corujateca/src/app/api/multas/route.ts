@@ -85,6 +85,14 @@ export async function GET(request: Request) {
     const status = searchParams.get("status")?.trim().toUpperCase();
     const tipo = searchParams.get("tipo")?.trim().toUpperCase();
 
+    const frequentadorIdParam = searchParams.get(
+      "fk_frequentador_id_frequentador"
+    );
+
+    const frequentadorId = frequentadorIdParam
+      ? Number(frequentadorIdParam)
+      : undefined;
+
     const statusNormalizado = status === "PAGA" ? "CANCELADA" : status;
     const tipoNormalizado = tipo || undefined;
     const dataInicio = data ? new Date(`${data}T00:00:00.000Z`) : undefined;
@@ -108,14 +116,40 @@ export async function GET(request: Request) {
 
     const where: Prisma.multaWhereInput = {
       ...filtroStatus,
+
+      ...(frequentadorId
+        ? {
+            fk_frequentador_id_frequentador: frequentadorId,
+          }
+        : {}),
+
       ...(usuario
-        ? { frequentador: { nome_freq: { contains: usuario, mode: "insensitive" } } }
+        ? {
+            frequentador: {
+              nome_freq: {
+                contains: usuario,
+                mode: "insensitive",
+              },
+            },
+          }
         : {}),
+
       ...(tipoNormalizado
-        ? { tipomulta: { equals: tipoNormalizado, mode: "insensitive" } }
+        ? {
+            tipomulta: {
+              equals: tipoNormalizado,
+              mode: "insensitive",
+            },
+          }
         : {}),
+
       ...(dataInicio && dataFim
-        ? { dta_inicio_multa: { gte: dataInicio, lte: dataFim } }
+        ? {
+            dta_inicio_multa: {
+              gte: dataInicio,
+              lte: dataFim,
+            },
+          }
         : {}),
     };
 
