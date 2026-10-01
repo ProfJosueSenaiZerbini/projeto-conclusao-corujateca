@@ -21,6 +21,7 @@ const LIVROS_POR_PAGINA = 20;
 
 export default function AcervoFreq() {
   const [nomeUsuario, setNomeUsuario] = useState("Visitante");
+
   const [titulo, setTitulo] = useState("");
   const [genero, setGenero] = useState("");
   const [ano, setAno] = useState("");
@@ -33,8 +34,16 @@ export default function AcervoFreq() {
     [],
   );
 
+  // Gênero sorteado da semana
+  const [generoSemana, setGeneroSemana] = useState("");
+
+  // Paginação da seção "Todos"
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+
+  // Paginação dos resultados da pesquisa
+  const [paginaPesquisa, setPaginaPesquisa] = useState(1);
+  const [totalPaginasPesquisa, setTotalPaginasPesquisa] = useState(1);
 
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
@@ -42,11 +51,15 @@ export default function AcervoFreq() {
 
   useEffect(() => {
     const session = getSession();
+
     if (session?.nome) {
       setNomeUsuario(session.nome);
     }
   }, []);
 
+  /*
+   * Carrega os dados do acervo principal.
+   */
   useEffect(() => {
     async function carregarDadosAcervo() {
       try {
@@ -86,12 +99,16 @@ export default function AcervoFreq() {
         setLivrosTodos(dadosTodos.livros);
         setTotalPaginas(dadosTodos.totalPaginas);
 
+        // Gênero sorteado pela API
+        setGeneroSemana(dadosGenero.genero);
         setLivrosGeneroSemana(dadosGenero.livros);
+
         setLivrosMaisEmprestados(
           dadosMaisEmprestados.livros,
         );
       } catch (error) {
         console.error(error);
+
         setErro("Não foi possível carregar os livros.");
       }
     }
@@ -101,11 +118,15 @@ export default function AcervoFreq() {
     }
   }, [paginaAtual, pesquisaRealizada]);
 
-  async function buscarLivros() {
+  /*
+   * Busca os livros.
+   *
+   * A função recebe a página que deverá ser carregada.
+   */
+  async function buscarLivros(pagina = 1) {
     try {
       setCarregando(true);
       setErro("");
-      setPesquisaRealizada(true);
 
       const params = new URLSearchParams();
 
@@ -125,6 +146,10 @@ export default function AcervoFreq() {
         params.append("autor", autor.trim());
       }
 
+      // Paginação da pesquisa
+      params.append("page", pagina.toString());
+      params.append("limit", LIVROS_POR_PAGINA.toString());
+
       const resposta = await fetch(
         `/api/livros?${params.toString()}`,
       );
@@ -136,16 +161,28 @@ export default function AcervoFreq() {
       const dados = await resposta.json();
 
       setLivros(dados.livros);
+
+      // Atualiza a paginação da pesquisa
+      setPaginaPesquisa(dados.pagina);
+      setTotalPaginasPesquisa(dados.totalPaginas);
+
+      setPesquisaRealizada(true);
     } catch (error) {
       console.error(error);
 
       setErro("Não foi possível buscar os livros.");
       setLivros([]);
+
+      setPaginaPesquisa(1);
+      setTotalPaginasPesquisa(1);
     } finally {
       setCarregando(false);
     }
   }
 
+  /*
+   * Limpa a pesquisa e volta para o acervo.
+   */
   function limparPesquisa() {
     setTitulo("");
     setGenero("");
@@ -153,17 +190,45 @@ export default function AcervoFreq() {
     setAutor("");
 
     setLivros([]);
+
     setPesquisaRealizada(false);
+
+    setPaginaPesquisa(1);
+    setTotalPaginasPesquisa(1);
+
     setPaginaAtual(1);
+
     setErro("");
   }
 
+  /*
+   * Muda a página da seção "Todos".
+   */
   function mudarPagina(novaPagina: number) {
     if (novaPagina < 1 || novaPagina > totalPaginas) {
       return;
     }
 
     setPaginaAtual(novaPagina);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
+  /*
+   * Muda a página dos resultados da pesquisa.
+   */
+  function mudarPaginaPesquisa(novaPagina: number) {
+    if (
+      novaPagina < 1 ||
+      novaPagina > totalPaginasPesquisa
+    ) {
+      return;
+    }
+
+    buscarLivros(novaPagina);
 
     window.scrollTo({
       top: 0,
@@ -333,7 +398,7 @@ export default function AcervoFreq() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={buscarLivros}
+                    onClick={() => buscarLivros(1)}
                     disabled={carregando}
                     className="
                       mt-2
@@ -391,7 +456,11 @@ export default function AcervoFreq() {
                 {/* Gênero da Semana */}
 
                 <LivroCarousel
-                  titulo="Gênero da Semana"
+                  titulo={
+                    generoSemana
+                      ? `Gênero da Semana: ${generoSemana}`
+                      : "Gênero da Semana"
+                  }
                   livros={livrosGeneroSemana}
                   baseUrl="/frequentador/acervo"
                 />
@@ -412,7 +481,7 @@ export default function AcervoFreq() {
                   baseUrl="/frequentador/acervo"
                 />
 
-                {/* Paginação */}
+                {/* Paginação - Todos */}
 
                 {totalPaginas > 1 && (
                   <div className="flex items-center justify-center gap-3 mt-6">
@@ -481,11 +550,89 @@ export default function AcervoFreq() {
                 {/* Resultados da Pesquisa */}
 
                 {livros.length > 0 ? (
-                  <LivroCarousel
-                    titulo="Resultados da pesquisa"
-                    livros={livros}
-                    baseUrl="/frequentador/acervo"
-                  />
+                  <>
+                    {/* 
+                      IMPORTANTE:
+                      Aqui usamos LivroGrid em vez de LivroCarousel.
+                      Assim os resultados deixam de ser um carrossel
+                      e passam a ocupar uma grade paginada.
+                    */}
+
+                    <LivroGrid
+                      titulo="Resultados da pesquisa"
+                      livros={livros}
+                    />
+
+                    {/* Paginação - Resultados da Pesquisa */}
+
+                    {totalPaginasPesquisa > 1 && (
+                      <div className="flex items-center justify-center gap-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            mudarPaginaPesquisa(
+                              paginaPesquisa - 1,
+                            )
+                          }
+                          disabled={paginaPesquisa === 1}
+                          className="
+                            w-10
+                            h-10
+                            rounded-full
+                            bg-[var(--color-brand-500)]
+                            text-[var(--color-text-inverse)]
+                            flex
+                            items-center
+                            justify-center
+                            font-bold
+                            text-lg
+                            disabled:opacity-40
+                            disabled:cursor-not-allowed
+                            cursor-pointer
+                          "
+                          aria-label="Página anterior dos resultados"
+                        >
+                          ←
+                        </button>
+
+                        <span className="font-bold text-[var(--color-text-primary)]">
+                          {paginaPesquisa} /{" "}
+                          {totalPaginasPesquisa}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            mudarPaginaPesquisa(
+                              paginaPesquisa + 1,
+                            )
+                          }
+                          disabled={
+                            paginaPesquisa ===
+                            totalPaginasPesquisa
+                          }
+                          className="
+                            w-10
+                            h-10
+                            rounded-full
+                            bg-[var(--color-brand-500)]
+                            text-[var(--color-text-inverse)]
+                            flex
+                            items-center
+                            justify-center
+                            font-bold
+                            text-lg
+                            disabled:opacity-40
+                            disabled:cursor-not-allowed
+                            cursor-pointer
+                          "
+                          aria-label="Próxima página dos resultados"
+                        >
+                          →
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   !carregando && (
                     <p className="text-[var(--color-text-primary)]">
