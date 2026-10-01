@@ -88,6 +88,14 @@ export async function POST(request: Request) {
     const dataEmprestimo = new Date();
     const dataDevolucao = new Date(dataEmprestimo);
     dataDevolucao.setDate(dataEmprestimo.getDate() + prazoDias);
+    const dataAtual = new Date();
+    const inicioDoDia = new Date(
+      Date.UTC(
+        dataAtual.getFullYear(),
+        dataAtual.getMonth(),
+        dataAtual.getDate(),
+      ),
+    );
 
     const resultado = await db.$transaction(async (tx) => {
       await tx.$queryRaw`
@@ -102,6 +110,7 @@ export async function POST(request: Request) {
         where: {
           fk_frequentador_id_frequentador: fkFrequentador,
           inativo_multa: false,
+          dta_termino_multa: { gt: inicioDoDia },
         },
       });
 
