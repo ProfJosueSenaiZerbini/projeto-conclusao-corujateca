@@ -8,6 +8,11 @@ type LivroOption = {
   isbn: string;
 };
 
+type LivrosResponse = {
+  livros: LivroOption[];
+  totalPaginas: number;
+};
+
 type ModalCadastrarExemplarProps = {
   aberto: boolean;
   onFechar: () => void;
@@ -35,35 +40,58 @@ export default function CadastrarExemplarModal({
       return;
     }
 
+    let cancelado = false;
+
     async function carregarLivros() {
       try {
         setCarregandoLivros(true);
         setErro("");
 
-        const resposta = await fetch("/api/livros");
-
-        if (!resposta.ok) {
+        const primeiraResposta = await fetch("/api/livros?page=1&limit=100");
+        if (!primeiraResposta.ok) {
           throw new Error("Não foi possível carregar os livros.");
         }
 
-        const dados = await resposta.json();
+        const primeiraPagina: LivrosResponse = await primeiraResposta.json();
+        const listaLivros = [...primeiraPagina.livros];
 
-        // Garante que pegamos a array corretamente, seja direta ou encapsulada num objeto
-        const listaLivros = Array.isArray(dados) 
-          ? dados 
-          : dados.livros || dados.data || [];
+        for (
+          let pagina = 2;
+          pagina <= primeiraPagina.totalPaginas;
+          pagina += 1
+        ) {
+          const resposta = await fetch(
+            `/api/livros?page=${pagina}&limit=100`,
+          );
+          if (!resposta.ok) {
+            throw new Error("Não foi possível carregar todos os livros.");
+          }
 
-        setLivros(listaLivros);
+          const dados: LivrosResponse = await resposta.json();
+          listaLivros.push(...dados.livros);
+        }
+
+        if (!cancelado) {
+          setLivros(listaLivros);
+        }
       } catch (error) {
         console.error(error);
 
-        setErro("Não foi possível carregar a lista de livros.");
+        if (!cancelado) {
+          setErro("Não foi possível carregar a lista de livros.");
+        }
       } finally {
-        setCarregandoLivros(false);
+        if (!cancelado) {
+          setCarregandoLivros(false);
+        }
       }
     }
 
-    carregarLivros();
+    void carregarLivros();
+
+    return () => {
+      cancelado = true;
+    };
   }, [aberto]);
 
   function fecharModal() {
