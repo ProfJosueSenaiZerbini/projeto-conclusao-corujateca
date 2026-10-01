@@ -116,7 +116,8 @@ export default function LivroCarousel({
           scroll-smooth
           snap-x
           snap-mandatory
-          pb-1
+          py-2
+          px-1
 
           [scrollbar-width:none]
           [&::-webkit-scrollbar]:hidden
