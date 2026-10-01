@@ -88,6 +88,14 @@ export async function POST(request: Request) {
     const dataEmprestimo = new Date();
     const dataDevolucao = new Date(dataEmprestimo);
     dataDevolucao.setDate(dataEmprestimo.getDate() + prazoDias);
+    const dataAtual = new Date();
+    const inicioDoDia = new Date(
+      Date.UTC(
+        dataAtual.getFullYear(),
+        dataAtual.getMonth(),
+        dataAtual.getDate(),
+      ),
+    );
 
     const resultado = await db.$transaction(async (tx) => {
       await tx.$queryRaw`
@@ -96,6 +104,18 @@ export async function POST(request: Request) {
         WHERE id_freq = ${fkFrequentador}
         FOR UPDATE
       `;
+
+      const multasAtivas = await tx.multa.count({
+        where: {
+          fk_frequentador_id_frequentador: fkFrequentador,
+          inativo_multa: false,
+          dta_termino_multa: { gt: inicioDoDia },
+        },
+      });
+
+      if (multasAtivas > 0) {
+        return { tipo: "multa-ativa" as const };
+      }
 
       const emprestimosAtivos = await tx.emprestimo.count({
         where: {
@@ -134,6 +154,16 @@ export async function POST(request: Request) {
 
       return { tipo: "criado" as const, emprestimo: novoEmprestimo };
     });
+
+    if (resultado.tipo === "multa-ativa") {
+      return NextResponse.json(
+        {
+          error:
+            "O frequentador possui uma multa ativa e não pode realizar empréstimos até a conclusão do prazo.",
+        },
+        { status: 409 },
+      );
+    }
 
     if (resultado.tipo === "limite-atingido") {
       return NextResponse.json(
