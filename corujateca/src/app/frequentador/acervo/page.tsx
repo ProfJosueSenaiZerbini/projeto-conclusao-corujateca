@@ -462,6 +462,7 @@ export default function AcervoFreq() {
                       : "Gênero da Semana"
                   }
                   livros={livrosGeneroSemana}
+                  baseUrl="/frequentador/acervo"
                 />
 
                 {/* Mais Emprestados */}
@@ -469,6 +470,7 @@ export default function AcervoFreq() {
                 <LivroCarousel
                   titulo="Mais Emprestados"
                   livros={livrosMaisEmprestados}
+                  baseUrl="/frequentador/acervo"
                 />
 
                 {/* Todos */}
@@ -476,6 +478,7 @@ export default function AcervoFreq() {
                 <LivroGrid
                   titulo="Todos"
                   livros={livrosTodos}
+                  baseUrl="/frequentador/acervo"
                 />
 
                 {/* Paginação - Todos */}

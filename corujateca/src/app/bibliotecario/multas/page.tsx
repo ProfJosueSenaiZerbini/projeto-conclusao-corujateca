@@ -397,6 +397,7 @@ export default function MultasPage() {
                   >
                     <option value="Pendente">Pendente</option>
                     <option value="Cancelada">Cancelada</option>
+                    <option value="Concluída">Concluída</option>
                   </select>
                 </div>
 
@@ -439,7 +440,7 @@ export default function MultasPage() {
                       <p>Data da Multa: {multa.data}</p>
                     </div>
 
-                    {multa.status !== "Cancelada" && (
+                    {multa.status === "Pendente" && (
                       <button
                         type="button"
                         onClick={() => cancelarMulta(multa.id)}
