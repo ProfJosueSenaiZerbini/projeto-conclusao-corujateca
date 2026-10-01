@@ -35,7 +35,7 @@ const estadoInicial: LivroForm = {
 const generos = [
   "Romance",
   "Religião e Mitologia",
-  "Ficção Científica",
+  "Ficção",
   "Arte e Cultura",
   "Fantasia",
   "Biografias e Memórias",
