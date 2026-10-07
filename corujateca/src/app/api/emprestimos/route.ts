@@ -158,7 +158,10 @@ export async function POST(request: Request) {
 
     if (resultado.tipo === "multa-ativa") {
       return NextResponse.json(
-        { error: "Não é permitido realizar empréstimo para frequentadores com multas ativas." },
+        {
+          error:
+            "O frequentador possui uma multa ativa.",
+        },
         { status: 409 },
       );
     }
