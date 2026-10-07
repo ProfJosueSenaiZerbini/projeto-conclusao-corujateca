@@ -65,7 +65,6 @@ export default function EmprestimosPage() {
   }, []);
 
   const loansFiltrados = loans.filter((loan) => {
-
     let correspondeAoStatus = true;
 
     if (statusFiltro === "em_andamento") {
@@ -93,6 +92,26 @@ export default function EmprestimosPage() {
     return correspondeAoStatus && correspondeAData;
   });
 
+  const emprestimosEmAndamento = loans.filter(
+    (loan) => loan.status === "Em andamento",
+  ).length;
+
+  function dataEhHoje(data: string) {
+    const hoje = new Date();
+
+    const [dia, mes, ano] = data.split("/");
+
+    return (
+      Number(dia) === hoje.getDate() &&
+      Number(mes) === hoje.getMonth() + 1 &&
+      Number(ano) === hoje.getFullYear()
+    );
+  }
+
+  const emprestimosQueExpiramHoje = loans.filter((loan) =>
+    dataEhHoje(loan.expiration),
+  ).length;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -104,11 +123,14 @@ export default function EmprestimosPage() {
           <div className="mx-auto w-full max-w-6xl space-y-8">
             {/* CARDS */}
             <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-              <DashboardCard title="Empréstimos em Andamento:" value={0} />
+              <DashboardCard
+                title="Empréstimos em Andamento:"
+                value={emprestimosEmAndamento}
+              />
 
               <DashboardCard
                 title="Quantidade de empréstimos que Expiram Hoje:"
-                value={0}
+                value={emprestimosQueExpiramHoje}
               />
             </section>
 
