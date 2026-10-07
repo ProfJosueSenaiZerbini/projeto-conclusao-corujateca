@@ -11,19 +11,33 @@ type ProfileMenuProps = {
   nomeUsuario: string;
 };
 
-export default function ProfileMenu({ nomeUsuario }: ProfileMenuProps) {
+export default function ProfileMenu({
+  nomeUsuario,
+}: ProfileMenuProps) {
   const [aberto, setAberto] = useState(false);
   const router = useRouter();
 
   async function handleLogout() {
     clearSession();
-    await fetch("/api/auth/logout", { method: "POST" });
+
+    await fetch("/api/auth/logout", {
+      method: "POST",
+    });
+
     router.push("/login");
+  }
+
+  function handleConfiguracoes() {
+    router.push("/configuracoes");
   }
 
   return (
     <div className="relative">
-      <button onClick={() => setAberto(!aberto)} className="rounded-full">
+      <button
+        type="button"
+        onClick={() => setAberto(!aberto)}
+        className="rounded-full"
+      >
         <Image
           className="rounded-full"
           src="/images/pfp.png"
@@ -42,19 +56,45 @@ export default function ProfileMenu({ nomeUsuario }: ProfileMenuProps) {
               {nomeUsuario}
             </div>
 
-            <a
-              href="/configuracoes"
-              className="flex items-center gap-3 px-4 py-4 text-gray-700 hover:bg-gray-100"
+            <button
+              type="button"
+              onClick={handleConfiguracoes}
+              className="
+                flex
+                w-full
+                items-center
+                gap-3
+                px-4
+                py-4
+                text-left
+                text-gray-700
+                hover:bg-gray-100
+              "
             >
               <Settings size={20} />
+
               <span>Configurações Perfil</span>
-            </a>
+            </button>
 
             <button
+              type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 border-t border-gray-200 px-4 py-4 text-left text-gray-700 hover:bg-gray-100"
+              className="
+                flex
+                w-full
+                items-center
+                gap-3
+                border-t
+                border-gray-200
+                px-4
+                py-4
+                text-left
+                text-gray-700
+                hover:bg-gray-100
+              "
             >
               <LogOut size={20} />
+
               <span>Log out</span>
             </button>
           </div>

@@ -33,6 +33,28 @@ const estadoInicial: LivroForm = {
   sinopse_livro: "",
 };
 
+const generos = [
+  "Romance",
+  "Religião e Mitologia",
+  "Ficção",
+  "Arte e Cultura",
+  "Fantasia",
+  "Biografias e Memórias",
+  "Thriller e Mistério",
+  "Quadrinhos e Mangá",
+  "Terror",
+  "Infantojuvenil",
+  "Aventura",
+  "Ciência e Conhecimento",
+  "Poesia e Crônicas",
+  "História",
+  "Guia, Manual e Gastronomia",
+  "Política",
+  "Autoajuda e Desenvolvimento Pessoal",
+  "Economia",
+  "Literatura",
+];
+
 export default function CadastrarLivroModal({
   aberto,
   onFechar,
