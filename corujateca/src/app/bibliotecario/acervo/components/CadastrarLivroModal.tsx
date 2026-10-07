@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { generos } from "@/lib/generos";
 
 type LivroForm = {
   isbn: string;

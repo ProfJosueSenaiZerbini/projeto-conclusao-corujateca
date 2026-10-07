@@ -20,7 +20,7 @@ type Livro = {
 const LIVROS_POR_PAGINA = 20;
 
 export default function AcervoFreq() {
-  const [nomeUsuario, setNomeUsuario] = useState("Visitante");
+  const [nomeUsuario, setNomeUsuario] = useState("");
 
   const [titulo, setTitulo] = useState("");
   const [genero, setGenero] = useState("");

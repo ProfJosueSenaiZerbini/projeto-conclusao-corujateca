@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { generos } from "@/lib/generos";
 
 type Livro = {
   id_livro: number;
@@ -634,14 +635,29 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
 
                 <div>
                   <label className="block text-sm font-semibold mb-1">Gênero</label>
-                  <input
-                    type="text"
+                  <select
                     value={formLivro.genero}
                     onChange={(e) =>
                       setFormLivro({ ...formLivro, genero: e.target.value })
                     }
+                    required
                     className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
+                  >
+                    <option value="" disabled>
+                      Selecione um gênero
+                    </option>
+                    {formLivro.genero &&
+                      !generos.some((genero) => genero === formLivro.genero) && (
+                        <option value={formLivro.genero}>
+                          {formLivro.genero}
+                        </option>
+                      )}
+                    {generos.map((genero) => (
+                      <option key={genero} value={genero}>
+                        {genero}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
