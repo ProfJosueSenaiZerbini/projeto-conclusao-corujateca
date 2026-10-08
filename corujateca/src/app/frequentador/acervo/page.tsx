@@ -24,7 +24,7 @@ export default function AcervoFreq() {
 
   const [titulo, setTitulo] = useState("");
   const [genero, setGenero] = useState("");
-  const [copias, setCopias] = useState("com");
+  const [copias, setCopias] = useState("");
   const [ano, setAno] = useState("");
   const [autor, setAutor] = useState("");
 
@@ -191,7 +191,7 @@ export default function AcervoFreq() {
   function limparPesquisa() {
     setTitulo("");
     setGenero("");
-    setCopias("com");
+    setCopias("");
     setAno("");
     setAutor("");
 
@@ -384,6 +384,7 @@ export default function AcervoFreq() {
                       py-2
                     "
                   >
+                    <option value="">Todos os livros</option>
                     <option value="com">Com cópias</option>
                     <option value="sem">Sem cópias</option>
                   </select>
