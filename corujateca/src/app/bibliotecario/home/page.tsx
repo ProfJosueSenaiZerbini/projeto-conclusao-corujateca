@@ -14,6 +14,9 @@ export default function HomeBibli() {
   const router = useRouter();
   const [session, setSession] = useState<UserSession | null>(null);
 
+  const [livrosEmprestados, setLivrosEmprestados] = useState(0);
+  const [multasAtivas, setMultasAtivas] = useState(0);
+
   useEffect(() => {
     const currentSession = getSession();
 
@@ -29,6 +32,30 @@ export default function HomeBibli() {
 
     setSession(currentSession);
   }, [router]);
+
+  useEffect(() => {
+    async function carregarResumo() {
+      try {
+        const resposta = await fetch("/api/bibliotecario/resumo");
+
+        if (!resposta.ok) {
+          throw new Error("Erro ao buscar resumo do bibliotecário.");
+        }
+
+        const dados = await resposta.json();
+
+        setLivrosEmprestados(dados.livrosEmprestados);
+        setMultasAtivas(dados.multasAtivas);
+      } catch (error) {
+        console.error("Erro ao buscar resumo do bibliotecário:", error);
+
+        setLivrosEmprestados(0);
+        setMultasAtivas(0);
+      }
+    }
+
+    carregarResumo();
+  }, []);
 
   if (!session) {
     return null;
@@ -78,8 +105,7 @@ export default function HomeBibli() {
               </p>
 
               <strong className="text-3xl sm:text-4xl font-bold mt-2">
-                6
-                {/* parte que precisa puxar o número do back e da autenticação */}
+                {livrosEmprestados}
               </strong>
             </div>
 
@@ -108,8 +134,7 @@ export default function HomeBibli() {
               </p>
 
               <strong className="text-3xl sm:text-4xl font-bold mt-2">
-                8
-                {/* parte que precisa puxar o número do back */}
+                {multasAtivas}
               </strong>
             </div>
 
@@ -236,7 +261,7 @@ export default function HomeBibli() {
               "
             >
 
-            <Link href="/bibliotecario/acervo" className="
+              <Link href="/bibliotecario/acervo" className="
                 cursor-pointer
                 shadow-md
                   w-full
@@ -254,13 +279,13 @@ export default function HomeBibli() {
                   hover:bg-[var(--color-brand-100)]
                   transition-colors
                 ">
-                
-                <LibraryBig size={20} className="mr-2"/>
+
+                <LibraryBig size={20} className="mr-2" />
                 <span>Acervo</span>
-            </Link>
+              </Link>
 
 
-            <Link href="/bibliotecario/emprestimos" className="
+              <Link href="/bibliotecario/emprestimos" className="
                 shadow-md
                 cursor-pointer  
                 w-full
@@ -278,13 +303,13 @@ export default function HomeBibli() {
                   hover:bg-[var(--color-brand-100)]
                   transition-colors
                 ">
-                <Stamp size={20} className="mr-2"/>
+                <Stamp size={20} className="mr-2" />
                 <span>Empréstimos</span>
-            </Link>
+              </Link>
 
             </div>
 
-        <Link href="/bibliotecario/ajuda" className="
+            <Link href="/bibliotecario/ajuda" className="
                cursor-pointer
                shadow-md
                 min-h-28
@@ -310,7 +335,7 @@ export default function HomeBibli() {
                 <br />
                 Ajuda?
               </span>
-        </Link>
+            </Link>
 
           </section>
 
