@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-
 import { getSession } from "@/lib/auth";
 
 type Multa = {
@@ -17,11 +16,16 @@ type Multa = {
   dataTermino: string;
 };
 
+const MULTAS_POR_PAGINA = 10;
+
 export default function MultasPage() {
   const [data, setData] = useState("");
   const [status, setStatus] = useState("");
   const [multas, setMultas] = useState<Multa[]>([]);
   const [carregando, setCarregando] = useState(true);
+
+  // Página atual da lista
+  const [paginaAtual, setPaginaAtual] = useState(1);
 
   // Não coloque 1 aqui.
   // O ID deve vir da sessão.
@@ -34,6 +38,7 @@ export default function MultasPage() {
     if (session?.id) {
       setId_freq(Number(session.id));
     }
+
   }, []);
 
   // Carrega as multas
@@ -50,7 +55,7 @@ export default function MultasPage() {
 
         params.set(
           "fk_frequentador_id_frequentador",
-          String(id_freq)
+          String(id_freq),
         );
 
         if (data) {
@@ -62,7 +67,7 @@ export default function MultasPage() {
         }
 
         const response = await fetch(
-          `/api/multas?${params.toString()}`
+          `/api/multas?${params.toString()}`,
         );
 
         if (!response.ok) {
@@ -81,200 +86,271 @@ export default function MultasPage() {
     }
 
     carregarMultas();
+
   }, [id_freq, data, status]);
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+  // Quando os filtros mudarem e a lista for atualizada,
+  // volta para a primeira página.
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [multas]);
 
-      <div className="flex flex-1">
-        <Nav />
+  const totalPaginas = Math.ceil(
+    multas.length / MULTAS_POR_PAGINA,
+  );
 
-        <main className="min-w-0 flex-1 p-3 sm:p-5 md:p-6 lg:p-8 xl:p-10">
-          <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8">
+  const inicio = (paginaAtual - 1) * MULTAS_POR_PAGINA;
 
-            {/* CARDS */}
-            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  const multasDaPagina = multas.slice(
+    inicio,
+    inicio + MULTAS_POR_PAGINA,
+  );
 
-              <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
-                <h2 className="font-semibold">
-                  Minhas Multas
-                  <br />
-                  Pendentes:
-                </h2>
+  return (<div className="min-h-screen flex flex-col"> <Header />
+    <div className="flex flex-1">
+      <Nav />
 
-                <span className="mt-1 text-3xl font-bold">
-                  {
-                    multas.filter(
-                      (multa) => multa.status === "Pendente"
-                    ).length
-                  }
-                </span>
-              </div>
+      <main className="min-w-0 flex-1 p-3 sm:p-5 md:p-6 lg:p-8 xl:p-10">
+        <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8">
 
-              <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
-                <h2 className="font-semibold">
-                  Dias de Punição
-                  <br />
-                  Total:
-                </h2>
+          {/* CARDS */}
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
+              <h2 className="font-semibold">
+                Minhas Multas
+                <br />
+                Pendentes:
+              </h2>
 
-                <span className="mt-1 text-3xl font-bold">
-                  {multas.reduce(
-                    (total, multa) =>
-                      total + multa.diasPunicao,
-                    0
-                  )}
-                </span>
-              </div>
+              <span className="mt-1 text-3xl font-bold">
+                {
+                  multas.filter(
+                    (multa) => multa.status === "Pendente",
+                  ).length
+                }
+              </span>
+            </div>
 
-              <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
-                <h2 className="font-semibold">
-                  Total de Multas
-                  <br />
-                  já Recebidas:
-                </h2>
+            <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
+              <h2 className="font-semibold">
+                Dias de Punição
+                <br />
+                Total:
+              </h2>
 
-                <span className="mt-1 text-3xl font-bold">
-                  {multas.length}
-                </span>
-              </div>
-
-            </section>
-
-            {/* FILTROS */}
-            <section className="rounded-3xl bg-brand-200 p-4 shadow-sm sm:p-5 md:p-6 lg:p-8">
-
-              <h1 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl">
-                Pesquisar por Multas
-              </h1>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-
-                <input
-                  type="date"
-                  value={data}
-                  onChange={(e) => setData(e.target.value)}
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-gray-300
-                    bg-white
-                    px-4
-                    py-3
-                    text-brand-600
-                    outline-none
-                    focus:ring-2
-                    focus:ring-brand-500
-                  "
-                />
-
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-gray-300
-                    bg-white
-                    px-5
-                    py-3
-                    text-brand-600
-                    outline-none
-                    focus:ring-2
-                    focus:ring-brand-500
-                  "
-                >
-                  <option value="">
-                    Todos os status
-                  </option>
-
-                  <option value="PENDENTE">
-                    Pendente
-                  </option>
-
-                  <option value="CONCLUÍDA">
-                    Concluída
-                  </option>
-
-                  <option value="CANCELADA">
-                    Cancelada
-                  </option>
-                </select>
-
-              </div>
-
-              {/* LISTA */}
-              <div className="mt-6 flex flex-col gap-4">
-
-                {carregando ? (
-                  <div className="py-8 text-center">
-                    Carregando multas...
-                  </div>
-                ) : multas.length === 0 ? (
-                  <div className="py-8 text-center text-text-inverse">
-                    Nenhuma multa encontrada.
-                  </div>
-                ) : (
-                  multas.map((multa) => (
-                    <div
-                      key={multa.id}
-                      className="
-                        grid
-                        grid-cols-1
-                        gap-4
-                        rounded-2xl
-                        bg-brand-400
-                        px-4
-                        py-4
-                        font-bold
-                        text-text-inverse
-                        md:grid-cols-2
-                        md:gap-8
-                        lg:gap-12
-                        sm:px-5
-                        sm:py-5
-                        lg:px-8
-                        lg:py-6
-                      "
-                    >
-                      <div className="space-y-1 sm:space-y-2 lg:space-y-3">
-                        <p>
-                          Dias de punição:{" "}
-                          {multa.diasPunicao} dias
-                        </p>
-
-                        <p>
-                          Status da Multa: {multa.status}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1 sm:space-y-2 lg:space-y-3">
-                        <p>
-                          Tipo da Multa: {multa.tipo}
-                        </p>
-
-                        <p>
-                          Início da Multa: {multa.dataInicio}
-                        </p>
-
-                        <p>
-                          Término da Multa: {multa.dataTermino}
-                        </p>
-                      </div>
-                    </div>
-                  ))
+              <span className="mt-1 text-3xl font-bold">
+                {multas.reduce(
+                  (total, multa) =>
+                    total + multa.diasPunicao,
+                  0,
                 )}
+              </span>
+            </div>
 
-              </div>
-            </section>
-          </div>
-        </main>
-      </div>
+            <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
+              <h2 className="font-semibold">
+                Total de Multas
+                <br />
+                já Recebidas:
+              </h2>
 
-      <Footer />
+              <span className="mt-1 text-3xl font-bold">
+                {multas.length}
+              </span>
+            </div>
+          </section>
+
+          {/* FILTROS */}
+          <section className="rounded-3xl bg-brand-200 p-4 shadow-sm sm:p-5 md:p-6 lg:p-8">
+            <h1 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl">
+              Pesquisar por Multas
+            </h1>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <input
+                type="date"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+                className="
+                w-full
+                rounded-2xl
+                border
+                border-gray-300
+                bg-white
+                px-4
+                py-3
+                text-brand-600
+                outline-none
+                focus:ring-2
+                focus:ring-brand-500
+              "
+              />
+
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="
+                w-full
+                rounded-2xl
+                border
+                border-gray-300
+                bg-white
+                px-5
+                py-3
+                text-brand-600
+                outline-none
+                focus:ring-2
+                focus:ring-brand-500
+              "
+              >
+                <option value="">
+                  Todos os status
+                </option>
+
+                <option value="PENDENTE">
+                  Pendente
+                </option>
+
+                <option value="CONCLUÍDA">
+                  Concluída
+                </option>
+
+                <option value="CANCELADA">
+                  Cancelada
+                </option>
+              </select>
+            </div>
+
+            {/* LISTA */}
+            <div className="mt-6 flex flex-col gap-4">
+              {carregando ? (
+                <div className="py-8 text-center">
+                  Carregando multas...
+                </div>
+              ) : multas.length === 0 ? (
+                <div className="py-8 text-center text-text-inverse">
+                  Nenhuma multa encontrada.
+                </div>
+              ) : (
+                multasDaPagina.map((multa) => (
+                  <div
+                    key={multa.id}
+                    className="
+                    grid
+                    grid-cols-1
+                    gap-4
+                    rounded-2xl
+                    bg-brand-400
+                    px-4
+                    py-4
+                    font-bold
+                    text-text-inverse
+                    md:grid-cols-2
+                    md:gap-8
+                    lg:gap-12
+                    sm:px-5
+                    sm:py-5
+                    lg:px-8
+                    lg:py-6
+                  "
+                  >
+                    <div className="space-y-1 sm:space-y-2 lg:space-y-3">
+                      <p>
+                        Dias de punição:{" "}
+                        {multa.diasPunicao} dias
+                      </p>
+
+                      <p>
+                        Status da Multa: {multa.status}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1 sm:space-y-2 lg:space-y-3">
+                      <p>
+                        Tipo da Multa: {multa.tipo}
+                      </p>
+
+                      <p>
+                        Início da Multa: {multa.dataInicio}
+                      </p>
+
+                      <p>
+                        Término da Multa: {multa.dataTermino}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* PAGINAÇÃO */}
+            {!carregando &&
+              multas.length > MULTAS_POR_PAGINA && (
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaginaAtual((pagina) =>
+                        Math.max(pagina - 1, 1),
+                      )
+                    }
+                    disabled={paginaAtual === 1}
+                    className="
+                    rounded-xl
+                    bg-brand-400
+                    px-4
+                    py-2
+                    text-sm
+                    font-semibold
+                    text-text-inverse
+                    transition
+                    hover:brightness-110
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                  "
+                  >
+                    Anterior
+                  </button>
+
+                  <span className="px-3 text-sm font-semibold text-(--color-text-primary)">
+                    Página {paginaAtual} de {totalPaginas}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaginaAtual((pagina) =>
+                        Math.min(
+                          pagina + 1,
+                          totalPaginas,
+                        ),
+                      )
+                    }
+                    disabled={paginaAtual === totalPaginas}
+                    className="
+                    rounded-xl
+                    bg-brand-400
+                    px-4
+                    py-2
+                    text-sm
+                    font-semibold
+                    text-text-inverse
+                    transition
+                    hover:brightness-110
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                  "
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
+          </section>
+        </div>
+      </main>
     </div>
+
+    <Footer />
+  </div>
   );
 }

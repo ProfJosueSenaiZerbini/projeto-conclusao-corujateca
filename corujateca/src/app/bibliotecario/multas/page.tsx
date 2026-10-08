@@ -36,6 +36,11 @@ export default function MultasPage() {
   const [dados, setDados] = useState<MultasResponse | null>(null);
   const [erro, setErro] = useState("");
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
+
+  const [paginaAtual, setPaginaAtual] = useState(1);
+
+  const MULTAS_POR_PAGINA = 10;
+
   const [salvando, setSalvando] = useState(false);
   const [filtros, setFiltros] = useState({
     usuario: "",
@@ -123,6 +128,10 @@ export default function MultasPage() {
     return () => clearTimeout(timeoutId);
   }, [carregarMultas]);
 
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [dados?.multas]);
+
   async function atualizarFiltro(campo: "usuario" | "data" | "status" | "tipo", valor: string) {
     const proximoFiltro = { ...filtros, [campo]: valor };
     setFiltros(proximoFiltro);
@@ -191,6 +200,18 @@ export default function MultasPage() {
   }
 
   const multasFormatadas = dados?.multas ?? [];
+
+  const totalPaginas = Math.ceil(
+    multasFormatadas.length / MULTAS_POR_PAGINA,
+  );
+
+  const inicio = (paginaAtual - 1) * MULTAS_POR_PAGINA;
+
+  const multasDaPagina = multasFormatadas.slice(
+    inicio,
+    inicio + MULTAS_POR_PAGINA,
+  );
+
   const atrasosAtivos = dados?.totais.atraso ?? 0;
   const depredacoesAtivas = dados?.totais.depredacao ?? 0;
   const extraviosAtivos = dados?.totais.extravio ?? 0;
@@ -427,7 +448,7 @@ export default function MultasPage() {
                   </div>
                 )}
 
-                {multasFormatadas.map((multa) => (
+                {multasDaPagina.map((multa) => (
                   <div key={multa.id} className="grid grid-cols-1 gap-5 rounded-2xl bg-brand-400 px-4 py-4 text-sm font-bold text-text-inverse sm:px-5 sm:py-5 sm:text-base lg:px-8 lg:py-6 md:grid-cols-2 md:gap-8 lg:gap-12">
 
                     <div className="space-y-2">
@@ -460,6 +481,38 @@ export default function MultasPage() {
                   </div>
                 )}
               </div>
+
+              {multasFormatadas.length > MULTAS_POR_PAGINA && (
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaginaAtual((pagina) => Math.max(pagina - 1, 1))
+                    }
+                    disabled={paginaAtual === 1}
+                    className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-text-inverse transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+
+                  <span className="px-3 text-sm font-semibold text-(--color-text-primary)">
+                    Página {paginaAtual} de {totalPaginas}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaginaAtual((pagina) =>
+                        Math.min(pagina + 1, totalPaginas),
+                      )
+                    }
+                    disabled={paginaAtual === totalPaginas}
+                    className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-text-inverse transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
             </section>
           </div>
         </main>
