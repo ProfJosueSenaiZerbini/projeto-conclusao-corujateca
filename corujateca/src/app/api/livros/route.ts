@@ -7,6 +7,7 @@ export async function GET(request: Request) {
 
     const titulo = searchParams.get("titulo")?.trim() || "";
     const genero = searchParams.get("genero")?.trim() || "";
+    const copias = searchParams.get("copias")?.trim() || "";
     const autor = searchParams.get("autor")?.trim() || "";
     const ano = searchParams.get("ano")?.trim() || "";
 
@@ -44,6 +45,40 @@ export async function GET(request: Request) {
       condicoes.push(
         `unaccent(l.genero_livro) ILIKE '%' || unaccent($${valores.length}) || '%'`,
       );
+    }
+
+    if (copias === "com") {
+      condicoes.push(`
+        EXISTS (
+          SELECT 1
+          FROM exemplar e
+          WHERE e.fk_livro_id_livro = l.id_livro
+            AND e.inativo_exemplar = false
+            AND NOT EXISTS (
+              SELECT 1
+              FROM emprestimo em
+              WHERE em.fk_exemplar_id_exemplar = e.id_exemplar
+                AND em.inativo_emprestimo = false
+                AND em.dta_devolucao_real IS NULL
+            )
+        )
+      `);
+    } else if (copias === "sem") {
+      condicoes.push(`
+        NOT EXISTS (
+          SELECT 1
+          FROM exemplar e
+          WHERE e.fk_livro_id_livro = l.id_livro
+            AND e.inativo_exemplar = false
+            AND NOT EXISTS (
+              SELECT 1
+              FROM emprestimo em
+              WHERE em.fk_exemplar_id_exemplar = e.id_exemplar
+                AND em.inativo_emprestimo = false
+                AND em.dta_devolucao_real IS NULL
+            )
+        )
+      `);
     }
 
     if (autor) {

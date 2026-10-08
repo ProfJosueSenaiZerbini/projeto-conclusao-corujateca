@@ -24,6 +24,7 @@ export default function AcervoFreq() {
 
   const [titulo, setTitulo] = useState("");
   const [genero, setGenero] = useState("");
+  const [copias, setCopias] = useState("com");
   const [ano, setAno] = useState("");
   const [autor, setAutor] = useState("");
 
@@ -138,6 +139,10 @@ export default function AcervoFreq() {
         params.append("genero", genero.trim());
       }
 
+      if (copias) {
+        params.append("copias", copias);
+      }
+
       if (ano.trim()) {
         params.append("ano", ano.trim());
       }
@@ -186,6 +191,7 @@ export default function AcervoFreq() {
   function limparPesquisa() {
     setTitulo("");
     setGenero("");
+    setCopias("com");
     setAno("");
     setAutor("");
 
@@ -276,7 +282,7 @@ export default function AcervoFreq() {
                   "
                 />
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <select
                     value={genero}
                     onChange={(e) => setGenero(e.target.value)}
@@ -366,6 +372,20 @@ export default function AcervoFreq() {
                     <option value="Literatura">
                       Literatura
                     </option>
+                  </select>
+
+                  <select
+                    value={copias}
+                    onChange={(e) => setCopias(e.target.value)}
+                    className="
+                      border
+                      rounded-lg
+                      px-3
+                      py-2
+                    "
+                  >
+                    <option value="com">Com cópias</option>
+                    <option value="sem">Sem cópias</option>
                   </select>
 
                   <input
