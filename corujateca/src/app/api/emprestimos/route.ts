@@ -66,9 +66,12 @@ export async function GET() {
       author: emprestimo.exemplar.livro.autor_livro,
 
       status: emprestimo.dta_devolucao_real
-        ? "Devolvido"
-        : new Date() > emprestimo.dta_devolucao
-          ? "Expirado"
+        ? new Date(emprestimo.dta_devolucao_real) >
+          new Date(emprestimo.dta_devolucao)
+          ? "Devolvido com atraso"
+          : "Devolvido no prazo"
+        : new Date() > new Date(emprestimo.dta_devolucao)
+          ? "Atrasado"
           : "Em andamento",
 
       expiration: formatarData(emprestimo.dta_devolucao),

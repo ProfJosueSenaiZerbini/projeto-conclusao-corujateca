@@ -71,12 +71,16 @@ export default function EmprestimosPage() {
       correspondeAoStatus = loan.status === "Em andamento";
     }
 
-    if (statusFiltro === "devolvido") {
-      correspondeAoStatus = loan.status === "Devolvido";
+    if (statusFiltro === "devolvido_no_prazo") {
+      correspondeAoStatus = loan.status === "Devolvido no prazo";
     }
 
-    if (statusFiltro === "expirado") {
-      correspondeAoStatus = loan.status === "Expirado";
+    if (statusFiltro === "devolvido_com_atraso") {
+      correspondeAoStatus = loan.status === "Devolvido com atraso";
+    }
+
+    if (statusFiltro === "atrasado") {
+      correspondeAoStatus = loan.status === "Atrasado";
     }
 
     let correspondeAData = true;
@@ -93,7 +97,9 @@ export default function EmprestimosPage() {
   });
 
   const emprestimosEmAndamento = loans.filter(
-    (loan) => loan.status === "Em andamento",
+    (loan) =>
+      loan.status === "Em andamento" ||
+      loan.status === "Atrasado",
   ).length;
 
   function dataEhHoje(data: string) {
@@ -108,8 +114,10 @@ export default function EmprestimosPage() {
     );
   }
 
-  const emprestimosQueExpiramHoje = loans.filter((loan) =>
-    dataEhHoje(loan.expiration),
+  const emprestimosQueExpiramHoje = loans.filter(
+    (loan) =>
+      (loan.status === "Em andamento" || loan.status === "Atrasado") &&
+      dataEhHoje(loan.expiration),
   ).length;
 
   return (
