@@ -193,7 +193,8 @@ export async function GET(request: Request) {
           : "Cancelada"
         : "Pendente",
       tipo: multa.tipomulta,
-      data: formatarData(multa.dta_inicio_multa),
+      dataInicio: formatarData(multa.dta_inicio_multa),
+      dataTermino: formatarData(multa.dta_termino_multa),
     }));
 
     const contarPorTipo = (tipo: string) =>
