@@ -13,7 +13,8 @@ type Multa = {
   diasPunicao: number;
   status: string;
   tipo: string;
-  data: string;
+  dataInicio: string;
+  dataTermino: string;
 };
 
 export default function MultasPage() {
@@ -256,7 +257,11 @@ export default function MultasPage() {
                         </p>
 
                         <p>
-                          Data da Multa: {multa.data}
+                          Início da Multa: {multa.dataInicio}
+                        </p>
+
+                        <p>
+                          Término da Multa: {multa.dataTermino}
                         </p>
                       </div>
                     </div>

@@ -12,7 +12,8 @@ type MultaView = {
   diasPunicao: number;
   status: string;
   tipo: string;
-  data: string;
+  dataInicio: string;
+  dataTermino: string;
 };
 
 type MultasResponse = {
@@ -437,7 +438,8 @@ export default function MultasPage() {
 
                     <div className="space-y-2">
                       <p>Tipo da Multa: {multa.tipo}</p>
-                      <p>Data da Multa: {multa.data}</p>
+                      <p>Início da Multa: {multa.dataInicio}</p>
+                      <p>Término da Multa: {multa.dataTermino}</p>
                     </div>
 
                     {multa.status === "Pendente" && (
