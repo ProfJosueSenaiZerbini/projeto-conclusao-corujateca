@@ -210,7 +210,13 @@ export async function GET(
       imgcapa_livro: livro.imgcapa_livro,
       genero_livro: livro.genero_livro,
       localizacao_livro: livro.localizacao_livro,
-      qtd_copias,
+      
+      // Total de exemplares ativos
+      qtd_copias: totalCadastrados,
+
+      // Exemplares disponíveis para empréstimo
+      copias_disponiveis: qtd_copias,
+
       status_livro,
       exemplar: livro.exemplar, // Retorna os exemplares para uso no front-end
     });
