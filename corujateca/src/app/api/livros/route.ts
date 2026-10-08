@@ -102,29 +102,6 @@ export async function GET(request: Request) {
       offset,
     ];
 
-    /*
-     * Busca os livros.
-     *
-     * A disponibilidade é calculada assim:
-     *
-     * 1. O exemplar precisa estar ativo.
-     * 2. Não pode existir um empréstimo ativo para esse exemplar.
-     *
-     * Consideramos um empréstimo ativo quando:
-     *
-     * - inativo_emprestimo = false
-     * - dta_devolucao_real IS NULL
-     *
-     * Portanto:
-     *
-     * - sem exemplares -> false
-     * - todos inativados -> false
-     * - todos emprestados -> false
-     * - pelo menos um exemplar ativo e não emprestado -> true
-     *
-     * Não usamos status_exemplar aqui, evitando depender
-     * dos valores do enum status_exemplar_enum.
-     */
     const consultaLivros = `
       SELECT
         l.id_livro,

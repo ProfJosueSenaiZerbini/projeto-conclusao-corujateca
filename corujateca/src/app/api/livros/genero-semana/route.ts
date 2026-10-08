@@ -4,7 +4,7 @@ import { db } from "@/app/db";
 const generos = [
   "Romance",
   "Religião e Mitologia",
-  "Ficção Científica",
+  "Ficção",
   "Arte e Cultura",
   "Fantasia",
   "Biografias e Memórias",

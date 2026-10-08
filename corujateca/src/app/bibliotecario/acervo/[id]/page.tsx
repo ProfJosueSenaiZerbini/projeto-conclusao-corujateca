@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import CadastrarExemplarModal from "@/app/bibliotecario/acervo/components/CadastrarExemplarModal";
 import { generos } from "@/lib/generos";
 
 type Exemplar = {
@@ -61,8 +62,8 @@ const coresGenero: Record<string, string> = {
   mitologia: "var(--color-religion-mythology)",
   "religião e mitologia": "var(--color-religion-mythology)",
   "religiao e mitologia": "var(--color-religion-mythology)",
-  "ficção científica": "var(--color-science-fiction)",
-  "ficcao cientifica": "var(--color-science-fiction)",
+  "ficção": "var(--color-science-fiction)",
+  "ficcao": "var(--color-science-fiction)",
   "arte e cultura": "var(--color-art-culture)",
   fantasia: "var(--color-fantasy)",
   biografias: "var(--color-biographies-memoirs)",
@@ -102,6 +103,8 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   // Estados dos Modais
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] =
+    useState(false);
 
   // Lista de Frequentadores do Banco
   const [listaFrequentadores, setListaFrequentadores] = useState<Frequentador[]>([]);
@@ -528,6 +531,14 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
 
                   <button
                     type="button"
+                    onClick={() => setModalCadastrarExemplarAberto(true)}
+                    className="w-full text-center bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors cursor-pointer"
+                  >
+                    Cadastrar Nova Cópia
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleExcluirLivro}
                     className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-red-200 hover:text-red-700 transition-colors cursor-pointer"
                   >
@@ -562,6 +573,11 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       </div>
 
       <Footer />
+      <CadastrarExemplarModal
+        aberto={modalCadastrarExemplarAberto}
+        onFechar={() => setModalCadastrarExemplarAberto(false)}
+        onSucesso={() => window.location.reload()}
+      />
 
       {/* ==================== MODAL CRIAR EMPRÉSTIMO ==================== */}
       {modalEmprestimoAberto && (

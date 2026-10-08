@@ -12,7 +12,10 @@ import { getSession, UserSession } from "@/lib/auth";
 
 export default function HomeFreq() {
   const router = useRouter();
+
   const [session, setSession] = useState<UserSession | null>(null);
+  const [emprestimosEmAndamento, setEmprestimosEmAndamento] = useState(0);
+  const [multasPendentes, setMultasPendentes] = useState(0);
 
   useEffect(() => {
     const currentSession = getSession();
@@ -30,33 +33,60 @@ export default function HomeFreq() {
     setSession(currentSession);
   }, [router]);
 
+  useEffect(() => {
+    async function carregarResumo() {
+      try {
+        const resposta = await fetch("/api/frequentador/resumo");
+
+        if (!resposta.ok) {
+          throw new Error("Erro ao buscar resumo do frequentador.");
+        }
+
+        const dados = await resposta.json();
+
+        setEmprestimosEmAndamento(dados.emprestimosEmAndamento);
+        setMultasPendentes(dados.multasPendentes);
+      } catch (error) {
+        console.error(
+          "Erro ao buscar resumo do frequentador:",
+          error,
+        );
+
+        setEmprestimosEmAndamento(0);
+        setMultasPendentes(0);
+      }
+    }
+
+    carregarResumo();
+  }, []);
+
   if (!session) {
     return null;
   }
 
   return (
-        <div className="min-h-screen flex flex-col">
-          <Header />
+    <div className="min-h-screen flex flex-col">
+      <Header />
 
-          <div className="flex flex-1">
-            <Nav />
-        
-                <main className="flex-1 min-w-0 p-10 md:p-10">
-        
-                  <section className="mb-6">
-                    <p className="text-base sm:text-lg text-[var(--color-text-primary)]">
-                      Bem-vindo,{" "}
-                      <strong className="font-bold">
-                        {session.nome}
-                      </strong>
-                    </p>
-                  </section>
-        
-        
-                  <section className="grid grid-cols-2 gap-1.5 mb-4">
-        
-                    <div
-                      className="
+      <div className="flex flex-1">
+        <Nav />
+
+        <main className="flex-1 min-w-0 p-10 md:p-10">
+
+          <section className="mb-6">
+            <p className="text-base sm:text-lg text-[var(--color-text-primary)]">
+              Bem-vindo,{" "}
+              <strong className="font-bold">
+                {session.nome}
+              </strong>
+            </p>
+          </section>
+
+
+          <section className="grid grid-cols-2 gap-1.5 mb-4">
+
+            <div
+              className="
                         rounded-xl
                         shadow-md
                         bg-[var(--color-brand-500)]
@@ -70,23 +100,22 @@ export default function HomeFreq() {
                         sm:min-h-32
                         p-3
                       "
-                    >
-                      <p className="text-sm sm:text-base md:text-lg leading-tight">
-                        Empréstimos em
-                        <br />
-                        Andamento:
-                      </p>
-        
-                      <strong className="text-3xl sm:text-4xl font-bold mt-2">
-                        2
-                        {/* parte que precisa puxar o número do back e da autenticação */}
-                      </strong>
-                    </div>
-        
-        
-                    {/* Quantidade de multas */}
-                    <div
-                      className="
+            >
+              <p className="text-sm sm:text-base md:text-lg leading-tight">
+                Empréstimos em
+                <br />
+                Andamento:
+              </p>
+
+              <strong className="text-3xl sm:text-4xl font-bold mt-2">
+                {emprestimosEmAndamento}
+              </strong>
+            </div>
+
+
+            {/* Quantidade de multas */}
+            <div
+              className="
                         rounded-xl
                         shadow-md
                         bg-[var(--color-brand-500)]
@@ -100,24 +129,23 @@ export default function HomeFreq() {
                         sm:min-h-32
                         p-3
                       "
-                    >
-                      <p className="text-sm sm:text-base md:text-lg leading-tight">
-                        Minhas Multas
-                        <br />
-                        Pendentes:
-                      </p>
-        
-                      <strong className="text-3xl sm:text-4xl font-bold mt-2">
-                        8
-                        {/* parte que precisa puxar o número do back */}
-                      </strong>
-                    </div>
-        
-                  </section>
-        
-        
-                  <section
-                    className="
+            >
+              <p className="text-sm sm:text-base md:text-lg leading-tight">
+                Minhas Multas
+                <br />
+                Pendentes:
+              </p>
+
+              <strong className="text-3xl sm:text-4xl font-bold mt-2">
+                {multasPendentes}
+              </strong>
+            </div>
+
+          </section>
+
+
+          <section
+            className="
                       bg-[var(--color-brand-200)]
                       shadow-md
                       rounded-2xl
@@ -125,21 +153,21 @@ export default function HomeFreq() {
                       sm:p-4
                       mb-6
                     "
-                  >
-                    <h2
-                      className="
+          >
+            <h2
+              className="
                         text-base
                         sm:text-lg
                         font-bold
                         text-[var(--color-text-primary)]
                         mb-2
                       "
-                    >
-                      Empréstimos que vencem hoje
-                    </h2>
-        
-                    <article
-                      className="
+            >
+              Empréstimos que vencem hoje
+            </h2>
+
+            <article
+              className="
                         bg-[var(--color-brand-400)]
                         text-[var(--color-text-inverse)]
                         rounded-2xl
@@ -150,93 +178,93 @@ export default function HomeFreq() {
                         gap-y-2
                         sm:gap-x-6
                       "
-                    >
-        
-                      {/* Informações do livro */}
-                      <div
-                        className="
+            >
+
+              {/* Informações do livro */}
+              <div
+                className="
                           flex
                           flex-col
                           min-w-0
                         "
-                      >
-                        <strong
-                          className="
+              >
+                <strong
+                  className="
                             text-sm
                             sm:text-base
                             leading-tight
                           "
-                        >
-                          Nome do livro
-                        </strong>
-        
-                        <span
-                          className="
+                >
+                  Nome do livro
+                </strong>
+
+                <span
+                  className="
                             text-xs
                             leading-tight
                           "
-                        >
-                          Nome do autor
-                        </span>
-                      </div>
-        
-        
-                      {/* Datas do empréstimo */}
-                      <div
-                        className="
+                >
+                  Nome do autor
+                </span>
+              </div>
+
+
+              {/* Datas do empréstimo */}
+              <div
+                className="
                           text-xs
                           leading-snug
                           sm:min-w-max
                         "
-                      >
-                        <p>
-                          <strong>Data de Expiração:</strong>{" "}
-                          xx/xx/xxxx
-                          {/* parte que precisa puxar a data do back */}
-                        </p>
-        
-                        <p>
-                          <strong>Data do Empréstimo:</strong>{" "}
-                          xx/xx/xxxx
-                          {/* parte que precisa puxar a data do back */}
-                        </p>
-                      </div>
-        
-        
-                      {/* Usuário que realizou o empréstimo */}
-                      <span
-                        className="
+              >
+                <p>
+                  <strong>Data de Expiração:</strong>{" "}
+                  xx/xx/xxxx
+                  {/* parte que precisa puxar a data do back */}
+                </p>
+
+                <p>
+                  <strong>Data do Empréstimo:</strong>{" "}
+                  xx/xx/xxxx
+                  {/* parte que precisa puxar a data do back */}
+                </p>
+              </div>
+
+
+              {/* Usuário que realizou o empréstimo */}
+              <span
+                className="
                           text-sm
                           sm:col-span-1
                         "
-                      >
-                        Nome do Usuário
-                        {/* parte que precisa puxar o nome do usuário do back */}
-                      </span>
-        
-                    </article>
-        
-                  </section>
-        
-                  <section
-                    className="
+              >
+                Nome do Usuário
+                {/* parte que precisa puxar o nome do usuário do back */}
+              </span>
+
+            </article>
+
+          </section>
+
+          <section
+            className="
                       grid
                       grid-cols-1
                       sm:grid-cols-[1.7fr_1fr]
                       gap-2
                     "
-                  >
-        
-                    {/* Coluna esquerda */}
-                    <div
-                      className="
+          >
+
+            {/* Coluna esquerda */}
+            <div
+              className="
                         flex
                         flex-col
                         gap-2
                       "
-                    >
-        
-                    <Link href="/frequentador/acervo" className="
+            >
+
+              <Link href="/frequentador/acervo" className="
                         cursor-pointer
                         shadow-md
                         w-full
@@ -254,12 +282,12 @@ export default function HomeFreq() {
                           hover:bg-[var(--color-brand-100)]
                           transition-colors
                         ">
-                        <LibraryBig size={20} className="mr-2"/>
-                        <span>Acervo</span>
-                    </Link>
-        
-        
-                    <Link href="/frequentador/emprestimos" className="
+                <LibraryBig size={20} className="mr-2" />
+                <span>Acervo</span>
+              </Link>
+
+
+              <Link href="/frequentador/emprestimos" className="
                         shadow-md
                         cursor-pointer  
                         w-full
@@ -276,13 +304,13 @@ export default function HomeFreq() {
                         text-[var(--color-text-primary)]
                         hover:bg-[var(--color-brand-100)]
                         transition-colors">
-                        <Stamp size={20} className="mr-2"/>
-                        <span>Empréstimos</span>
-                    </Link>
-        
-                    </div>
-        
-                <Link href="/frequentador/ajuda" className="
+                <Stamp size={20} className="mr-2" />
+                <span>Empréstimos</span>
+              </Link>
+
+            </div>
+
+            <Link href="/frequentador/ajuda" className="
                         cursor-pointer
                         shadow-md
                         min-h-28
@@ -301,23 +329,23 @@ export default function HomeFreq() {
                         hover:bg-[var(--color-brand-100)]
                         transition-colors
                       ">
-                    <button>
-                      <span>
-                        Precisa
-                        <br />
-                        de
-                        <br />
-                        Ajuda?
-                      </span>
-                    </button>
-                </Link>
-        
-                  </section>
-        
-                </main>
-              </div>
-        
-              <Footer />
-            </div>
-    );
+              <button>
+                <span>
+                  Precisa
+                  <br />
+                  de
+                  <br />
+                  Ajuda?
+                </span>
+              </button>
+            </Link>
+
+          </section>
+
+        </main>
+      </div>
+
+      <Footer />
+    </div>
+  );
 }
