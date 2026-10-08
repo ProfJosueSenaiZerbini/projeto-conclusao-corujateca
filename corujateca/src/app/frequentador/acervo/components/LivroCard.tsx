@@ -18,7 +18,8 @@ const coresGenero: Record<string, string> = {
   "religião e mitologia": "var(--color-religion-mythology)",
   "religiao e mitologia": "var(--color-religion-mythology)",
 
-  "ficção": "var(--color-science-fiction)",
+  "ficção": "var(--color-fiction)",
+  "ficcao": "var(--color-fiction)",
 
   "arte e cultura": "var(--color-art-culture)",
 

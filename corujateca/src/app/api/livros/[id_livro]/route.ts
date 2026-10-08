@@ -164,17 +164,13 @@ export async function GET(
       );
     }
 
-    // Busca o livro junto com todos os exemplares ativos
+    // Busca o livro junto com todos os exemplares do banco
     const livro = await db.livro.findUnique({
       where: {
         id_livro: idLivro,
       },
       include: {
-        exemplar: {
-          where: {
-            inativo_exemplar: false,
-          },
-        },
+        exemplar: true,
       },
     });
 
@@ -185,13 +181,14 @@ export async function GET(
       );
     }
 
-    // Filtra apenas os exemplares que estão disponíveis para empréstimo
-    const exemplaresDisponiveis = livro.exemplar.filter(
-      (exp) => exp.status_exemplar === 'Dispon_vel'
-    );
+    // Conta apenas os exemplares que NÃO estão inativos E estão disponíveis para empréstimo
+    const qtd_copias = livro.exemplar.filter(
+      (exp) => exp.inativo_exemplar === false && exp.status_exemplar === 'Dispon_vel'
+    ).length;
 
-    const qtd_copias = exemplaresDisponiveis.length;
-    const totalCadastrados = livro.exemplar.length;
+    const totalCadastrados = livro.exemplar.filter(
+      (exp) => exp.inativo_exemplar === false
+    ).length;
 
     const temDisponivel = qtd_copias > 0;
 
@@ -221,6 +218,7 @@ export async function GET(
       copias_disponiveis: qtd_copias,
 
       status_livro,
+      exemplar: livro.exemplar, // Retorna os exemplares para uso no front-end
     });
   } catch (error) {
     console.error('Erro ao buscar livro no banco:', error);

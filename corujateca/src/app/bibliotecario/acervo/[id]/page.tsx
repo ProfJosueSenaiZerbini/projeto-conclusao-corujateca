@@ -5,7 +5,14 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import CadastrarExemplarModal from "@/app/bibliotecario/acervo/components/CadastrarExemplarModal";
 import { generos } from "@/lib/generos";
+
+type Exemplar = {
+  id_exemplar: number;
+  inativo_exemplar: boolean;
+  status_exemplar?: string;
+};
 
 type Livro = {
   id_livro: number;
@@ -32,6 +39,8 @@ type Livro = {
   sinopse?: string;
   imgcapa_livro?: string | null;
   capa?: string | null;
+  exemplar?: Exemplar[];
+  exemplares?: Exemplar[];
 };
 
 type Frequentador = {
@@ -52,8 +61,8 @@ const coresGenero: Record<string, string> = {
   mitologia: "var(--color-religion-mythology)",
   "religião e mitologia": "var(--color-religion-mythology)",
   "religiao e mitologia": "var(--color-religion-mythology)",
-  "ficção científica": "var(--color-science-fiction)",
-  "ficcao cientifica": "var(--color-science-fiction)",
+  "ficção": "var(--color-science-fiction)",
+  "ficcao": "var(--color-science-fiction)",
   "arte e cultura": "var(--color-art-culture)",
   fantasia: "var(--color-fantasy)",
   biografias: "var(--color-biographies-memoirs)",
@@ -79,7 +88,7 @@ const coresGenero: Record<string, string> = {
   "autoajuda e desenvolvimento pessoal":
     "var(--color-selfHelp-personal-development)",
   economia: "var(--color-economy)",
-  literatura: "var(--color-literature)",
+  literatura: "var(--color-literatura)",
 };
 
 export default function DetalhesLivroBibPage({ params }: PageProps) {
@@ -93,6 +102,8 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   // Estados dos Modais
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] =
+    useState(false);
 
   // Lista de Frequentadores do Banco
   const [listaFrequentadores, setListaFrequentadores] = useState<Frequentador[]>([]);
@@ -139,7 +150,11 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   }
 
   function abrirModalEmprestimo() {
-    const copiasDisponiveis = livro?.qtd_copias ?? livro?.copias ?? 0;
+    const listaExemplares = livro?.exemplar || livro?.exemplares || [];
+    const copiasDisponiveis = listaExemplares.filter(
+      (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel"
+    ).length;
+
     if (copiasDisponiveis <= 0) {
       alert("Aviso: Não há exemplares disponíveis para empréstimo no momento.");
       return;
@@ -173,8 +188,7 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
           throw new Error("Erro ao buscar informações do livro.");
         }
 
-        const dados = await res.json();
-        const livroDados = dados.livro || dados;
+        const livroDados = await res.json();
         setLivro(livroDados);
 
         setFormLivro({
@@ -221,11 +235,74 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
     }
   }
 
+  async function handleDesativarCopia() {
+    const listaExemplares = livro?.exemplar || livro?.exemplares || [];
+    const exemplarAtivo = listaExemplares.find((ex) => !ex.inativo_exemplar);
+
+    if (!exemplarAtivo) {
+      alert("Não há cópias ativas disponíveis para desativar.");
+      return;
+    }
+
+    if (!confirm("Tem certeza que deseja desativar uma cópia deste livro?")) return;
+
+    try {
+      const res = await fetch(`/api/exemplares/${exemplarAtivo.id_exemplar}/desativar`, {
+        method: "PATCH",
+      });
+
+      if (res.ok) {
+        alert("Cópia desativada com sucesso!");
+        window.location.reload();
+      } else {
+        const dadosErro = await res.json().catch(() => ({}));
+        alert(dadosErro.erro || "Erro ao desativar a cópia.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro de conexão ao desativar a cópia.");
+    }
+  }
+
+  async function handleReativarCopia() {
+    const listaExemplares = livro?.exemplar || livro?.exemplares || [];
+    const exemplarInativo = listaExemplares.find((ex) => ex.inativo_exemplar);
+
+    // Regra: Se nenhuma cópia estiver desativada, impede a reativação
+    if (!exemplarInativo) {
+      alert("Aviso: Nenhuma cópia foi desativada anteriormente para ser reativada.");
+      return;
+    }
+
+    if (!confirm("Tem certeza que deseja reativar uma cópia deste livro?")) return;
+
+    try {
+      const res = await fetch(`/api/exemplares/${exemplarInativo.id_exemplar}/reativar`, {
+        method: "PATCH",
+      });
+
+      if (res.ok) {
+        alert("Cópia reativada com sucesso!");
+        window.location.reload();
+      } else {
+        const dadosErro = await res.json().catch(() => ({}));
+        alert(dadosErro.erro || "Erro ao reativar a cópia.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro de conexão ao reativar a cópia.");
+    }
+  }
+
   async function handleCriarEmprestimo(e: React.FormEvent) {
     e.preventDefault();
 
-    const copiasDisponiveis = livro?.qtd_copias ?? livro?.copias ?? 0;
-    if (copiasDisponiveis <= 0) {
+    const listaExemplares = livro?.exemplar || livro?.exemplares || [];
+    const exemplarAtivo = listaExemplares.find(
+      (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel"
+    );
+
+    if (!exemplarAtivo) {
       alert("Não é possível realizar o empréstimo pois não há exemplares disponíveis.");
       return;
     }
@@ -248,7 +325,7 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fk_frequentador_id_freq: Number(idFrequentadorSelecionado),
-          fk_exemplar_id_exemplar: Number(id),
+          fk_exemplar_id_exemplar: exemplarAtivo.id_exemplar,
           prazo_dias: Number(prazoDias),
           senha: senhaFrequentador,
         }),
@@ -321,6 +398,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   const localizacao = livro?.localizacao_livro || livro?.localizacao;
   const sinopse = livro?.sinopse_livro || livro?.sinopse;
   const capa = livro?.imgcapa_livro || livro?.capa;
+
+  const listaExemplares = livro?.exemplar || livro?.exemplares || [];
+  const temInativo = listaExemplares.some((ex) => ex.inativo_exemplar);
 
   const generoChave = genero?.trim().toLowerCase() ?? "";
   const corGenero =
@@ -446,6 +526,7 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                   </p>
                 </div>
 
+                {/* 4 Botões Administrativos reorganizados em grade */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                   <button
                     type="button"
@@ -457,10 +538,39 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
 
                   <button
                     type="button"
+                    onClick={() => setModalCadastrarExemplarAberto(true)}
+                    className="w-full text-center bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors cursor-pointer"
+                  >
+                    Cadastrar Nova Cópia
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleExcluirLivro}
                     className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-red-200 hover:text-red-700 transition-colors cursor-pointer"
                   >
                     Excluir Livro
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDesativarCopia}
+                    className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-orange-200 hover:text-orange-800 transition-colors cursor-pointer"
+                  >
+                    Desativar Cópia
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleReativarCopia}
+                    disabled={!temInativo}
+                    className={`w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg transition-colors cursor-pointer ${
+                      !temInativo
+                        ? "opacity-50 cursor-not-allowed hover:bg-gray-300"
+                        : "hover:bg-green-200 hover:text-green-800"
+                    }`}
+                  >
+                    Reativar Cópia
                   </button>
                 </div>
               </div>
@@ -470,6 +580,11 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       </div>
 
       <Footer />
+      <CadastrarExemplarModal
+        aberto={modalCadastrarExemplarAberto}
+        onFechar={() => setModalCadastrarExemplarAberto(false)}
+        onSucesso={() => window.location.reload()}
+      />
 
       {/* ==================== MODAL CRIAR EMPRÉSTIMO ==================== */}
       {modalEmprestimoAberto && (
