@@ -21,9 +21,8 @@ type Livro = {
   anopub_livro?: number;
   ano_publicacao?: number;
   ano?: number;
-  qtd_paginas?: number;
-  paginas?: number;
   qtd_copias?: number;
+  copias_disponiveis?: number;
   copias?: number;
   status_livro?: string;
   status?: string;
@@ -113,7 +112,6 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
     genero: "",
     editora: "",
     ano: "",
-    paginas: "",
     copias: "",
     localizacao: "",
     sinopse: "",
@@ -185,7 +183,6 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
           genero: livroDados.genero_livro || livroDados.genero || "",
           editora: livroDados.editora_livro || livroDados.editora || "",
           ano: (livroDados.anopub_livro || livroDados.ano_publicacao || livroDados.ano || "").toString(),
-          paginas: (livroDados.qtd_paginas ?? livroDados.paginas ?? "").toString(),
           copias: (livroDados.qtd_copias ?? livroDados.copias ?? "").toString(),
           localizacao: livroDados.localizacao_livro || livroDados.localizacao || "",
           sinopse: livroDados.sinopse_livro || livroDados.sinopse || "",
@@ -290,7 +287,6 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
           genero_livro: formLivro.genero,
           editora_livro: formLivro.editora,
           anopub_livro: Number(formLivro.ano) || null,
-          qtd_paginas: Number(formLivro.paginas) || null,
           qtd_copias: Number(formLivro.copias) || 0,
           localizacao_livro: formLivro.localizacao,
           sinopse_livro: formLivro.sinopse,
@@ -319,8 +315,8 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   const genero = livro?.genero_livro || livro?.genero;
   const editora = livro?.editora_livro || livro?.editora;
   const ano = livro?.anopub_livro || livro?.ano_publicacao || livro?.ano;
-  const paginas = livro?.qtd_paginas ?? livro?.paginas;
-  const copias = livro?.qtd_copias ?? livro?.copias ?? 0;
+  const copiasTotais = livro?.qtd_copias ?? 0;
+  const copiasDisponiveis = livro?.copias_disponiveis ?? 0;
   const status = livro?.status_livro || livro?.status;
   const localizacao = livro?.localizacao_livro || livro?.localizacao;
   const sinopse = livro?.sinopse_livro || livro?.sinopse;
@@ -402,17 +398,25 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                           {ano || "Não informado"}
                         </p>
                         <p>
-                          <span className="font-semibold">Quantidade de páginas:</span>{" "}
-                          {paginas ?? "Não informado"}
-                        </p>
-                        <p>
                           <span className="font-semibold">Editora:</span>{" "}
                           {editora || "Não informada"}
                         </p>
                         <p>
-                          <span className="font-semibold">Quantidade de cópias:</span>{" "}
-                          <span className={copias === 0 ? "text-red-600 font-bold" : ""}>
-                            {copias} {copias === 0 ? "(Indisponível)" : ""}
+                          <span className="font-semibold">Cópias totais:</span>{" "}
+                          {copiasTotais}
+                        </p>
+
+                        <p>
+                          <span className="font-semibold">Cópias disponíveis:</span>{" "}
+                          <span
+                            className={
+                              copiasDisponiveis === 0
+                                ? "text-red-600 font-bold"
+                                : "text-green-700 font-bold"
+                            }
+                          >
+                            {copiasDisponiveis}
+                            {copiasDisponiveis === 0 ? " (Indisponível)" : ""}
                           </span>
                         </p>
                       </div>
@@ -679,30 +683,6 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                     value={formLivro.ano}
                     onChange={(e) =>
                       setFormLivro({ ...formLivro, ano: e.target.value })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Páginas</label>
-                  <input
-                    type="number"
-                    value={formLivro.paginas}
-                    onChange={(e) =>
-                      setFormLivro({ ...formLivro, paginas: e.target.value })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Cópias</label>
-                  <input
-                    type="number"
-                    value={formLivro.copias}
-                    onChange={(e) =>
-                      setFormLivro({ ...formLivro, copias: e.target.value })
                     }
                     className="w-full p-2.5 border border-gray-300 rounded-lg"
                   />
