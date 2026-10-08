@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 export default function EsqueceuSenha() {
+  const [tipoUsuario, setTipoUsuario] = useState("bibliotecario");
   const [senhaUsuarioMaster, setSenhaUsuarioMaster] = useState("");
   const [codigoIdentificacaoUsuario, setCodigoIdentificacaoUsuario] = useState("");
   const [novaSenhaUsuario, setNovaSenhaUsuario] = useState("");
@@ -31,6 +32,7 @@ export default function EsqueceuSenha() {
           senhaMaster: senhaUsuarioMaster,
           codigoIdentificacaoUsuario: codigoIdentificacaoUsuario,
           novaSenhaUsuario: novaSenhaUsuario,
+          tipoUsuario,
         }),
       });
 
@@ -51,9 +53,11 @@ export default function EsqueceuSenha() {
       setSenhaUsuarioMaster("");
       setCodigoIdentificacaoUsuario("");
       setNovaSenhaUsuario("");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const mensagemErro = error instanceof Error ? error.message : "Não foi possível conectar ao servidor.";
+
       console.error(error);
-      setErro(error?.message || "Não foi possível conectar ao servidor.");
+      setErro(mensagemErro);
     } finally {
       setCarregando(false);
     }
@@ -71,6 +75,26 @@ export default function EsqueceuSenha() {
         />
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col">
+          <div className="flex w-full flex-col gap-2 mb-4">
+            <label
+              htmlFor="tipoUsuario"
+              className="text-md font-medium text-gray-700"
+            >
+              Tipo de usuário:
+            </label>
+
+            <select
+              id="tipoUsuario"
+              name="tipoUsuario"
+              value={tipoUsuario}
+              onChange={(e) => setTipoUsuario(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 outline-none transition focus:border-[var(--color-brand-800)] focus:ring-2"
+            >
+              <option value="bibliotecario">Bibliotecário</option>
+              <option value="frequentador">Usuário</option>
+            </select>
+          </div>
+
           <div className="flex w-full flex-col gap-2 mb-4">
             <label
               htmlFor="senhaUsuarioMaster"
