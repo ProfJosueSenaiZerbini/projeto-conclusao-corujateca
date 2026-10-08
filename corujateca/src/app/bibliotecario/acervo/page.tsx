@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CadastrarExemplarModal from "@/app/bibliotecario/acervo/components/CadastrarExemplarModal";
 
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
@@ -36,9 +35,6 @@ export default function AcervoBib() {
     useState(false);
 
   const [modalCadastrarLivro, setModalCadastrarLivro] =
-    useState(false);
-
-  const [modalCadastrarExemplar, setModalCadastrarExemplar] =
     useState(false);
 
   // Livros
@@ -395,64 +391,48 @@ export default function AcervoBib() {
           {/* Funções administrativas do bibliotecário */}
 
           <section className="mb-6">
-            <div className="grid grid-cols-2 gap-3 max-w-xl mx-auto">
-              <button
+            <div className="grid grid-cols-2 max-w-xl mx-auto dflex gap-15">
+              <div className="">
+                <button
                 type="button"
                 onClick={() =>
-                  setModalCadastrarLivro(true)
+                setModalCadastrarLivro(true)
                 }
                 className="
-                  w-full
-                  px-5
-                  py-2.5
-                  rounded-lg
-                  bg-[var(--color-button-primary)]
-                  text-[var(--color-text-inverse)]
-                  font-bold
-                  cursor-pointer
+                w-full
+                px-5
+                py-2.5
+                rounded-lg
+                bg-[var(--color-button-primary)]
+                text-[var(--color-text-inverse)]
+                font-bold
+                cursor-pointer
                 "
-              >
+                >
                 Cadastrar Novo Livro
-              </button>
+                </button>
+              </div>
 
-              <button
+              <div className="">
+                <button
                 type="button"
                 onClick={() =>
-                  setModalCadastrarExemplar(true)
+                setModalReativarLivro(true)
                 }
                 className="
-                  w-full
-                  px-5
-                  py-2.5
-                  rounded-lg
-                  bg-[var(--color-button-primary)]
-                  text-[var(--color-text-inverse)]
-                  font-bold
-                  cursor-pointer
+                justify-self-center
+                px-18
+                py-2.5
+                rounded-lg
+                bg-[var(--color-button-primary)]
+                text-[var(--color-text-inverse)]
+                font-bold
+                cursor-pointer
                 "
-              >
-                Cadastrar Nova Cópia
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setModalReativarLivro(true)
-                }
-                className="
-                  col-span-2
-                  justify-self-center
-                  px-12
-                  py-2.5
-                  rounded-lg
-                  bg-[var(--color-button-primary)]
-                  text-[var(--color-text-inverse)]
-                  font-bold
-                  cursor-pointer
-                "
-              >
+                >
                 Reativar Livro
-              </button>
+                </button>
+              </div>
             </div>
           </section>
 
@@ -856,16 +836,6 @@ export default function AcervoBib() {
       </div>
 
       <Footer />
-
-      {/* Modal para cadastrar exemplar */}
-
-      <CadastrarExemplarModal
-        aberto={modalCadastrarExemplar}
-        onFechar={() =>
-          setModalCadastrarExemplar(false)
-        }
-        onSucesso={atualizarTela}
-      />
 
       {/* Modal para cadastrar livro */}
 

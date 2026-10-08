@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import CadastrarExemplarModal from "@/app/bibliotecario/acervo/components/CadastrarExemplarModal";
 import { generos } from "@/lib/generos";
 
 type Livro = {
@@ -94,6 +95,8 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   // Estados dos Modais
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] =
+    useState(false);
 
   // Lista de Frequentadores do Banco
   const [listaFrequentadores, setListaFrequentadores] = useState<Frequentador[]>([]);
@@ -442,13 +445,21 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
                   <button
                     type="button"
                     onClick={() => setModalEditarAberto(true)}
                     className="w-full text-center bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors cursor-pointer"
                   >
                     Atualizar Livro
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setModalCadastrarExemplarAberto(true)}
+                    className="w-full text-center bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors cursor-pointer"
+                  >
+                    Cadastrar Nova Cópia
                   </button>
 
                   <button
@@ -466,6 +477,11 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       </div>
 
       <Footer />
+      <CadastrarExemplarModal
+        aberto={modalCadastrarExemplarAberto}
+        onFechar={() => setModalCadastrarExemplarAberto(false)}
+        onSucesso={() => window.location.reload()}
+      />
 
       {/* ==================== MODAL CRIAR EMPRÉSTIMO ==================== */}
       {modalEmprestimoAberto && (
