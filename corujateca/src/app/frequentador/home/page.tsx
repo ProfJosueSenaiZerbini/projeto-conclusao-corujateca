@@ -14,8 +14,19 @@ export default function HomeFreq() {
   const router = useRouter();
 
   const [session, setSession] = useState<UserSession | null>(null);
+
   const [emprestimosEmAndamento, setEmprestimosEmAndamento] = useState(0);
   const [multasPendentes, setMultasPendentes] = useState(0);
+
+  const [emprestimosHoje, setEmprestimosHoje] = useState<EmprestimoHoje[]>([]);
+
+  type EmprestimoHoje = {
+    id: number;
+    titulo: string;
+    autor: string;
+    dataEmprestimo: string;
+    dataDevolucao: string;
+  };
 
   useEffect(() => {
     const currentSession = getSession();
@@ -58,6 +69,35 @@ export default function HomeFreq() {
     }
 
     carregarResumo();
+  }, []);
+
+  useEffect(() => {
+    async function carregarEmprestimosHoje() {
+      try {
+        const resposta = await fetch(
+          "/api/frequentador/emprestimos-hoje",
+        );
+
+        if (!resposta.ok) {
+          throw new Error(
+            "Erro ao buscar empréstimos que vencem hoje.",
+          );
+        }
+
+        const dados = await resposta.json();
+
+        setEmprestimosHoje(dados.emprestimos);
+      } catch (error) {
+        console.error(
+          "Erro ao buscar empréstimos que vencem hoje:",
+          error,
+        );
+
+        setEmprestimosHoje([]);
+      }
+    }
+
+    carregarEmprestimosHoje();
   }, []);
 
   if (!session) {
@@ -166,83 +206,68 @@ export default function HomeFreq() {
               Empréstimos que vencem hoje
             </h2>
 
-            <article
+            <div
               className="
-                        bg-[var(--color-brand-400)]
-                        text-[var(--color-text-inverse)]
-                        rounded-2xl
-                        p-3
-                        grid
-                        grid-cols-1
-                        sm:grid-cols-[1fr_auto]
-                        gap-y-2
-                        sm:gap-x-6
-                      "
+    max-h-[320px]
+    overflow-y-auto
+    space-y-3
+    pr-1
+  "
             >
-
-              {/* Informações do livro */}
-              <div
-                className="
-                          flex
-                          flex-col
-                          min-w-0
-                        "
-              >
-                <strong
+              {emprestimosHoje.length === 0 ? (
+                <article
                   className="
-                            text-sm
-                            sm:text-base
-                            leading-tight
-                          "
+        bg-[var(--color-brand-400)]
+        text-[var(--color-text-inverse)]
+        rounded-2xl
+        p-4
+      "
                 >
-                  Nome do livro
-                </strong>
+                  <p className="text-sm">
+                    Nenhum empréstimo vence hoje.
+                  </p>
+                </article>
+              ) : (
+                emprestimosHoje.map((emprestimo) => (
+                  <article
+                    key={emprestimo.id}
+                    className="
+          bg-[var(--color-brand-400)]
+          text-[var(--color-text-inverse)]
+          rounded-2xl
+          p-3
+          grid
+          grid-cols-1
+          sm:grid-cols-[1fr_auto]
+          gap-y-2
+          sm:gap-x-6
+        "
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <strong className="text-sm sm:text-base leading-tight">
+                        {emprestimo.titulo}
+                      </strong>
 
-                <span
-                  className="
-                            text-xs
-                            leading-tight
-                          "
-                >
-                  Nome do autor
-                </span>
-              </div>
+                      <span className="text-xs leading-tight">
+                        {emprestimo.autor}
+                      </span>
+                    </div>
 
+                    <div className="text-xs leading-snug sm:min-w-max">
+                      <p>
+                        <strong>Data de Expiração:</strong>{" "}
+                        {emprestimo.dataDevolucao}
+                      </p>
 
-              {/* Datas do empréstimo */}
-              <div
-                className="
-                          text-xs
-                          leading-snug
-                          sm:min-w-max
-                        "
-              >
-                <p>
-                  <strong>Data de Expiração:</strong>{" "}
-                  xx/xx/xxxx
-                  {/* parte que precisa puxar a data do back */}
-                </p>
-
-                <p>
-                  <strong>Data do Empréstimo:</strong>{" "}
-                  xx/xx/xxxx
-                  {/* parte que precisa puxar a data do back */}
-                </p>
-              </div>
-
-
-              {/* Usuário que realizou o empréstimo */}
-              <span
-                className="
-                          text-sm
-                          sm:col-span-1
-                        "
-              >
-                Nome do Usuário
-                {/* parte que precisa puxar o nome do usuário do back */}
-              </span>
-
-            </article>
+                      <p>
+                        <strong>Data do Empréstimo:</strong>{" "}
+                        {emprestimo.dataEmprestimo}
+                      </p>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
 
           </section>
 
