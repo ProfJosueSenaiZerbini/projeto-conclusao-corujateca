@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
+import { useEffect, useState } from "react";
 import LoanCard from "./LoanCard";
 
 export type LoanView = {
@@ -15,51 +14,81 @@ export type LoanView = {
   loanDate: string;
 };
 
-export default function LoansSection({ loans }: { loans: LoanView[] }) {
-  const router = useRouter();
+type LoansSectionProps = {
+  loans: LoanView[];
+};
 
-  async function concluirEmprestimo(formData: FormData) {
-    const idEmprestimo = Number(formData.get("id_emprestimo"));
+const EMPRESTIMOS_POR_PAGINA = 10;
 
-    if (!idEmprestimo) {
-      return;
-    }
+export default function LoansSection({
+  loans,
+}: LoansSectionProps) {
+  const [paginaAtual, setPaginaAtual] = useState(1);
 
-    const response = await fetch(`/api/emprestimos/${idEmprestimo}`, {
-      method: "PATCH",
-    });
+  const totalPaginas = Math.ceil(
+    loans.length / EMPRESTIMOS_POR_PAGINA,
+  );
 
-    const data = await response.json().catch(() => null);
+  const inicio = (paginaAtual - 1) * EMPRESTIMOS_POR_PAGINA;
 
-    if (!response.ok) {
-      alert(data?.error ?? "Erro ao concluir empréstimo.");
-      return;
-    }
+  const loansDaPagina = loans.slice(
+    inicio,
+    inicio + EMPRESTIMOS_POR_PAGINA,
+  );
 
-    if (data?.multa) {
-      const inicio = new Date(data.multa.dta_inicio_multa);
-      const termino = new Date(data.multa.dta_termino_multa);
-      const diasMulta = Math.round(
-        (termino.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24),
-      );
-
-      alert(
-        `Devolução concluída. Uma multa de atraso de ${diasMulta} ${
-          diasMulta === 1 ? "dia" : "dias"
-        } foi aplicada.`,
-      );
-    }
-
-    router.refresh();
-  }
- 
+  // Sempre volta para a primeira página quando os filtros
+  // alterarem a quantidade de empréstimos.
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [loans]);
 
   return (
-    <div className="mt-8 space-y-5">
-      {loans.map((loan) => (
-        <LoanCard key={loan.id} loan={loan} onConcluir={concluirEmprestimo} />
-        
-      ))}
-    </div>
-  );
+  <div className="mt-4">
+    {loans.length === 0 ? (<p className="py-6 text-center text-(--color-text-primary)">
+      Nenhum empréstimo encontrado. </p>
+    ) : (
+      <> <div className="space-y-5">
+        {loansDaPagina.map((loan) => (<LoanCard
+          key={loan.id}
+          loan={loan}
+        />
+        ))} </div>
+
+        {loans.length > EMPRESTIMOS_POR_PAGINA && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setPaginaAtual((pagina) =>
+                  Math.max(pagina - 1, 1),
+                )
+              }
+              disabled={paginaAtual === 1}
+              className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-(--color-text-inverse) transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Anterior
+            </button>
+
+            <span className="px-3 text-sm font-semibold text-(--color-text-primary)">
+              Página {paginaAtual} de {totalPaginas}
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                setPaginaAtual((pagina) =>
+                  Math.min(pagina + 1, totalPaginas),
+                )
+              }
+              disabled={paginaAtual === totalPaginas}
+              className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-(--color-text-inverse) transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Próxima
+            </button>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+);
 }

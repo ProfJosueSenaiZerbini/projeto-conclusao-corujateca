@@ -21,15 +21,16 @@ type Loan = {
 
 export default function EmprestimosPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
-
   const [carregando, setCarregando] = useState(true);
-
   const [erro, setErro] = useState("");
 
   // Filtros
   const [statusFiltro, setStatusFiltro] = useState("");
-
   const [dataFiltro, setDataFiltro] = useState("");
+
+  const [paginaAtual, setPaginaAtual] = useState(1);
+
+  const EMPRESTIMOS_POR_PAGINA = 10;
 
   useEffect(() => {
     async function buscarEmprestimos() {
@@ -64,6 +65,10 @@ export default function EmprestimosPage() {
     buscarEmprestimos();
   }, []);
 
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [statusFiltro, dataFiltro]);
+
   const loansFiltrados = loans.filter((loan) => {
     let correspondeAoStatus = true;
 
@@ -95,6 +100,15 @@ export default function EmprestimosPage() {
 
     return correspondeAoStatus && correspondeAData;
   });
+
+  const totalPaginas = Math.ceil(
+    loansFiltrados.length / EMPRESTIMOS_POR_PAGINA,
+  );
+
+  const inicio = (paginaAtual - 1) * EMPRESTIMOS_POR_PAGINA;
+  const fim = inicio + EMPRESTIMOS_POR_PAGINA;
+
+  const loansDaPagina = loansFiltrados.slice(inicio, fim);
 
   const emprestimosEmAndamento = loans.filter(
     (loan) =>
@@ -177,10 +191,44 @@ export default function EmprestimosPage() {
 
                 {!carregando &&
                   !erro &&
-                  loansFiltrados.map((loan) => (
+                  loansDaPagina.map((loan) => (
                     <LoanCard key={loan.id} loan={loan} />
                   ))}
               </div>
+
+              {!carregando &&
+                !erro &&
+                loansFiltrados.length > EMPRESTIMOS_POR_PAGINA && (
+                  <div className="mt-6 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPaginaAtual((pagina) => Math.max(pagina - 1, 1))
+                      }
+                      disabled={paginaAtual === 1}
+                      className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-(--color-text-inverse) transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Anterior
+                    </button>
+
+                    <span className="px-3 text-sm font-semibold text-(--color-text-primary)">
+                      Página {paginaAtual} de {totalPaginas}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPaginaAtual((pagina) =>
+                          Math.min(pagina + 1, totalPaginas),
+                        )
+                      }
+                      disabled={paginaAtual === totalPaginas}
+                      className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-(--color-text-inverse) transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Próxima
+                    </button>
+                  </div>
+                )}
             </section>
           </div>
         </main>
