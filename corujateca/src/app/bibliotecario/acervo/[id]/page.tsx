@@ -102,8 +102,8 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   // Estados dos Modais
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
-  const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] =
-    useState(false);
+  const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] = useState(false);
+  const [modalGerenciarExemplaresAberto, setModalGerenciarExemplaresAberto] = useState(false);
 
   // Lista de Frequentadores do Banco
   const [listaFrequentadores, setListaFrequentadores] = useState<Frequentador[]>([]);
@@ -235,62 +235,25 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
     }
   }
 
-  async function handleDesativarCopia() {
-    const listaExemplares = livro?.exemplar || livro?.exemplares || [];
-    const exemplarAtivo = listaExemplares.find((ex) => !ex.inativo_exemplar);
-
-    if (!exemplarAtivo) {
-      alert("Não há cópias ativas disponíveis para desativar.");
-      return;
-    }
-
-    if (!confirm("Tem certeza que deseja desativar uma cópia deste livro?")) return;
+  async function handleMudarStatusCopia(idExemplar: number, inativoAtual: boolean) {
+    const acao = inativoAtual ? "reativar" : "desativar";
+    if (!confirm(`Tem certeza que deseja ${acao} esta cópia?`)) return;
 
     try {
-      const res = await fetch(`/api/exemplares/${exemplarAtivo.id_exemplar}/desativar`, {
+      const res = await fetch(`/api/exemplares/${idExemplar}/${acao}`, {
         method: "PATCH",
       });
 
       if (res.ok) {
-        alert("Cópia desativada com sucesso!");
+        alert(`Cópia ${inativoAtual ? "reativada" : "desativada"} com sucesso!`);
         window.location.reload();
       } else {
         const dadosErro = await res.json().catch(() => ({}));
-        alert(dadosErro.erro || "Erro ao desativar a cópia.");
+        alert(dadosErro.erro || `Erro ao ${acao} a cópia.`);
       }
     } catch (error) {
       console.error(error);
-      alert("Erro de conexão ao desativar a cópia.");
-    }
-  }
-
-  async function handleReativarCopia() {
-    const listaExemplares = livro?.exemplar || livro?.exemplares || [];
-    const exemplarInativo = listaExemplares.find((ex) => ex.inativo_exemplar);
-
-    // Regra: Se nenhuma cópia estiver desativada, impede a reativação
-    if (!exemplarInativo) {
-      alert("Aviso: Nenhuma cópia foi desativada anteriormente para ser reativada.");
-      return;
-    }
-
-    if (!confirm("Tem certeza que deseja reativar uma cópia deste livro?")) return;
-
-    try {
-      const res = await fetch(`/api/exemplares/${exemplarInativo.id_exemplar}/reativar`, {
-        method: "PATCH",
-      });
-
-      if (res.ok) {
-        alert("Cópia reativada com sucesso!");
-        window.location.reload();
-      } else {
-        const dadosErro = await res.json().catch(() => ({}));
-        alert(dadosErro.erro || "Erro ao reativar a cópia.");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Erro de conexão ao reativar a cópia.");
+      alert(`Erro de conexão ao ${acao} a cópia.`);
     }
   }
 
@@ -400,7 +363,6 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   const capa = livro?.imgcapa_livro || livro?.capa;
 
   const listaExemplares = livro?.exemplar || livro?.exemplares || [];
-  const temInativo = listaExemplares.some((ex) => ex.inativo_exemplar);
 
   const generoChave = genero?.trim().toLowerCase() ?? "";
   const corGenero =
@@ -526,7 +488,7 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                   </p>
                 </div>
 
-                {/* 4 Botões Administrativos reorganizados em grade */}
+                {/* Botões Administrativos */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                   <button
                     type="button"
@@ -554,23 +516,10 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
 
                   <button
                     type="button"
-                    onClick={handleDesativarCopia}
-                    className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-orange-200 hover:text-orange-800 transition-colors cursor-pointer"
+                    onClick={() => setModalGerenciarExemplaresAberto(true)}
+                    className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-blue-200 hover:text-blue-800 transition-colors cursor-pointer"
                   >
-                    Desativar Cópia
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleReativarCopia}
-                    disabled={!temInativo}
-                    className={`w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg transition-colors cursor-pointer ${
-                      !temInativo
-                        ? "opacity-50 cursor-not-allowed hover:bg-gray-300"
-                        : "hover:bg-green-200 hover:text-green-800"
-                    }`}
-                  >
-                    Reativar Cópia
+                    Gerenciar Exemplares 
                   </button>
                 </div>
               </div>
@@ -580,11 +529,101 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       </div>
 
       <Footer />
+
       <CadastrarExemplarModal
         aberto={modalCadastrarExemplarAberto}
         onFechar={() => setModalCadastrarExemplarAberto(false)}
         onSucesso={() => window.location.reload()}
       />
+
+      {/* ==================== MODAL GERENCIAR EXEMPLARES ==================== */}
+      {modalGerenciarExemplaresAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="text-xl font-bold text-black">Gerenciar Exemplares</h3>
+              <button
+                type="button"
+                onClick={() => setModalGerenciarExemplaresAberto(false)}
+                className="text-gray-500 hover:text-black font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Visualize abaixo todas as cópias deste livro e escolha qual deseja desativar ou reativar de forma prática:
+            </p>
+
+            <div className="space-y-3 pt-2">
+              {listaExemplares.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">Nenhum exemplar cadastrado.</p>
+              ) : (
+                listaExemplares.map((ex, index) => {
+                  const isInativo = ex.inativo_exemplar;
+                  const statusTexto = isInativo
+                    ? "Inativo"
+                    : ex.status_exemplar === "Em_posse"
+                    ? "Em Posse (Emprestado)"
+                    : "Disponível";
+
+                  return (
+                    <div
+                      key={ex.id_exemplar}
+                      className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50"
+                    >
+                      <div>
+                        <span className="font-bold text-black block">Cópia #{index + 1} (ID: {ex.id_exemplar})</span>
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${
+                            isInativo
+                              ? "bg-red-100 text-red-700"
+                              : ex.status_exemplar === "Em_posse"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
+                          {statusTexto}
+                        </span>
+                      </div>
+
+                      <div>
+                        {isInativo ? (
+                          <button
+                            type="button"
+                            onClick={() => handleMudarStatusCopia(ex.id_exemplar, true)}
+                            className="bg-green-600 text-white font-semibold text-xs py-2 px-4 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                          >
+                            Reativar
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleMudarStatusCopia(ex.id_exemplar, false)}
+                            className="bg-orange-600 text-white font-semibold text-xs py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+                          >
+                            Desativar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="pt-4 border-t flex justify-end">
+              <button
+                type="button"
+                onClick={() => setModalGerenciarExemplaresAberto(false)}
+                className="py-2 px-5 bg-gray-200 text-black font-semibold rounded-lg hover:bg-gray-300"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ==================== MODAL CRIAR EMPRÉSTIMO ==================== */}
       {modalEmprestimoAberto && (
