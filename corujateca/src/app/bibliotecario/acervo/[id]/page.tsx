@@ -584,6 +584,8 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
         aberto={modalCadastrarExemplarAberto}
         onFechar={() => setModalCadastrarExemplarAberto(false)}
         onSucesso={() => window.location.reload()}
+        livroId={livro?.id_livro}
+        livroTitulo={livro?.titulo_livro || livro?.titulo}
       />
 
       {/* ==================== MODAL CRIAR EMPRÉSTIMO ==================== */}

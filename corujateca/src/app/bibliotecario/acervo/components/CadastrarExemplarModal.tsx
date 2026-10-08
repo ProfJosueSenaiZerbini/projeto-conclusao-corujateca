@@ -17,12 +17,16 @@ type ModalCadastrarExemplarProps = {
   aberto: boolean;
   onFechar: () => void;
   onSucesso: () => void;
+  livroId?: number;
+  livroTitulo?: string;
 };
 
 export default function CadastrarExemplarModal({
   aberto,
   onFechar,
   onSucesso,
+  livroId,
+  livroTitulo,
 }: ModalCadastrarExemplarProps) {
   const [livros, setLivros] = useState<LivroOption[]>([]);
   const [livroSelecionado, setLivroSelecionado] = useState("");
@@ -37,6 +41,10 @@ export default function CadastrarExemplarModal({
 
   useEffect(() => {
     if (!aberto) {
+      return;
+    }
+
+    if (livroId) {
       return;
     }
 
@@ -92,7 +100,7 @@ export default function CadastrarExemplarModal({
     return () => {
       cancelado = true;
     };
-  }, [aberto]);
+  }, [aberto, livroId]);
 
   function fecharModal() {
     if (carregando) {
@@ -114,8 +122,9 @@ export default function CadastrarExemplarModal({
     event.preventDefault();
 
     const quantidadeNumerica = Number(quantidade);
+    const livroParaCadastrar = livroId?.toString() || livroSelecionado;
 
-    if (!livroSelecionado) {
+    if (!livroParaCadastrar) {
       setErro("Selecione um livro.");
       return;
     }
@@ -140,7 +149,7 @@ export default function CadastrarExemplarModal({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            fk_livro_id_livro: Number(livroSelecionado),
+            fk_livro_id_livro: Number(livroParaCadastrar),
             status_exemplar: statusExemplar,
           }),
         });
@@ -253,7 +262,7 @@ export default function CadastrarExemplarModal({
         >
           <div>
             <label
-              htmlFor="livro"
+              htmlFor={livroId ? undefined : "livro"}
               className="
                 mb-2
                 block
@@ -265,42 +274,60 @@ export default function CadastrarExemplarModal({
               Livro
             </label>
 
-            <select
-              id="livro"
-              value={livroSelecionado}
-              onChange={(event) =>
-                setLivroSelecionado(event.target.value)
-              }
-              required
-              disabled={carregandoLivros || carregando}
-              className="
-                w-full
-                rounded-lg
-                border
-                border-[var(--color-brand-300)]
-                bg-[var(--color-background)]
-                px-3
-                py-3
-                text-sm
-                text-[var(--color-text-primary)]
-                outline-none
-              "
-            >
-              <option value="">
-                {carregandoLivros
-                  ? "Carregando livros..."
-                  : "Selecione um livro"}
-              </option>
-
-              {(Array.isArray(livros) ? livros : []).map((livro) => (
-                <option
-                  key={livro.id_livro}
-                  value={livro.id_livro}
-                >
-                  {livro.titulo_livro} — ISBN: {livro.isbn}
+            {livroId ? (
+              <div
+                className="
+                  w-full
+                  rounded-lg
+                  border
+                  border-[var(--color-brand-300)]
+                  bg-[var(--color-background)]
+                  px-3
+                  py-3
+                  text-sm
+                  text-[var(--color-text-primary)]
+                "
+              >
+                {livroTitulo || "Livro atual"}
+              </div>
+            ) : (
+              <select
+                id="livro"
+                value={livroSelecionado}
+                onChange={(event) =>
+                  setLivroSelecionado(event.target.value)
+                }
+                required
+                disabled={carregandoLivros || carregando}
+                className="
+                  w-full
+                  rounded-lg
+                  border
+                  border-[var(--color-brand-300)]
+                  bg-[var(--color-background)]
+                  px-3
+                  py-3
+                  text-sm
+                  text-[var(--color-text-primary)]
+                  outline-none
+                "
+              >
+                <option value="">
+                  {carregandoLivros
+                    ? "Carregando livros..."
+                    : "Selecione um livro"}
                 </option>
-              ))}
-            </select>
+
+                {(Array.isArray(livros) ? livros : []).map((livro) => (
+                  <option
+                    key={livro.id_livro}
+                    value={livro.id_livro}
+                  >
+                    {livro.titulo_livro} — ISBN: {livro.isbn}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
@@ -341,46 +368,6 @@ export default function CadastrarExemplarModal({
                 outline-none
               "
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="status-exemplar"
-              className="
-                mb-2
-                block
-                text-sm
-                font-bold
-                text-[var(--color-text-primary)]
-              "
-            >
-              Status das cópias
-            </label>
-
-            <select
-              id="status-exemplar"
-              value={statusExemplar}
-              onChange={(event) =>
-                setStatusExemplar(event.target.value)
-              }
-              disabled={carregando}
-              className="
-                w-full
-                rounded-lg
-                border
-                border-[var(--color-brand-300)]
-                bg-[var(--color-background)]
-                px-3
-                py-3
-                text-sm
-                text-[var(--color-text-primary)]
-                outline-none
-              "
-            >
-              <option value="Dispon_vel">
-                Disponível
-              </option>
-            </select>
           </div>
 
           {erro && (
