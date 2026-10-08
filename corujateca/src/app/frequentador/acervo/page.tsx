@@ -300,7 +300,7 @@ export default function AcervoFreq() {
                     </option>
 
                     <option value="Ficção Científica">
-                      Ficção Científica
+                      Ficção
                     </option>
 
                     <option value="Arte e Cultura">

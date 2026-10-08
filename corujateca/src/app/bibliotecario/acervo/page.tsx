@@ -487,7 +487,7 @@ export default function AcervoBib() {
                     </option>
 
                     <option value="Ficção Científica">
-                      Ficção Científica
+                      Ficção
                     </option>
 
                     <option value="Arte e Cultura">
