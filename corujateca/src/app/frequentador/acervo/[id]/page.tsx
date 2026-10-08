@@ -20,8 +20,7 @@ type Livro = {
   anopub_livro?: number;
   ano_publicacao?: number;
   ano?: number;
-  qtd_paginas?: number;
-  paginas?: number;
+  copias_disponiveis?: number;
   qtd_copias?: number;
   copias?: number;
   status_livro?: string;
@@ -115,8 +114,8 @@ export default function DetalhesLivroFrequentadorPage({ params }: PageProps) {
   const genero = livro?.genero_livro || livro?.genero;
   const editora = livro?.editora_livro || livro?.editora;
   const ano = livro?.anopub_livro || livro?.ano_publicacao || livro?.ano;
-  const paginas = livro?.qtd_paginas ?? livro?.paginas;
-  const copias = livro?.qtd_copias ?? livro?.copias ?? 0;
+  const copiasTotais = livro?.qtd_copias ?? 0;
+  const copiasDisponiveis = livro?.copias_disponiveis ?? 0;
   const status = livro?.status_livro || livro?.status;
   const localizacao = livro?.localizacao_livro || livro?.localizacao;
   const sinopse = livro?.sinopse_livro || livro?.sinopse;
@@ -198,17 +197,25 @@ export default function DetalhesLivroFrequentadorPage({ params }: PageProps) {
                           {ano || "Não informado"}
                         </p>
                         <p>
-                          <span className="font-semibold">Quantidade de páginas:</span>{" "}
-                          {paginas ?? "Não informado"}
-                        </p>
-                        <p>
                           <span className="font-semibold">Editora:</span>{" "}
                           {editora || "Não informada"}
                         </p>
                         <p>
-                          <span className="font-semibold">Quantidade de cópias:</span>{" "}
-                          <span className={copias === 0 ? "text-red-600 font-bold" : ""}>
-                            {copias} {copias === 0 ? "(Indisponível)" : ""}
+                          <span className="font-semibold">Cópias totais:</span>{" "}
+                          {copiasTotais}
+                        </p>
+
+                        <p>
+                          <span className="font-semibold">Cópias disponíveis:</span>{" "}
+                          <span
+                            className={
+                              copiasDisponiveis === 0
+                                ? "text-red-600 font-bold"
+                                : "text-green-700 font-bold"
+                            }
+                          >
+                            {copiasDisponiveis}
+                            {copiasDisponiveis === 0 ? " (Indisponível)" : ""}
                           </span>
                         </p>
                       </div>
