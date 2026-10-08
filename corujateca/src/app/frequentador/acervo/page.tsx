@@ -428,6 +428,7 @@ export default function AcervoFreq() {
                       bg-[var(--color-brand-500)]
                       text-[var(--color-text-inverse)]
                       font-bold
+                      cursor-pointer
                       hover:bg-[var(--color-brand-400)]
                       transition-colors
                     "
@@ -437,24 +438,23 @@ export default function AcervoFreq() {
                       : "Pesquisar"}
                   </button>
 
-                  {pesquisaRealizada && (
-                    <button
-                      type="button"
-                      onClick={limparPesquisa}
-                      className="
-                        mt-2
-                        px-6
-                        py-3
-                        rounded-lg
-                        border
-                        border-[var(--color-brand-500)]
-                        text-[var(--color-brand-500)]
-                        font-bold
-                      "
-                    >
-                      Limpar
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={limparPesquisa}
+                    className="
+                      mt-2
+                      px-6
+                      py-3
+                      rounded-lg
+                      border
+                      border-[var(--color-brand-500)]
+                      text-[var(--color-brand-500)]
+                      font-bold
+                      cursor-pointer
+                    "
+                  >
+                    Limpar filtros
+                  </button>
                 </div>
               </div>
             </section>
