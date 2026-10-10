@@ -19,10 +19,6 @@ type MultaView = {
 type MultasResponse = {
   multas: MultaView[];
   frequentadores: { id_freq: number; nome_freq: string }[];
-  bibliotecarios: {
-    id_bibliotecario: number;
-    nome_bibliotecario: string;
-  }[];
   tipos: string[];
   tiposCadastro: string[];
   totais: {
@@ -50,7 +46,6 @@ export default function MultasPage() {
   });
   const [formulario, setFormulario] = useState({
     frequentadorId: "",
-    bibliotecarioId: "",
     tipo: "",
     inicio: "",
     termino: "",
@@ -85,43 +80,56 @@ export default function MultasPage() {
     });
   }
 
-  const carregarMultas = useCallback(async (filtrosAtuais = { usuario: "", data: "", status: "Pendente", tipo: "" }) => {
-    try {
-      const params = new URLSearchParams();
+  const carregarMultas = useCallback(
+    async (
+      filtrosAtuais = { usuario: "", data: "", status: "Pendente", tipo: "" },
+    ) => {
+      try {
+        const params = new URLSearchParams();
 
-      if (filtrosAtuais.usuario.trim()) {
-        params.set("usuario", filtrosAtuais.usuario.trim());
+        if (filtrosAtuais.usuario.trim()) {
+          params.set("usuario", filtrosAtuais.usuario.trim());
+        }
+
+        if (filtrosAtuais.data) {
+          params.set("data", filtrosAtuais.data);
+        }
+
+        if (filtrosAtuais.status) {
+          params.set("status", filtrosAtuais.status);
+        }
+
+        if (filtrosAtuais.tipo) {
+          params.set("tipo", filtrosAtuais.tipo);
+        }
+
+        const queryString = params.toString();
+        const resposta = await fetch(
+          `/api/multas${queryString ? `?${queryString}` : ""}`,
+        );
+
+        if (!resposta.ok)
+          throw new Error("Não foi possível carregar as multas.");
+
+        const resultado = await resposta.json();
+        setDados(resultado);
+        setErro("");
+      } catch (error) {
+        console.error(error);
+        setErro("Não foi possível carregar as multas.");
       }
-
-      if (filtrosAtuais.data) {
-        params.set("data", filtrosAtuais.data);
-      }
-
-      if (filtrosAtuais.status) {
-        params.set("status", filtrosAtuais.status);
-      }
-
-      if (filtrosAtuais.tipo) {
-        params.set("tipo", filtrosAtuais.tipo);
-      }
-
-      const queryString = params.toString();
-      const resposta = await fetch(`/api/multas${queryString ? `?${queryString}` : ""}`);
-
-      if (!resposta.ok) throw new Error("Não foi possível carregar as multas.");
-
-      const resultado = await resposta.json();
-      setDados(resultado);
-      setErro("");
-    } catch (error) {
-      console.error(error);
-      setErro("Não foi possível carregar as multas.");
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     const carregarDadosIniciais = () => {
-      void carregarMultas({ usuario: "", data: "", status: "Pendente", tipo: "" });
+      void carregarMultas({
+        usuario: "",
+        data: "",
+        status: "Pendente",
+        tipo: "",
+      });
     };
 
     const timeoutId = setTimeout(carregarDadosIniciais, 0);
@@ -132,7 +140,10 @@ export default function MultasPage() {
     setPaginaAtual(1);
   }, [dados?.multas]);
 
-  async function atualizarFiltro(campo: "usuario" | "data" | "status" | "tipo", valor: string) {
+  async function atualizarFiltro(
+    campo: "usuario" | "data" | "status" | "tipo",
+    valor: string,
+  ) {
     const proximoFiltro = { ...filtros, [campo]: valor };
     setFiltros(proximoFiltro);
 
@@ -147,7 +158,12 @@ export default function MultasPage() {
   }
 
   async function limparFiltros() {
-    const filtrosVazios = { usuario: "", data: "", status: "Pendente", tipo: "" };
+    const filtrosVazios = {
+      usuario: "",
+      data: "",
+      status: "Pendente",
+      tipo: "",
+    };
     setFiltros(filtrosVazios);
     await carregarMultas(filtrosVazios);
   }
@@ -180,7 +196,6 @@ export default function MultasPage() {
           dta_inicio_multa: formulario.inicio,
           dta_termino_multa: formulario.termino,
           tipomulta: formulario.tipo,
-          fk_bibliotecario_id_bibliotecario: formulario.bibliotecarioId,
           fk_frequentador_id_frequentador: formulario.frequentadorId,
         }),
       });
@@ -191,7 +206,12 @@ export default function MultasPage() {
         return;
       }
 
-      setFormulario({ frequentadorId: "", bibliotecarioId: "", tipo: "", inicio: "", termino: "" });
+      setFormulario({
+        frequentadorId: "",
+        tipo: "",
+        inicio: "",
+        termino: "",
+      });
       setMostrarCadastro(false);
       await carregarMultas(filtros);
     } finally {
@@ -201,9 +221,7 @@ export default function MultasPage() {
 
   const multasFormatadas = dados?.multas ?? [];
 
-  const totalPaginas = Math.ceil(
-    multasFormatadas.length / MULTAS_POR_PAGINA,
-  );
+  const totalPaginas = Math.ceil(multasFormatadas.length / MULTAS_POR_PAGINA);
 
   const inicio = (paginaAtual - 1) * MULTAS_POR_PAGINA;
 
@@ -293,7 +311,6 @@ export default function MultasPage() {
                   const inicio = obterDataAtual();
                   setFormulario({
                     frequentadorId: "",
-                    bibliotecarioId: "",
                     tipo: "",
                     inicio,
                     termino: "",
@@ -321,51 +338,95 @@ export default function MultasPage() {
                   </button>
                 </div>
 
-                <form onSubmit={cadastrarMulta} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <form
+                  onSubmit={cadastrarMulta}
+                  className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                >
                   <label className="flex flex-col gap-2 font-semibold text-brand-600">
                     Usuário
-                    <select required value={formulario.frequentadorId} onChange={(event) => setFormulario({ ...formulario, frequentadorId: event.target.value })} className="rounded-xl border border-gray-300 bg-white px-4 py-3">
+                    <select
+                      required
+                      value={formulario.frequentadorId}
+                      onChange={(event) =>
+                        setFormulario({
+                          ...formulario,
+                          frequentadorId: event.target.value,
+                        })
+                      }
+                      className="rounded-xl border border-gray-300 bg-white px-4 py-3"
+                    >
                       <option value="">Selecione o usuário</option>
                       {dados?.frequentadores.map((frequentador) => (
-                        <option key={frequentador.id_freq} value={frequentador.id_freq}>{frequentador.nome_freq}</option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="flex flex-col gap-2 font-semibold text-brand-600">
-                    Bibliotecário
-                    <select required value={formulario.bibliotecarioId} onChange={(event) => setFormulario({ ...formulario, bibliotecarioId: event.target.value })} className="rounded-xl border border-gray-300 bg-white px-4 py-3">
-                      <option value="">Selecione o bibliotecário</option>
-                      {dados?.bibliotecarios.map((bibliotecario) => (
-                        <option key={bibliotecario.id_bibliotecario} value={bibliotecario.id_bibliotecario}>{bibliotecario.nome_bibliotecario}</option>
+                        <option
+                          key={frequentador.id_freq}
+                          value={frequentador.id_freq}
+                        >
+                          {frequentador.nome_freq}
+                        </option>
                       ))}
                     </select>
                   </label>
 
                   <label className="flex flex-col gap-2 font-semibold text-brand-600">
                     Tipo da multa
-                    <select required value={formulario.tipo} onChange={(event) => atualizarTipo(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-4 py-3">
+                    <select
+                      required
+                      value={formulario.tipo}
+                      onChange={(event) => atualizarTipo(event.target.value)}
+                      className="rounded-xl border border-gray-300 bg-white px-4 py-3"
+                    >
                       <option value="">Selecione o tipo</option>
-                      {(dados?.tiposCadastro ?? []).map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                      {(dados?.tiposCadastro ?? []).map((tipo) => (
+                        <option key={tipo} value={tipo}>
+                          {tipo}
+                        </option>
+                      ))}
                     </select>
                   </label>
 
                   <label className="flex flex-col gap-2 font-semibold text-brand-600">
                     Data de início
-                    <input required readOnly type="date" value={formulario.inicio} className="rounded-xl border border-gray-300 bg-gray-100 px-4 py-3" />
+                    <input
+                      required
+                      readOnly
+                      type="date"
+                      value={formulario.inicio}
+                      className="rounded-xl border border-gray-300 bg-gray-100 px-4 py-3"
+                    />
                   </label>
 
                   <label className="flex flex-col gap-2 font-semibold text-brand-600">
                     Data de término
-                    <input required readOnly={formulario.tipo === "DEPREDAÇÃO" || formulario.tipo === "EXTRAVIO"} type="date" value={formulario.termino} onChange={(event) => setFormulario({ ...formulario, termino: event.target.value })} className={`rounded-xl border border-gray-300 px-4 py-3 ${formulario.tipo === "DEPREDAÇÃO" || formulario.tipo === "EXTRAVIO" ? "bg-gray-100" : "bg-white"}`} />
-                    {(formulario.tipo === "DEPREDAÇÃO" || formulario.tipo === "EXTRAVIO") && (
+                    <input
+                      required
+                      readOnly={
+                        formulario.tipo === "DEPREDAÇÃO" ||
+                        formulario.tipo === "EXTRAVIO"
+                      }
+                      type="date"
+                      value={formulario.termino}
+                      onChange={(event) =>
+                        setFormulario({
+                          ...formulario,
+                          termino: event.target.value,
+                        })
+                      }
+                      className={`rounded-xl border border-gray-300 px-4 py-3 ${formulario.tipo === "DEPREDAÇÃO" || formulario.tipo === "EXTRAVIO" ? "bg-gray-100" : "bg-white"}`}
+                    />
+                    {(formulario.tipo === "DEPREDAÇÃO" ||
+                      formulario.tipo === "EXTRAVIO") && (
                       <span className="text-sm font-normal text-brand-600">
-                        Prazo automático: {formulario.tipo === "DEPREDAÇÃO" ? "15" : "30"} dias.
+                        Prazo automático:{" "}
+                        {formulario.tipo === "DEPREDAÇÃO" ? "15" : "30"} dias.
                       </span>
                     )}
                   </label>
 
-                  <button type="submit" disabled={salvando} className="self-end rounded-xl bg-[var(--color-button-primary)] px-4 py-3 font-bold text-text-inverse disabled:opacity-60">
+                  <button
+                    type="submit"
+                    disabled={salvando}
+                    className="self-end rounded-xl bg-[var(--color-button-primary)] px-4 py-3 font-bold text-text-inverse disabled:opacity-60"
+                  >
                     {salvando ? "Cadastrando..." : "Cadastrar multa"}
                   </button>
                 </form>
@@ -382,7 +443,9 @@ export default function MultasPage() {
                   <input
                     type="text"
                     value={filtros.usuario}
-                    onChange={(event) => atualizarFiltro("usuario", event.target.value)}
+                    onChange={(event) =>
+                      atualizarFiltro("usuario", event.target.value)
+                    }
                     placeholder="Nome do Usuário"
                     className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 placeholder:text-brand-600/50 outline-none focus:ring-2 focus:ring-brand-500 sm:py-4"
                   />
@@ -392,14 +455,18 @@ export default function MultasPage() {
                   <input
                     type="date"
                     value={filtros.data}
-                    onChange={(event) => void atualizarFiltro("data", event.target.value)}
+                    onChange={(event) =>
+                      void atualizarFiltro("data", event.target.value)
+                    }
                     placeholder="Por data"
                     className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 placeholder:text-brand-600/50 outline-none focus:ring-2 focus:ring-brand-500 sm:py-4"
                   />
 
                   <select
                     value={filtros.tipo}
-                    onChange={(event) => void atualizarFiltro("tipo", event.target.value)}
+                    onChange={(event) =>
+                      void atualizarFiltro("tipo", event.target.value)
+                    }
                     className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer sm:py-4"
                     aria-label="Filtrar por tipo de multa"
                   >
@@ -413,7 +480,9 @@ export default function MultasPage() {
 
                   <select
                     value={filtros.status}
-                    onChange={(event) => void atualizarFiltro("status", event.target.value)}
+                    onChange={(event) =>
+                      void atualizarFiltro("status", event.target.value)
+                    }
                     className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer sm:py-4"
                     aria-label="Filtrar por status"
                   >
@@ -449,8 +518,10 @@ export default function MultasPage() {
                 )}
 
                 {multasDaPagina.map((multa) => (
-                  <div key={multa.id} className="grid grid-cols-1 gap-5 rounded-2xl bg-brand-400 px-4 py-4 text-sm font-bold text-text-inverse sm:px-5 sm:py-5 sm:text-base lg:px-8 lg:py-6 md:grid-cols-2 md:gap-8 lg:gap-12">
-
+                  <div
+                    key={multa.id}
+                    className="grid grid-cols-1 gap-5 rounded-2xl bg-brand-400 px-4 py-4 text-sm font-bold text-text-inverse sm:px-5 sm:py-5 sm:text-base lg:px-8 lg:py-6 md:grid-cols-2 md:gap-8 lg:gap-12"
+                  >
                     <div className="space-y-2">
                       <p className="text-lg">{multa.usuario}</p>
                       <p>Dias de punição: {multa.diasPunicao} dias</p>

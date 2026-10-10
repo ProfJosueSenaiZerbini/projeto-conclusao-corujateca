@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -23,25 +22,21 @@ export default function MultasPage() {
   const [status, setStatus] = useState("");
   const [multas, setMultas] = useState<Multa[]>([]);
   const [carregando, setCarregando] = useState(true);
-
-  // Página atual da lista
   const [paginaAtual, setPaginaAtual] = useState(1);
-
-  // Não coloque 1 aqui.
-  // O ID deve vir da sessão.
   const [id_freq, setId_freq] = useState<number | null>(null);
 
-  // Pega o frequentador logado
+  // Obtém o frequentador logado.
   useEffect(() => {
     const session = getSession();
 
     if (session?.id) {
       setId_freq(Number(session.id));
+    } else {
+      setCarregando(false);
     }
-
   }, []);
 
-  // Carrega as multas
+  // Carrega as multas de acordo com os filtros.
   useEffect(() => {
     if (id_freq === null) {
       return;
@@ -53,10 +48,7 @@ export default function MultasPage() {
 
         const params = new URLSearchParams();
 
-        params.set(
-          "fk_frequentador_id_frequentador",
-          String(id_freq),
-        );
+        params.set("fk_frequentador_id_frequentador", String(id_freq));
 
         if (data) {
           params.set("data", data);
@@ -66,11 +58,11 @@ export default function MultasPage() {
           params.set("status", status);
         }
 
-        const response = await fetch(
-          `/api/multas?${params.toString()}`,
-        );
+        const response = await fetch(`/api/multas?${params.toString()}`);
 
         if (!response.ok) {
+          const erro = await response.text();
+          console.error("Erro da API de multas:", erro);
           throw new Error("Erro ao carregar multas");
         }
 
@@ -86,228 +78,137 @@ export default function MultasPage() {
     }
 
     carregarMultas();
-
   }, [id_freq, data, status]);
 
-  // Quando os filtros mudarem e a lista for atualizada,
-  // volta para a primeira página.
+  // Retorna à primeira página quando os filtros mudam.
   useEffect(() => {
     setPaginaAtual(1);
-  }, [multas]);
+  }, [data, status]);
 
-  const totalPaginas = Math.ceil(
-    multas.length / MULTAS_POR_PAGINA,
-  );
+  const totalPaginas = Math.ceil(multas.length / MULTAS_POR_PAGINA);
 
   const inicio = (paginaAtual - 1) * MULTAS_POR_PAGINA;
 
-  const multasDaPagina = multas.slice(
-    inicio,
-    inicio + MULTAS_POR_PAGINA,
-  );
+  const multasDaPagina = multas.slice(inicio, inicio + MULTAS_POR_PAGINA);
 
-  return (<div className="min-h-screen flex flex-col"> <Header />
-    <div className="flex flex-1">
-      <Nav />
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header />
 
-      <main className="min-w-0 flex-1 p-3 sm:p-5 md:p-6 lg:p-8 xl:p-10">
-        <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8">
+      <div className="flex flex-1">
+        <Nav />
 
-          {/* CARDS */}
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
-              <h2 className="font-semibold">
-                Minhas Multas
-                <br />
-                Pendentes:
-              </h2>
+        <main className="min-w-0 flex-1 p-3 sm:p-5 md:p-6 lg:p-8 xl:p-10">
+          <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8">
+            {/* CARDS */}
+            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
+                <h2 className="font-semibold">
+                  Minhas Multas
+                  <br />
+                  Pendentes:
+                </h2>
 
-              <span className="mt-1 text-3xl font-bold">
-                {
-                  multas.filter(
-                    (multa) => multa.status === "Pendente",
-                  ).length
-                }
-              </span>
-            </div>
+                <span className="mt-1 text-3xl font-bold">
+                  {multas.filter((multa) => multa.status === "Pendente").length}
+                </span>
+              </div>
 
-            <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
-              <h2 className="font-semibold">
-                Dias de Punição
-                <br />
-                Total:
-              </h2>
+              <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
+                <h2 className="font-semibold">
+                  Dias de Punição
+                  <br />
+                  Total:
+                </h2>
 
-              <span className="mt-1 text-3xl font-bold">
-                {multas.reduce(
-                  (total, multa) =>
-                    total + multa.diasPunicao,
-                  0,
-                )}
-              </span>
-            </div>
+                <span className="mt-1 text-3xl font-bold">
+                  {multas.reduce(
+                    (total, multa) => total + multa.diasPunicao,
+                    0,
+                  )}
+                </span>
+              </div>
 
-            <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
-              <h2 className="font-semibold">
-                Total de Multas
-                <br />
-                já Recebidas:
-              </h2>
+              <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md">
+                <h2 className="font-semibold">
+                  Total de Multas
+                  <br />
+                  já Recebidas:
+                </h2>
 
-              <span className="mt-1 text-3xl font-bold">
-                {multas.length}
-              </span>
-            </div>
-          </section>
+                <span className="mt-1 text-3xl font-bold">{multas.length}</span>
+              </div>
+            </section>
 
-          {/* FILTROS */}
-          <section className="rounded-3xl bg-brand-200 p-4 shadow-sm sm:p-5 md:p-6 lg:p-8">
-            <h1 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl">
-              Pesquisar por Multas
-            </h1>
+            {/* FILTROS E LISTA */}
+            <section className="rounded-3xl bg-brand-200 p-4 shadow-sm sm:p-5 md:p-6 lg:p-8">
+              <h1 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl">
+                Pesquisar por Multas
+              </h1>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <input
-                type="date"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-                className="
-                w-full
-                rounded-2xl
-                border
-                border-gray-300
-                bg-white
-                px-4
-                py-3
-                text-brand-600
-                outline-none
-                focus:ring-2
-                focus:ring-brand-500
-              "
-              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <input
+                  type="date"
+                  value={data}
+                  onChange={(e) => setData(e.target.value)}
+                  aria-label="Filtrar pela data de início ou término da multa"
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
+                />
 
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="
-                w-full
-                rounded-2xl
-                border
-                border-gray-300
-                bg-white
-                px-5
-                py-3
-                text-brand-600
-                outline-none
-                focus:ring-2
-                focus:ring-brand-500
-              "
-              >
-                <option value="">
-                  Todos os status
-                </option>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="">Todos os status</option>
+                  <option value="PENDENTE">Pendente</option>
+                  <option value="CONCLUÍDA">Concluída</option>
+                  <option value="CANCELADA">Cancelada</option>
+                </select>
+              </div>
 
-                <option value="PENDENTE">
-                  Pendente
-                </option>
-
-                <option value="CONCLUÍDA">
-                  Concluída
-                </option>
-
-                <option value="CANCELADA">
-                  Cancelada
-                </option>
-              </select>
-            </div>
-
-            {/* LISTA */}
-            <div className="mt-6 flex flex-col gap-4">
-              {carregando ? (
-                <div className="py-8 text-center">
-                  Carregando multas...
-                </div>
-              ) : multas.length === 0 ? (
-                <div className="py-8 text-center text-text-inverse">
-                  Nenhuma multa encontrada.
-                </div>
-              ) : (
-                multasDaPagina.map((multa) => (
-                  <div
-                    key={multa.id}
-                    className="
-                    grid
-                    grid-cols-1
-                    gap-4
-                    rounded-2xl
-                    bg-brand-400
-                    px-4
-                    py-4
-                    font-bold
-                    text-text-inverse
-                    md:grid-cols-2
-                    md:gap-8
-                    lg:gap-12
-                    sm:px-5
-                    sm:py-5
-                    lg:px-8
-                    lg:py-6
-                  "
-                  >
-                    <div className="space-y-1 sm:space-y-2 lg:space-y-3">
-                      <p>
-                        Dias de punição:{" "}
-                        {multa.diasPunicao} dias
-                      </p>
-
-                      <p>
-                        Status da Multa: {multa.status}
-                      </p>
-                    </div>
-
-                    <div className="space-y-1 sm:space-y-2 lg:space-y-3">
-                      <p>
-                        Tipo da Multa: {multa.tipo}
-                      </p>
-
-                      <p>
-                        Início da Multa: {multa.dataInicio}
-                      </p>
-
-                      <p>
-                        Término da Multa: {multa.dataTermino}
-                      </p>
-                    </div>
+              {/* LISTA */}
+              <div className="mt-6 flex flex-col gap-4">
+                {carregando ? (
+                  <div className="py-8 text-center">Carregando multas...</div>
+                ) : multas.length === 0 ? (
+                  <div className="py-8 text-center text-text-inverse">
+                    Nenhuma multa encontrada.
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  multasDaPagina.map((multa) => (
+                    <div
+                      key={multa.id}
+                      className="grid grid-cols-1 gap-4 rounded-2xl bg-brand-400 px-4 py-4 font-bold text-text-inverse sm:px-5 sm:py-5 md:grid-cols-2 md:gap-8 lg:gap-12 lg:px-8 lg:py-6"
+                    >
+                      <div className="space-y-1 sm:space-y-2 lg:space-y-3">
+                        <p>Dias de punição: {multa.diasPunicao} dias</p>
 
-            {/* PAGINAÇÃO */}
-            {!carregando &&
-              multas.length > MULTAS_POR_PAGINA && (
+                        <p>Status da Multa: {multa.status}</p>
+                      </div>
+
+                      <div className="space-y-1 sm:space-y-2 lg:space-y-3">
+                        <p>Tipo da Multa: {multa.tipo}</p>
+
+                        <p>Início da Multa: {multa.dataInicio}</p>
+
+                        <p>Término da Multa: {multa.dataTermino}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* PAGINAÇÃO */}
+              {!carregando && multas.length > MULTAS_POR_PAGINA && (
                 <div className="mt-6 flex items-center justify-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
-                      setPaginaAtual((pagina) =>
-                        Math.max(pagina - 1, 1),
-                      )
+                      setPaginaAtual((pagina) => Math.max(pagina - 1, 1))
                     }
                     disabled={paginaAtual === 1}
-                    className="
-                    rounded-xl
-                    bg-brand-400
-                    px-4
-                    py-2
-                    text-sm
-                    font-semibold
-                    text-text-inverse
-                    transition
-                    hover:brightness-110
-                    disabled:cursor-not-allowed
-                    disabled:opacity-50
-                  "
+                    className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-text-inverse transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Anterior
                   </button>
@@ -320,37 +221,22 @@ export default function MultasPage() {
                     type="button"
                     onClick={() =>
                       setPaginaAtual((pagina) =>
-                        Math.min(
-                          pagina + 1,
-                          totalPaginas,
-                        ),
+                        Math.min(pagina + 1, totalPaginas),
                       )
                     }
                     disabled={paginaAtual === totalPaginas}
-                    className="
-                    rounded-xl
-                    bg-brand-400
-                    px-4
-                    py-2
-                    text-sm
-                    font-semibold
-                    text-text-inverse
-                    transition
-                    hover:brightness-110
-                    disabled:cursor-not-allowed
-                    disabled:opacity-50
-                  "
+                    className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-text-inverse transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Próxima
                   </button>
                 </div>
               )}
-          </section>
-        </div>
-      </main>
-    </div>
+            </section>
+          </div>
+        </main>
+      </div>
 
-    <Footer />
-  </div>
+      <Footer />
+    </div>
   );
 }
