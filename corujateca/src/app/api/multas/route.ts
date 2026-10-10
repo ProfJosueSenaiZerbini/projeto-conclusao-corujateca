@@ -1,8 +1,10 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 import { db } from "@/app/db";
+import { SESSION_COOKIE, decodeSession } from "@/lib/auth";
 
 function formatarData(data: Date | string | null) {
   if (!data) {
@@ -26,6 +28,33 @@ function obterDataAtual() {
   const dia = String(dataAtual.getDate()).padStart(2, "0");
 
   return new Date(`${ano}-${mes}-${dia}T00:00:00.000Z`);
+}
+
+async function obterBibliotecarioAutenticado() {
+  const cookieStore = await cookies();
+  const valorCookie = cookieStore.get(SESSION_COOKIE)?.value;
+
+  if (!valorCookie) {
+    return null;
+  }
+
+  const sessao = decodeSession(valorCookie);
+
+  if (!sessao || sessao.role !== "bibliotecario") {
+    return null;
+  }
+
+  const bibliotecario = await db.bibliotecario.findFirst({
+    where: {
+      id_bibliotecario: sessao.id,
+      inativo_bibliotecario: false,
+    },
+    select: {
+      id_bibliotecario: true,
+    },
+  });
+
+  return bibliotecario;
 }
 
 async function concluirMultasVencidas(dataAtual: Date) {
@@ -80,13 +109,14 @@ export async function GET(request: Request) {
     await concluirMultasVencidas(dataAtual);
 
     const searchParams = new URL(request.url).searchParams;
+
     const usuario = searchParams.get("usuario")?.trim();
     const data = searchParams.get("data")?.trim();
     const status = searchParams.get("status")?.trim().toUpperCase();
     const tipo = searchParams.get("tipo")?.trim().toUpperCase();
 
     const frequentadorIdParam = searchParams.get(
-      "fk_frequentador_id_frequentador"
+      "fk_frequentador_id_frequentador",
     );
 
     const frequentadorId = frequentadorIdParam
@@ -95,8 +125,13 @@ export async function GET(request: Request) {
 
     const statusNormalizado = status === "PAGA" ? "CANCELADA" : status;
     const tipoNormalizado = tipo || undefined;
+
     const dataInicio = data ? new Date(`${data}T00:00:00.000Z`) : undefined;
-    const dataFim = data ? new Date(`${data}T23:59:59.999Z`) : undefined;
+
+    const dataFim = dataInicio
+      ? new Date(dataInicio.getTime() + 24 * 60 * 60 * 1000)
+      : undefined;
+
     const filtroStatus: Prisma.multaWhereInput =
       statusNormalizado === "CONCLUÍDA" || statusNormalizado === "CONCLUIDA"
         ? {
@@ -145,30 +180,37 @@ export async function GET(request: Request) {
 
       ...(dataInicio && dataFim
         ? {
-            dta_inicio_multa: {
-              gte: dataInicio,
-              lte: dataFim,
-            },
+            OR: [
+              {
+                dta_inicio_multa: {
+                  gte: dataInicio,
+                  lt: dataFim,
+                },
+              },
+              {
+                dta_termino_multa: {
+                  gte: dataInicio,
+                  lt: dataFim,
+                },
+              },
+            ],
           }
         : {}),
     };
 
-    const [multas, frequentadores, bibliotecarios, totaisAtivos] = await Promise.all([
+    const [multas, frequentadores, totaisAtivos] = await Promise.all([
       db.multa.findMany({
         where,
         include: { frequentador: true },
         orderBy: { dta_inicio_multa: "desc" },
       }),
+
       db.frequentador.findMany({
         where: { inativo_freq: false },
         select: { id_freq: true, nome_freq: true },
         orderBy: { nome_freq: "asc" },
       }),
-      db.bibliotecario.findMany({
-        where: { inativo_bibliotecario: false },
-        select: { id_bibliotecario: true, nome_bibliotecario: true },
-        orderBy: { nome_bibliotecario: "asc" },
-      }),
+
       db.multa.findMany({
         where: { inativo_multa: false },
         select: { tipomulta: true },
@@ -178,6 +220,7 @@ export async function GET(request: Request) {
     const multasFormatadas = multas.map((multa) => ({
       id: multa.id_multa,
       usuario: multa.frequentador.nome_freq,
+
       diasPunicao: Math.max(
         1,
         Math.ceil(
@@ -186,26 +229,29 @@ export async function GET(request: Request) {
             (1000 * 60 * 60 * 24),
         ),
       ),
+
       status: multa.inativo_multa
         ? multa.tipomulta.toUpperCase() === "ATRASO" &&
           multa.dta_termino_multa <= dataAtual
           ? "Concluída"
           : "Cancelada"
         : "Pendente",
+
       tipo: multa.tipomulta,
       dataInicio: formatarData(multa.dta_inicio_multa),
       dataTermino: formatarData(multa.dta_termino_multa),
     }));
 
     const contarPorTipo = (tipo: string) =>
-      totaisAtivos.filter((multa) => multa.tipomulta.toUpperCase() === tipo).length;
+      totaisAtivos.filter((multa) => multa.tipomulta.toUpperCase() === tipo)
+        .length;
 
     return NextResponse.json({
       multas: multasFormatadas,
       frequentadores,
-      bibliotecarios,
       tipos: ["ATRASO", "DEPREDAÇÃO", "EXTRAVIO"],
       tiposCadastro: ["DEPREDAÇÃO", "EXTRAVIO"],
+
       totais: {
         atraso: contarPorTipo("ATRASO"),
         depredacao: contarPorTipo("DEPREDAÇÃO"),
@@ -214,6 +260,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Erro ao consultar multas:", error);
+
     return NextResponse.json(
       { erro: "Erro ao carregar as multas." },
       { status: 500 },
@@ -233,10 +280,15 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const multa = await db.multa.findUnique({ where: { id_multa: idMulta } });
+    const multa = await db.multa.findUnique({
+      where: { id_multa: idMulta },
+    });
 
     if (!multa) {
-      return NextResponse.json({ erro: "Multa não encontrada." }, { status: 404 });
+      return NextResponse.json(
+        { erro: "Multa não encontrada." },
+        { status: 404 },
+      );
     }
 
     if (multa.inativo_multa) {
@@ -247,6 +299,7 @@ export async function PATCH(request: Request) {
     }
 
     const dataAtual = obterDataAtual();
+
     await db.$transaction(async (tx) => {
       await tx.multa.update({
         where: { id_multa: idMulta },
@@ -255,13 +308,17 @@ export async function PATCH(request: Request) {
 
       const multasAtivas = await tx.multa.count({
         where: {
-          fk_frequentador_id_frequentador: multa.fk_frequentador_id_frequentador,
+          fk_frequentador_id_frequentador:
+            multa.fk_frequentador_id_frequentador,
           inativo_multa: false,
         },
       });
+
       if (multasAtivas === 0) {
         await tx.frequentador.update({
-          where: { id_freq: multa.fk_frequentador_id_frequentador },
+          where: {
+            id_freq: multa.fk_frequentador_id_frequentador,
+          },
           data: { suspensao_freq: false },
         });
       }
@@ -278,6 +335,7 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     console.error("Erro ao cancelar multa:", error);
+
     return NextResponse.json(
       { erro: "Erro ao cancelar a multa." },
       { status: 500 },
@@ -287,71 +345,104 @@ export async function PATCH(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const text = await request.text();
-    if (!text) {
+    const bibliotecario = await obterBibliotecarioAutenticado();
+
+    if (!bibliotecario) {
       return NextResponse.json(
-        { erro: 'O corpo da requisição está vazio. Envie um JSON válido.' },
-        { status: 400 }
+        {
+          erro: "Acesso negado. Entre com uma conta ativa de bibliotecário.",
+        },
+        { status: 401 },
       );
     }
 
-    let body: Record<string, unknown>;
-    try {
-      body = JSON.parse(text) as Record<string, unknown>;
-    } catch {
+    const text = await request.text();
+
+    if (!text) {
       return NextResponse.json(
-        { erro: "O corpo da requisição deve ser um JSON válido." },
+        {
+          erro: "O corpo da requisição está vazio. Envie um JSON válido.",
+        },
         { status: 400 },
       );
     }
 
-    const {
-      dta_termino_multa,
-      tipomulta,
-      fk_bibliotecario_id_bibliotecario,
-      fk_frequentador_id_frequentador,
-    } = body;
+    let body: Record<string, unknown>;
+
+    try {
+      body = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        {
+          erro: "O corpo da requisição deve ser um JSON válido.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { dta_termino_multa, tipomulta, fk_frequentador_id_frequentador } =
+      body;
 
     const tiposPermitidos = ["ATRASO", "DEPREDAÇÃO", "EXTRAVIO"];
-    const tipoTratado = String(tipomulta || "").trim().toUpperCase();
+
+    const tipoTratado = String(tipomulta || "")
+      .trim()
+      .toUpperCase();
 
     if (tipoTratado === "ATRASO") {
       return NextResponse.json(
         {
-          erro:
-            "Multas de atraso são criadas automaticamente após a devolução do empréstimo atrasado.",
+          erro: "Multas de atraso são criadas automaticamente após a devolução do empréstimo atrasado.",
         },
         { status: 409 },
       );
     }
 
     const inicio = obterDataAtual();
+
     const terminoInformado = dta_termino_multa
       ? new Date(`${String(dta_termino_multa)}T00:00:00.000Z`)
       : null;
-    const bibliotecarioId = Number(fk_bibliotecario_id_bibliotecario);
+
     const frequentadorId = Number(fk_frequentador_id_frequentador);
+
     const prazoAutomatico =
       tipoTratado === "DEPREDAÇÃO"
         ? 15
         : tipoTratado === "EXTRAVIO"
           ? 30
           : undefined;
+
     const termino = prazoAutomatico
       ? new Date(inicio.getTime() + prazoAutomatico * 24 * 60 * 60 * 1000)
       : terminoInformado;
 
     if (
       !tiposPermitidos.includes(tipoTratado) ||
-      !Number.isInteger(bibliotecarioId) ||
-      bibliotecarioId <= 0 ||
       !Number.isInteger(frequentadorId) ||
       frequentadorId <= 0 ||
-      !termino || termino < inicio
+      !termino ||
+      Number.isNaN(termino.getTime()) ||
+      termino < inicio
     ) {
       return NextResponse.json(
         { erro: "Informe dados válidos para a multa." },
         { status: 400 },
+      );
+    }
+
+    const frequentador = await db.frequentador.findFirst({
+      where: {
+        id_freq: frequentadorId,
+        inativo_freq: false,
+      },
+      select: { id_freq: true },
+    });
+
+    if (!frequentador) {
+      return NextResponse.json(
+        { erro: "Frequentador não encontrado ou inativo." },
+        { status: 404 },
       );
     }
 
@@ -361,28 +452,35 @@ export async function POST(request: Request) {
           dta_inicio_multa: inicio,
           dta_termino_multa: termino,
           tipomulta: tipoTratado,
-          fk_bibliotecario_id_bibliotecario: bibliotecarioId,
+          fk_bibliotecario_id_bibliotecario: bibliotecario.id_bibliotecario,
           fk_frequentador_id_frequentador: frequentadorId,
         },
       }),
+
       db.frequentador.update({
         where: { id_freq: frequentadorId },
         data: { suspensao_freq: true },
       }),
     ]);
 
-    return NextResponse.json(
-      { mensagem: 'Multa aplicada e frequentador suspenso com sucesso!', multa: novaMulta },
-      { status: 201 }
-    );
-  } catch (error: unknown) {
-    console.error('Erro ao cadastrar multa:', error);
+    revalidatePath("/bibliotecario/multas");
+
     return NextResponse.json(
       {
-        erro: 'Erro no servidor',
+        mensagem: "Multa aplicada e frequentador suspenso com sucesso!",
+        multa: novaMulta,
+      },
+      { status: 201 },
+    );
+  } catch (error: unknown) {
+    console.error("Erro ao cadastrar multa:", error);
+
+    return NextResponse.json(
+      {
+        erro: "Erro no servidor",
         detalhe: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

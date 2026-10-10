@@ -5,125 +5,58 @@ import { FormEvent, useEffect, useState } from "react";
 type LivroOption = {
   id_livro: number;
   titulo_livro: string;
-  isbn: string;
-};
-
-type LivrosResponse = {
-  livros: LivroOption[];
-  totalPaginas: number;
+  isbn?: string;
 };
 
 type ModalCadastrarExemplarProps = {
   aberto: boolean;
   onFechar: () => void;
   onSucesso: () => void;
+  livro: LivroOption | null;
 };
 
 export default function CadastrarExemplarModal({
   aberto,
   onFechar,
   onSucesso,
+  livro,
 }: ModalCadastrarExemplarProps) {
-  const [livros, setLivros] = useState<LivroOption[]>([]);
   const [livroSelecionado, setLivroSelecionado] = useState("");
   const [statusExemplar, setStatusExemplar] = useState("Dispon_vel");
   const [quantidade, setQuantidade] = useState("1");
-
-  const [carregandoLivros, setCarregandoLivros] = useState(false);
   const [carregando, setCarregando] = useState(false);
-
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
 
   useEffect(() => {
-    if (!aberto) {
-      return;
-    }
+    if (!aberto) return;
 
-    let cancelado = false;
-
-    async function carregarLivros() {
-      try {
-        setCarregandoLivros(true);
-        setErro("");
-
-        const primeiraResposta = await fetch("/api/livros?page=1&limit=100");
-        if (!primeiraResposta.ok) {
-          throw new Error("Não foi possível carregar os livros.");
-        }
-
-        const primeiraPagina: LivrosResponse = await primeiraResposta.json();
-        const listaLivros = [...primeiraPagina.livros];
-
-        for (
-          let pagina = 2;
-          pagina <= primeiraPagina.totalPaginas;
-          pagina += 1
-        ) {
-          const resposta = await fetch(
-            `/api/livros?page=${pagina}&limit=100`,
-          );
-          if (!resposta.ok) {
-            throw new Error("Não foi possível carregar todos os livros.");
-          }
-
-          const dados: LivrosResponse = await resposta.json();
-          listaLivros.push(...dados.livros);
-        }
-
-        if (!cancelado) {
-          setLivros(listaLivros);
-        }
-      } catch (error) {
-        console.error(error);
-
-        if (!cancelado) {
-          setErro("Não foi possível carregar a lista de livros.");
-        }
-      } finally {
-        if (!cancelado) {
-          setCarregandoLivros(false);
-        }
-      }
-    }
-
-    void carregarLivros();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [aberto]);
-
-  function fecharModal() {
-    if (carregando) {
-      return;
-    }
-
-    setLivroSelecionado("");
+    setLivroSelecionado(livro ? String(livro.id_livro) : "");
     setStatusExemplar("Dispon_vel");
     setQuantidade("1");
     setMensagem("");
     setErro("");
+  }, [aberto, livro]);
 
+  function fecharModal() {
+    if (carregando) return;
+
+    setMensagem("");
+    setErro("");
     onFechar();
   }
 
-  async function enviarExemplar(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function enviarExemplar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const quantidadeNumerica = Number(quantidade);
 
-    if (!livroSelecionado) {
-      setErro("Selecione um livro.");
+    if (!livro || !livroSelecionado) {
+      setErro("Não foi possível identificar o livro selecionado.");
       return;
     }
 
-    if (
-      !Number.isInteger(quantidadeNumerica) ||
-      quantidadeNumerica < 1
-    ) {
+    if (!Number.isInteger(quantidadeNumerica) || quantidadeNumerica < 1) {
       setErro("A quantidade deve ser de pelo menos 1 cópia.");
       return;
     }
@@ -149,8 +82,7 @@ export default function CadastrarExemplarModal({
 
         if (!resposta.ok) {
           throw new Error(
-            resultado.erro ||
-              `Erro ao cadastrar a cópia ${i + 1}.`,
+            resultado.erro || `Erro ao cadastrar a cópia ${i + 1}.`,
           );
         }
       }
@@ -169,58 +101,24 @@ export default function CadastrarExemplarModal({
     }
   }
 
-  if (!aberto) {
-    return null;
-  }
+  if (!aberto) return null;
 
   return (
     <div
-      className="
-        fixed
-        inset-0
-        z-[999]
-        flex
-        items-center
-        justify-center
-        bg-black/50
-        p-4
-      "
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          fecharModal();
-        }
+        if (event.target === event.currentTarget) fecharModal();
       }}
     >
-      <div
-        className="
-          w-full
-          max-w-lg
-          rounded-2xl
-          bg-[var(--color-background)]
-          p-6
-          shadow-2xl
-        "
-      >
+      <div className="w-full max-w-lg rounded-2xl bg-[var(--color-background)] p-6 shadow-2xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2
-              className="
-                text-xl
-                font-bold
-                text-[var(--color-text-primary)]
-              "
-            >
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
               Cadastrar Novas Cópias
             </h2>
 
-            <p
-              className="
-                mt-1
-                text-sm
-                text-[var(--color-text-secondary)]
-              "
-            >
-              Adicione uma ou mais cópias a um livro já cadastrado.
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              Adicione uma ou mais cópias a este livro.
             </p>
           </div>
 
@@ -228,91 +126,42 @@ export default function CadastrarExemplarModal({
             type="button"
             onClick={fecharModal}
             disabled={carregando}
-            className="
-              flex
-              h-9
-              w-9
-              items-center
-              justify-center
-              rounded-full
-              text-xl
-              text-[var(--color-text-secondary)]
-              hover:bg-[var(--color-brand-100)]
-              hover:text-[var(--color-text-primary)]
-              transition-colors
-            "
+            className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-brand-100)] hover:text-[var(--color-text-primary)]"
             aria-label="Fechar"
           >
             ×
           </button>
         </div>
 
-        <form
-          onSubmit={enviarExemplar}
-          className="flex flex-col gap-5"
-        >
+        <form onSubmit={enviarExemplar} className="flex flex-col gap-5">
           <div>
             <label
               htmlFor="livro"
-              className="
-                mb-2
-                block
-                text-sm
-                font-bold
-                text-[var(--color-text-primary)]
-              "
+              className="mb-2 block text-sm font-bold text-[var(--color-text-primary)]"
             >
-              Livro
+              Livro selecionado
             </label>
 
-            <select
+            <input
               id="livro"
-              value={livroSelecionado}
-              onChange={(event) =>
-                setLivroSelecionado(event.target.value)
-              }
-              required
-              disabled={carregandoLivros || carregando}
-              className="
-                w-full
-                rounded-lg
-                border
-                border-[var(--color-brand-300)]
-                bg-[var(--color-background)]
-                px-3
-                py-3
-                text-sm
-                text-[var(--color-text-primary)]
-                outline-none
-              "
-            >
-              <option value="">
-                {carregandoLivros
-                  ? "Carregando livros..."
-                  : "Selecione um livro"}
-              </option>
+              type="text"
+              value={livro?.titulo_livro ?? ""}
+              readOnly
+              disabled={!livro}
+              className="w-full rounded-lg border border-[var(--color-brand-300)] bg-gray-100 px-3 py-3 text-sm text-gray-700 outline-none"
+            />
 
-              {(Array.isArray(livros) ? livros : []).map((livro) => (
-                <option
-                  key={livro.id_livro}
-                  value={livro.id_livro}
-                >
-                  {livro.titulo_livro} — ISBN: {livro.isbn}
-                </option>
-              ))}
-            </select>
+            {livro?.isbn && (
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                ISBN: {livro.isbn}
+              </p>
+            )}
           </div>
 
           <div>
             <label
               htmlFor="quantidade"
-              className="
-                mb-2
-                block
-                text-sm
-                font-bold
-                text-[var(--color-text-primary)]
-              "
+              className="mb-2 block text-sm font-bold text-[var(--color-text-primary)]"
             >
               Quantidade de cópias
             </label>
@@ -323,36 +172,17 @@ export default function CadastrarExemplarModal({
               min="1"
               step="1"
               value={quantidade}
-              onChange={(event) =>
-                setQuantidade(event.target.value)
-              }
+              onChange={(event) => setQuantidade(event.target.value)}
               disabled={carregando}
               required
-              className="
-                w-full
-                rounded-lg
-                border
-                border-[var(--color-brand-300)]
-                bg-[var(--color-background)]
-                px-3
-                py-3
-                text-sm
-                text-[var(--color-text-primary)]
-                outline-none
-              "
+              className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none"
             />
           </div>
 
           <div>
             <label
               htmlFor="status-exemplar"
-              className="
-                mb-2
-                block
-                text-sm
-                font-bold
-                text-[var(--color-text-primary)]
-              "
+              className="mb-2 block text-sm font-bold text-[var(--color-text-primary)]"
             >
               Status das cópias
             </label>
@@ -360,59 +190,22 @@ export default function CadastrarExemplarModal({
             <select
               id="status-exemplar"
               value={statusExemplar}
-              onChange={(event) =>
-                setStatusExemplar(event.target.value)
-              }
+              onChange={(event) => setStatusExemplar(event.target.value)}
               disabled={carregando}
-              className="
-                w-full
-                rounded-lg
-                border
-                border-[var(--color-brand-300)]
-                bg-[var(--color-background)]
-                px-3
-                py-3
-                text-sm
-                text-[var(--color-text-primary)]
-                outline-none
-              "
+              className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none"
             >
-              <option value="Dispon_vel">
-                Disponível
-              </option>
+              <option value="Dispon_vel">Disponível</option>
             </select>
           </div>
 
           {erro && (
-            <div
-              className="
-                rounded-lg
-                border
-                border-red-200
-                bg-red-50
-                px-4
-                py-3
-                text-sm
-                text-red-700
-              "
-            >
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {erro}
             </div>
           )}
 
           {mensagem && (
-            <div
-              className="
-                rounded-lg
-                border
-                border-green-200
-                bg-green-50
-                px-4
-                py-3
-                text-sm
-                text-green-700
-              "
-            >
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
               {mensagem}
             </div>
           )}
@@ -422,40 +215,17 @@ export default function CadastrarExemplarModal({
               type="button"
               onClick={fecharModal}
               disabled={carregando}
-              className="
-                rounded-lg
-                border
-                border-[var(--color-brand-500)]
-                px-5
-                py-2.5
-                font-bold
-                text-[var(--color-brand-500)]
-                transition-colors
-                hover:bg-[var(--color-brand-100)]
-              "
+              className="rounded-lg border border-[var(--color-brand-500)] px-5 py-2.5 font-bold text-[var(--color-brand-500)] transition-colors hover:bg-[var(--color-brand-100)]"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              disabled={carregando || carregandoLivros}
-              className="
-                rounded-lg
-                bg-[var(--color-brand-500)]
-                px-5
-                py-2.5
-                font-bold
-                text-[var(--color-text-inverse)]
-                transition-colors
-                hover:bg-[var(--color-brand-400)]
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-              "
+              disabled={carregando || !livro}
+              className="rounded-lg bg-[var(--color-brand-500)] px-5 py-2.5 font-bold text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-brand-400)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {carregando
-                ? "Cadastrando..."
-                : "Cadastrar Cópias"}
+              {carregando ? "Cadastrando..." : "Cadastrar Cópias"}
             </button>
           </div>
         </form>

@@ -61,8 +61,8 @@ const coresGenero: Record<string, string> = {
   mitologia: "var(--color-religion-mythology)",
   "religião e mitologia": "var(--color-religion-mythology)",
   "religiao e mitologia": "var(--color-religion-mythology)",
-  "ficção": "var(--color-science-fiction)",
-  "ficcao": "var(--color-science-fiction)",
+  ficção: "var(--color-science-fiction)",
+  ficcao: "var(--color-science-fiction)",
   "arte e cultura": "var(--color-art-culture)",
   fantasia: "var(--color-fantasy)",
   biografias: "var(--color-biographies-memoirs)",
@@ -102,14 +102,19 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   // Estados dos Modais
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
-  const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] = useState(false);
-  const [modalGerenciarExemplaresAberto, setModalGerenciarExemplaresAberto] = useState(false);
+  const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] =
+    useState(false);
+  const [modalGerenciarExemplaresAberto, setModalGerenciarExemplaresAberto] =
+    useState(false);
 
   // Lista de Frequentadores do Banco
-  const [listaFrequentadores, setListaFrequentadores] = useState<Frequentador[]>([]);
+  const [listaFrequentadores, setListaFrequentadores] = useState<
+    Frequentador[]
+  >([]);
 
   // Formulário do Empréstimo
-  const [idFrequentadorSelecionado, setIdFrequentadorSelecionado] = useState("");
+  const [idFrequentadorSelecionado, setIdFrequentadorSelecionado] =
+    useState("");
   const [senhaFrequentador, setSenhaFrequentador] = useState("");
   const [prazoDias, setPrazoDias] = useState<number>(15);
   const [dataEmprestimo, setDataEmprestimo] = useState("");
@@ -152,7 +157,7 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   function abrirModalEmprestimo() {
     const listaExemplares = livro?.exemplar || livro?.exemplares || [];
     const copiasDisponiveis = listaExemplares.filter(
-      (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel"
+      (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel",
     ).length;
 
     if (copiasDisponiveis <= 0) {
@@ -196,9 +201,15 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
           autor: livroDados.autor_livro || livroDados.autor || "",
           genero: livroDados.genero_livro || livroDados.genero || "",
           editora: livroDados.editora_livro || livroDados.editora || "",
-          ano: (livroDados.anopub_livro || livroDados.ano_publicacao || livroDados.ano || "").toString(),
+          ano: (
+            livroDados.anopub_livro ||
+            livroDados.ano_publicacao ||
+            livroDados.ano ||
+            ""
+          ).toString(),
           copias: (livroDados.qtd_copias ?? livroDados.copias ?? "").toString(),
-          localizacao: livroDados.localizacao_livro || livroDados.localizacao || "",
+          localizacao:
+            livroDados.localizacao_livro || livroDados.localizacao || "",
           sinopse: livroDados.sinopse_livro || livroDados.sinopse || "",
           capa: livroDados.imgcapa_livro || livroDados.capa || "",
         });
@@ -235,7 +246,10 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
     }
   }
 
-  async function handleMudarStatusCopia(idExemplar: number, inativoAtual: boolean) {
+  async function handleMudarStatusCopia(
+    idExemplar: number,
+    inativoAtual: boolean,
+  ) {
     const acao = inativoAtual ? "reativar" : "desativar";
     if (!confirm(`Tem certeza que deseja ${acao} esta cópia?`)) return;
 
@@ -245,7 +259,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       });
 
       if (res.ok) {
-        alert(`Cópia ${inativoAtual ? "reativada" : "desativada"} com sucesso!`);
+        alert(
+          `Cópia ${inativoAtual ? "reativada" : "desativada"} com sucesso!`,
+        );
         window.location.reload();
       } else {
         const dadosErro = await res.json().catch(() => ({}));
@@ -262,11 +278,13 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
 
     const listaExemplares = livro?.exemplar || livro?.exemplares || [];
     const exemplarAtivo = listaExemplares.find(
-      (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel"
+      (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel",
     );
 
     if (!exemplarAtivo) {
-      alert("Não é possível realizar o empréstimo pois não há exemplares disponíveis.");
+      alert(
+        "Não é possível realizar o empréstimo pois não há exemplares disponíveis.",
+      );
       return;
     }
 
@@ -406,7 +424,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-gray-700 font-medium">Sem Capa</span>
+                        <span className="text-gray-700 font-medium">
+                          Sem Capa
+                        </span>
                       )}
                     </div>
 
@@ -436,7 +456,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                           {autor || "Não informado"}
                         </p>
                         <p>
-                          <span className="font-semibold">Ano de publicação:</span>{" "}
+                          <span className="font-semibold">
+                            Ano de publicação:
+                          </span>{" "}
                           {ano || "Não informado"}
                         </p>
                         <p>
@@ -449,7 +471,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                         </p>
 
                         <p>
-                          <span className="font-semibold">Cópias disponíveis:</span>{" "}
+                          <span className="font-semibold">
+                            Cópias disponíveis:
+                          </span>{" "}
                           <span
                             className={
                               copiasDisponiveis === 0
@@ -519,7 +543,7 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                     onClick={() => setModalGerenciarExemplaresAberto(true)}
                     className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-blue-200 hover:text-blue-800 transition-colors cursor-pointer"
                   >
-                    Gerenciar Exemplares 
+                    Gerenciar Exemplares
                   </button>
                 </div>
               </div>
@@ -534,6 +558,15 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
         aberto={modalCadastrarExemplarAberto}
         onFechar={() => setModalCadastrarExemplarAberto(false)}
         onSucesso={() => window.location.reload()}
+        livro={
+          livro
+            ? {
+                id_livro: livro.id_livro,
+                titulo_livro:
+                  livro.titulo_livro || livro.titulo || "Livro sem título",
+              }
+            : null
+        }
       />
 
       {/* ==================== MODAL GERENCIAR EXEMPLARES ==================== */}
@@ -541,7 +574,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-xl font-bold text-black">Gerenciar Exemplares</h3>
+              <h3 className="text-xl font-bold text-black">
+                Gerenciar Exemplares
+              </h3>
               <button
                 type="button"
                 onClick={() => setModalGerenciarExemplaresAberto(false)}
@@ -552,20 +587,23 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
             </div>
 
             <p className="text-sm text-gray-600">
-              Visualize abaixo todas as cópias deste livro e escolha qual deseja desativar ou reativar de forma prática:
+              Visualize abaixo todas as cópias deste livro e escolha qual deseja
+              desativar ou reativar de forma prática:
             </p>
 
             <div className="space-y-3 pt-2">
               {listaExemplares.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">Nenhum exemplar cadastrado.</p>
+                <p className="text-center text-gray-500 py-4">
+                  Nenhum exemplar cadastrado.
+                </p>
               ) : (
                 listaExemplares.map((ex, index) => {
                   const isInativo = ex.inativo_exemplar;
                   const statusTexto = isInativo
                     ? "Inativo"
                     : ex.status_exemplar === "Em_posse"
-                    ? "Em Posse (Emprestado)"
-                    : "Disponível";
+                      ? "Em Posse (Emprestado)"
+                      : "Disponível";
 
                   return (
                     <div
@@ -573,14 +611,16 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                       className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50"
                     >
                       <div>
-                        <span className="font-bold text-black block">Cópia #{index + 1} (ID: {ex.id_exemplar})</span>
+                        <span className="font-bold text-black block">
+                          Cópia #{index + 1} (ID: {ex.id_exemplar})
+                        </span>
                         <span
                           className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${
                             isInativo
                               ? "bg-red-100 text-red-700"
                               : ex.status_exemplar === "Em_posse"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-700"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-100 text-green-700"
                           }`}
                         >
                           {statusTexto}
@@ -591,7 +631,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                         {isInativo ? (
                           <button
                             type="button"
-                            onClick={() => handleMudarStatusCopia(ex.id_exemplar, true)}
+                            onClick={() =>
+                              handleMudarStatusCopia(ex.id_exemplar, true)
+                            }
                             className="bg-green-600 text-white font-semibold text-xs py-2 px-4 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
                           >
                             Reativar
@@ -599,7 +641,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleMudarStatusCopia(ex.id_exemplar, false)}
+                            onClick={() =>
+                              handleMudarStatusCopia(ex.id_exemplar, false)
+                            }
                             className="bg-orange-600 text-white font-semibold text-xs py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
                           >
                             Desativar
@@ -766,7 +810,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
             <form onSubmit={handleSalvarLivro} className="space-y-4 text-black">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Título</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Título
+                  </label>
                   <input
                     type="text"
                     required
@@ -779,7 +825,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Autor</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Autor
+                  </label>
                   <input
                     type="text"
                     required
@@ -792,7 +840,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Gênero</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Gênero
+                  </label>
                   <select
                     value={formLivro.genero}
                     onChange={(e) =>
@@ -805,7 +855,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                       Selecione um gênero
                     </option>
                     {formLivro.genero &&
-                      !generos.some((genero) => genero === formLivro.genero) && (
+                      !generos.some(
+                        (genero) => genero === formLivro.genero,
+                      ) && (
                         <option value={formLivro.genero}>
                           {formLivro.genero}
                         </option>
@@ -819,7 +871,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Editora</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Editora
+                  </label>
                   <input
                     type="text"
                     value={formLivro.editora}
@@ -831,7 +885,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Ano</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Ano
+                  </label>
                   <input
                     type="number"
                     value={formLivro.ano}
@@ -843,12 +899,17 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Localização</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Localização
+                  </label>
                   <input
                     type="text"
                     value={formLivro.localizacao}
                     onChange={(e) =>
-                      setFormLivro({ ...formLivro, localizacao: e.target.value })
+                      setFormLivro({
+                        ...formLivro,
+                        localizacao: e.target.value,
+                      })
                     }
                     className="w-full p-2.5 border border-gray-300 rounded-lg"
                   />
@@ -870,7 +931,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1">Sinopse</label>
+                <label className="block text-sm font-semibold mb-1">
+                  Sinopse
+                </label>
                 <textarea
                   rows={4}
                   value={formLivro.sinopse}

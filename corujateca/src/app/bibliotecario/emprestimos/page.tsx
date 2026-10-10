@@ -5,42 +5,40 @@ import Footer from "@/components/Footer";
 
 import DashboardCard from "./components/DashboardCard";
 import SearchFilters from "./components/SearchFilters";
-import CreateEmprestimoForm from "./components/CreateEmprestimoForm";
 import LoansSection, { type LoanView } from "./components/LoansSection";
 import { Prisma } from "@prisma/client";
 
 function formatarData(data: Date | string | null) {
-  if (!data) {
-    return "-";
-  }
-
-  const valor = new Date(data);
+  if (!data) return "-";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(valor);
+    timeZone: "UTC",
+  }).format(new Date(data));
 }
 
 interface PageProps {
   searchParams: Promise<{
     nome?: string;
     status?: string;
-    dataExpiracao?: string;
-    dataEmprestimo?: string;
     data?: string;
+    dataFiltro?: string;
+    page?: string;
   }>;
 }
 
 export default async function EmprestimosPage({ searchParams }: PageProps) {
-  const { nome, status, dataExpiracao, dataEmprestimo, data: nomeLivro } = await searchParams;
+  const { nome, status, data: nomeLivro, dataFiltro } = await searchParams;
+
   const hoje = new Date();
 
   const whereClause: Prisma.emprestimoWhereInput = {
     inativo_emprestimo: false,
   };
 
+  // Filtro pelo nome do frequentador.
   if (nome) {
     whereClause.frequentador = {
       nome_freq: {
@@ -50,6 +48,7 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     };
   }
 
+  // Filtro por status.
   if (status) {
     if (status === "Em andamento") {
       whereClause.dta_devolucao_real = null;
@@ -57,19 +56,45 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     } else if (status === "Atrasado") {
       whereClause.dta_devolucao_real = null;
       whereClause.dta_devolucao = { lt: hoje };
-    } else if (status === "Devolvido no prazo" || status === "Devolvido com atraso") { 
+    } else if (
+      status === "Devolvido no prazo" ||
+      status === "Devolvido com atraso"
+    ) {
       whereClause.dta_devolucao_real = { not: null };
     }
   }
 
-  // PROGRAMADO EM UMA LINHA: Agrupa Data do Empréstimo (Início) e Data de Expiração (Fim) juntas
-  if (dataEmprestimo || dataExpiracao) {
-    whereClause.AND = [
-      ...(dataEmprestimo ? [{ dta_emprestimo: { gte: new Date(`${dataEmprestimo}T00:00:00`), lte: new Date(`${dataEmprestimo}T23:59:59`) } }] : []),
-      ...(dataExpiracao ? [{ dta_devolucao: { gte: new Date(`${dataExpiracao}T00:00:00`), lte: new Date(`${dataExpiracao}T23:59:59`) } }] : [])
-    ];
-  }
+  // Filtro por uma única data:
+  // encontra empréstimos cuja data de início OU de devolução
+if (dataFiltro) {
+  const [ano, mes, dia] = dataFiltro.split("-").map(Number);
 
+  const inicioDia = new Date(Date.UTC(ano, mes - 1, dia));
+  const inicioProximoDia = new Date(Date.UTC(ano, mes - 1, dia + 1));
+
+  whereClause.OR = [
+    {
+      dta_emprestimo: {
+        gte: inicioDia,
+        lt: inicioProximoDia,
+      },
+    },
+    {
+      dta_devolucao: {
+        gte: inicioDia,
+        lt: inicioProximoDia,
+      },
+    },
+    {
+      dta_devolucao_real: {
+        gte: inicioDia,
+        lt: inicioProximoDia,
+      },
+    },
+  ];
+}
+
+  // Filtro pelo título do livro.
   if (nomeLivro) {
     whereClause.exemplar = {
       livro: {
@@ -81,7 +106,8 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     };
   }
 
-  const [emprestimosFiltrados, exemplaresDisponiveis, frequentadores, todosEmprestimosAtivos] = await Promise.all([
+  // Busca empréstimos filtrados e dados para os cards de resumo.
+  const [emprestimosFiltrados, todosEmprestimosAtivos] = await Promise.all([
     db.emprestimo.findMany({
       where: whereClause,
       include: {
@@ -92,39 +118,39 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
         },
         frequentador: true,
       },
-      orderBy: { dta_emprestimo: "desc" },
-    }),
-    db.exemplar.findMany({
-      where: {
-        inativo_exemplar: false,
-        status_exemplar: "Dispon_vel",
+      orderBy: {
+        dta_emprestimo: "desc",
       },
-      include: {
-        livro: true,
-      },
-      take: 50,
     }),
-    db.frequentador.findMany({
-      where: { inativo_freq: false },
-      orderBy: { nome_freq: "asc" },
-      take: 50,
-    }),
+
     db.emprestimo.findMany({
-      where: { inativo_emprestimo: false },
-      select: { dta_devolucao_real: true, dta_devolucao: true }
-    })
+      where: {
+        inativo_emprestimo: false,
+      },
+      select: {
+        dta_devolucao_real: true,
+        dta_devolucao: true,
+      },
+    }),
   ]);
 
   let emprestimosProcessados = emprestimosFiltrados;
 
+  // Diferencia devoluções realizadas no prazo das devoluções atrasadas.
   if (status === "Devolvido no prazo") {
-    emprestimosProcessados = emprestimosFiltrados.filter(emp => {
-      if (!emp.dta_devolucao_real) return false;
+    emprestimosProcessados = emprestimosFiltrados.filter((emp) => {
+      if (!emp.dta_devolucao_real) {
+        return false;
+      }
+
       return new Date(emp.dta_devolucao_real) <= new Date(emp.dta_devolucao);
     });
   } else if (status === "Devolvido com atraso") {
-    emprestimosProcessados = emprestimosFiltrados.filter(emp => {
-      if (!emp.dta_devolucao_real) return false;
+    emprestimosProcessados = emprestimosFiltrados.filter((emp) => {
+      if (!emp.dta_devolucao_real) {
+        return false;
+      }
+
       return new Date(emp.dta_devolucao_real) > new Date(emp.dta_devolucao);
     });
   }
@@ -136,20 +162,26 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     if (emprestimo.dta_devolucao_real) {
       const real = new Date(emprestimo.dta_devolucao_real);
       const prevista = new Date(emprestimo.dta_devolucao);
-      statusCalculado = real <= prevista ? "Devolvido no prazo" : "Devolvido com atraso";
+
+      statusCalculado =
+        real <= prevista ? "Devolvido no prazo" : "Devolvido com atraso";
     } else if (new Date(emprestimo.dta_devolucao) < hoje) {
       statusCalculado = "Atrasado";
+
       const dataPrevista = new Date(emprestimo.dta_devolucao);
+
       const vencimento = Date.UTC(
         dataPrevista.getUTCFullYear(),
         dataPrevista.getUTCMonth(),
         dataPrevista.getUTCDate(),
       );
+
       const hojeSemHorario = Date.UTC(
         hoje.getFullYear(),
         hoje.getMonth(),
         hoje.getDate(),
       );
+
       daysOverdue = Math.max(
         1,
         Math.floor((hojeSemHorario - vencimento) / (1000 * 60 * 60 * 24)),
@@ -168,19 +200,27 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     };
   });
 
+  // Quantidade de empréstimos ainda não devolvidos.
   const quantidadeEmAndamento = todosEmprestimosAtivos.filter(
-    (emp) => !emp.dta_devolucao_real
+    (emp) => !emp.dta_devolucao_real,
   ).length;
 
+  // Quantidade de empréstimos com devolução prevista para hoje.
   const quantidadeExpirandoHoje = todosEmprestimosAtivos.filter((emp) => {
-    if (emp.dta_devolucao_real) return false;
+    if (emp.dta_devolucao_real) {
+      return false;
+    }
+
     const dataExpiracao = new Date(emp.dta_devolucao);
+
     return dataExpiracao.toDateString() === hoje.toDateString();
   }).length;
 
   return (
-    // Adicionado suppressHydrationWarning para matar o erro de renderização de data do servidor
-    <div className="min-h-screen bg-[var(--color-background)] flex flex-col" suppressHydrationWarning>
+    <div
+      className="min-h-screen bg-[var(--color-background)] flex flex-col"
+      suppressHydrationWarning
+    >
       <Header />
 
       <div className="flex flex-1 min-w-0">
@@ -188,7 +228,6 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
           <div className="mx-auto w-full max-w-6xl space-y-8">
-
             <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
               <DashboardCard
                 title="Empréstimos em Andamento:"
@@ -202,11 +241,6 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
             </section>
 
             <section className="rounded-3xl bg-brand-200 p-4 shadow-sm md:p-6">
-              <CreateEmprestimoForm
-                frequentadores={frequentadores}
-                exemplaresDisponiveis={exemplaresDisponiveis}
-              />
-
               <h2 className="mb-5 text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
                 Pesquisar por Empréstimos
               </h2>

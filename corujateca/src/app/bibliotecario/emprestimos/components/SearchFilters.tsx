@@ -10,65 +10,54 @@ export default function SearchFilters() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  // Inicializa o estado local com o que já está na URL (bom para F5/Reload)
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [nome, setNome] = useState(searchParams.get("nome") ?? "");
-  const [data, setData] = useState(searchParams.get("data") ?? "");
-  
-  // ADICIONADO: Estados para gerenciar as duas novas datas independentes
-  const [dataEmprestimo, setDataEmprestimo] = useState(searchParams.get("dataEmprestimo") ?? "");
-  const [dataExpiracao, setDataExpiracao] = useState(searchParams.get("dataExpiracao") ?? "");
+  const [nomeLivro, setNomeLivro] = useState(searchParams.get("data") ?? "");
+  const [data, setData] = useState(searchParams.get("dataFiltro") ?? "");
 
   function handleBuscar() {
     const params = new URLSearchParams(searchParams.toString());
 
-    // Atualiza ou remove o parâmetro 'nome'
     if (nome.trim()) {
       params.set("nome", nome.trim());
     } else {
       params.delete("nome");
     }
 
-    // Atualiza ou remove o parâmetro 'data' (Nome do Livro)
-    if (data) {
-      params.set("data", data);
+    // O parâmetro "data" continua reservado para o nome do livro.
+    if (nomeLivro.trim()) {
+      params.set("data", nomeLivro.trim());
     } else {
       params.delete("data");
     }
 
-    // ADICIONADO: Atualiza ou remove o parâmetro 'dataEmprestimo'
-    if (dataEmprestimo) {
-      params.set("dataEmprestimo", dataEmprestimo);
+    // Um único campo de data para início OU término do empréstimo.
+    if (data) {
+      params.set("dataFiltro", data);
     } else {
-      params.delete("dataEmprestimo");
+      params.delete("dataFiltro");
     }
 
-    // ADICIONADO: Atualiza ou remove o parâmetro 'dataExpiracao'
-    if (dataExpiracao) {
-      params.set("dataExpiracao", dataExpiracao);
-    } else {
-      params.delete("dataExpiracao");
-    }
+    // Remove os parâmetros antigos das duas datas.
+    params.delete("dataEmprestimo");
+    params.delete("dataExpiracao");
 
-    // Atualiza ou remove o parâmetro 'status'
     if (status) {
       params.set("status", status);
     } else {
       params.delete("status");
     }
 
-    // Reseta a paginação ao aplicar um novo filtro
     params.delete("page");
 
-    // Executa a transição de rota de forma suave
     startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
     });
   }
 
   return (
-    <div className="flex flex-col gap-3 relative">
-      {/* Input de nome */}
+    <div className="relative flex flex-col gap-3">
       <input
         type="text"
         placeholder="Buscar por nome..."
@@ -77,49 +66,24 @@ export default function SearchFilters() {
         className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
       />
 
-      {/* Input de data antiga reaproveitada como Nome do livro conforme regras anteriores */}
       <input
         type="text"
         placeholder="Buscar por nome do livro..."
-        value={data}
-        onChange={(e) => setData(e.target.value)}
+        value={nomeLivro}
+        onChange={(e) => setNomeLivro(e.target.value)}
         className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
       />
 
-      {/* Filtros lado a lado modificados para comportar as duas datas e o status */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        
-        {/* ADICIONADO: Filtro por data de Empréstimo */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <input
-          type="text"
-          placeholder="Por data (Empréstimo)"
-          value={dataEmprestimo}
-          onChange={(e) => setDataEmprestimo(e.target.value)}
-          onFocus={(e) => (e.target.type = "date")}
-          onBlur={(e) => {
-            if (!e.target.value) {
-              e.target.type = "text";
-            }
-          }}
+          type="date"
+          aria-label="Filtrar pela data de início ou devolução do empréstimo"
+          title="Busca pela data de início ou devolução prevista"
+          value={data}
+          onChange={(e) => setData(e.target.value)}
           className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
         />
 
-        {/* ADICIONADO: Filtro por data de Expiração */}
-        <input
-          type="text"
-          placeholder="Por data (Expiração)"
-          value={dataExpiracao}
-          onChange={(e) => setDataExpiracao(e.target.value)}
-          onFocus={(e) => (e.target.type = "date")}
-          onBlur={(e) => {
-            if (!e.target.value) {
-              e.target.type = "text";
-            }
-          }}
-          className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
-        />
-
-        {/* Filtro por status (Mantido idêntico com as strings corrigidas das regras anteriores) */}
         <div className="relative flex items-center">
           <ChevronDown
             aria-hidden="true"
@@ -129,7 +93,7 @@ export default function SearchFilters() {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className={`w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 pr-10 py-2 outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer ${
+            className={`w-full cursor-pointer appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-2 pr-10 outline-none focus:ring-2 focus:ring-brand-500 ${
               status === "" ? "text-brand-600/50" : "text-brand-600"
             }`}
           >
@@ -142,12 +106,11 @@ export default function SearchFilters() {
         </div>
       </div>
 
-      {/* Botão de busca */}
       <button
         type="button"
         disabled={isPending}
         onClick={handleBuscar}
-        className="rounded-xl bg-brand-500 px-4 py-2.5 text-white hover:bg-brand-600 disabled:opacity-50 transition-opacity"
+        className="rounded-xl bg-brand-500 px-4 py-2.5 text-white transition-opacity hover:bg-brand-600 disabled:opacity-50"
       >
         {isPending ? "Buscando..." : "Buscar Empréstimos"}
       </button>
