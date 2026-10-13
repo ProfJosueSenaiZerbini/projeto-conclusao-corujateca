@@ -1,18 +1,37 @@
+import type { LucideIcon } from "lucide-react";
+
 type Props = {
   title: string;
   value: number;
+  icon: LucideIcon;
+  tone: "info" | "warning";
 };
 
-export default function DashboardCard({ title, value }: Props) {
-  return (
-    <div className="flex min-h-28 flex-col items-center justify-center rounded-xl bg-brand-500 p-3 text-center text-text-inverse shadow-md sm:min-h-32 sm:p-4">
-      <h3 className="max-w-xs text-sm font-semibold leading-snug sm:text-base lg:text-lg">
-        {title}
-      </h3>
+const toneClasses = {
+  info: "bg-[var(--status-info)]/10 text-[var(--status-info)]",
+  warning: "bg-[var(--status-warning)]/10 text-[var(--status-warning)]",
+};
 
-      <span className="mt-1 text-3xl font-bold sm:text-4xl">
-        {value}
-      </span>
-    </div>
+export default function DashboardCard({ title, value, icon: Icon, tone }: Props) {
+  return (
+    <article className="flex min-w-0 items-center gap-4 rounded-[var(--radius-card)] border-2 border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-5">
+      <div
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md sm:h-14 sm:w-14 ${toneClasses[tone]}`}
+      >
+        <Icon size={25} aria-hidden="true" />
+      </div>
+
+      <div className="min-w-0">
+        <h2 className="text-sm font-medium leading-snug text-[var(--text-secondary)]">
+          {title}
+        </h2>
+
+        <p className="mt-1 text-3xl font-bold tabular-nums sm:text-4xl">
+          {value}
+        </p>
+
+        <p className="mt-1 text-xs text-[var(--text-muted)]">Em circulação</p>
+      </div>
+    </article>
   );
 }

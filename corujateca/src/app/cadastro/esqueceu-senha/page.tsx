@@ -22,7 +22,6 @@ export default function EsqueceuSenha() {
     setCarregando(true);
 
     try {
-      // APONTANDO PARA /api/esqueci-senha
       const response = await fetch("/api/esqueci-senha", {
         method: "POST",
         headers: {

@@ -1,53 +1,93 @@
 "use client";
 
+import { CalendarDays, RotateCcw } from "lucide-react";
+
 type SearchFiltersProps = {
   status: string;
   data: string;
   onStatusChange: (status: string) => void;
   onDataChange: (data: string) => void;
+  onClear: () => void;
 };
+
+const campoClasse =
+  "min-h-11 w-full min-w-0 rounded-[var(--radius-input)] border border-[var(--border-default)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--border-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] sm:px-4";
+
+const opcoesStatus = [
+  { value: "", label: "Todos os status" },
+  { value: "em_andamento", label: "Em andamento" },
+  { value: "atrasado", label: "Atrasado" },
+  { value: "devolvido_no_prazo", label: "Devolvido no prazo" },
+  { value: "devolvido_com_atraso", label: "Devolvido com atraso" },
+];
 
 export default function SearchFilters({
   status,
   data,
   onStatusChange,
   onDataChange,
+  onClear,
 }: SearchFiltersProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      <input
-        type="date"
-        value={data}
-        onChange={(e) => onDataChange(e.target.value)}
-        className="w-full cursor-pointer rounded-2xl border border-gray-300 bg-white px-5 py-3 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
-      />
+    <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="min-w-0">
+        <label
+          htmlFor="data-emprestimo"
+          className="mb-2 block text-sm font-medium text-[var(--text-secondary)]"
+        >
+          Data do empréstimo
+        </label>
 
-      <select
-        value={status}
-        onChange={(e) => onStatusChange(e.target.value)}
-        className={`w-full cursor-pointer appearance-none rounded-2xl border border-gray-300 bg-white px-5 py-3 outline-none focus:ring-2 focus:ring-brand-500 bg-[right_1.25rem_center] bg-no-repeat bg-[url('data:image/svg+xml;charset=UTF-8,<svg%20xmlns="http://www.w3.org/2000/svg"%20width="16"%20height="16"%20viewBox="0%200%2024%2024"%20fill="none"%20stroke="%239e8a78"%20stroke-width="2"%20stroke-linecap="round"%20stroke-linejoin="round"><path%20d="m6%209%206%206%206-6"/></svg>')] ${status === "" ? "text-brand-600/50" : "text-brand-600"
-          }`}
-      >
-        <option value="" className="text-brand-600">
-          Todos os status
-        </option>
+        <div className="flex min-h-11 min-w-0 items-center rounded-[var(--radius-input)] border border-[var(--border-default)] bg-[var(--surface)] transition focus-within:ring-2 focus-within:ring-[var(--focus-ring)]">
+          <CalendarDays
+            size={17}
+            className="ml-3 shrink-0 text-[var(--text-muted)]"
+            aria-hidden="true"
+          />
 
-        <option value="em_andamento" className="text-brand-600">
-          Em andamento
-        </option>
+          <input
+            id="data-emprestimo"
+            type="date"
+            value={data}
+            onChange={(event) => onDataChange(event.target.value)}
+            className="min-w-0 flex-1 cursor-pointer bg-transparent px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none sm:px-4"
+          />
+        </div>
+      </div>
 
-        <option value="atrasado" className="text-brand-600">
-          Atrasado
-        </option>
+      <div className="min-w-0">
+        <label
+          htmlFor="status-emprestimo"
+          className="mb-2 block text-sm font-medium text-[var(--text-secondary)]"
+        >
+          Status do empréstimo
+        </label>
 
-        <option value="devolvido_no_prazo" className="text-brand-600">
-          Devolvido no prazo
-        </option>
+        <select
+          id="status-emprestimo"
+          value={status}
+          onChange={(event) => onStatusChange(event.target.value)}
+          className={`${campoClasse} cursor-pointer`}
+        >
+          {opcoesStatus.map((opcao) => (
+            <option key={opcao.value} value={opcao.value}>
+              {opcao.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        <option value="devolvido_com_atraso" className="text-brand-600">
-          Devolvido com atraso
-        </option>
-      </select>
+      <div className="min-w-0 sm:col-span-2">
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={!status && !data}
+          className="inline-flex min-h-11 w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-button)] border-2 border-[var(--border-default)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RotateCcw size={16} aria-hidden="true" />
+          Limpar filtros
+        </button>
+      </div>
     </div>
   );
 }

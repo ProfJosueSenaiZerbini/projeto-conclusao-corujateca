@@ -2,9 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import Header from "@/components/Header";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import { AlertCircle, ArrowLeft, LoaderCircle } from "lucide-react";
 
 type Livro = {
   id_livro: number;
@@ -44,8 +42,8 @@ const coresGenero: Record<string, string> = {
   mitologia: "var(--color-religion-mythology)",
   "religião e mitologia": "var(--color-religion-mythology)",
   "religiao e mitologia": "var(--color-religion-mythology)",
-  "ficção": "var(--color-science-fiction)",
-  "ficcao": "var(--color-science-fiction)",
+  ficção: "var(--color-science-fiction)",
+  ficcao: "var(--color-science-fiction)",
   "arte e cultura": "var(--color-art-culture)",
   fantasia: "var(--color-fantasy)",
   biografias: "var(--color-biographies-memoirs)",
@@ -126,121 +124,146 @@ export default function DetalhesLivroFrequentadorPage({ params }: PageProps) {
     livro?.cor_genero || coresGenero[generoChave] || "var(--color-brand-500)";
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
-      <Header />
+    <>
+      <main className="mx-auto w-full max-w-5xl min-w-0">
+        <div className="space-y-6 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-card)] sm:p-6 lg:p-8">
+          <div>
+                  <Link
+                    href="/frequentador/acervo"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-button)] px-3 text-sm font-semibold text-[var(--brand-700)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                  >
+                    <ArrowLeft size={17} aria-hidden="true" />
+                    Voltar ao acervo
+                  </Link>
+          </div>
 
-      <div className="flex flex-1">
-        <Nav />
-
-        <main className="flex-1 min-w-0 p-6 md:p-10">
-          <div className="max-w-4xl mx-auto bg-gray-100/85 rounded-3xl p-6 md:p-8 shadow-sm">
-            <div className="mb-6">
-              <Link
-                href="/frequentador/acervo"
-                className="inline-flex items-center text-black font-semibold text-base hover:opacity-75 transition-opacity"
-              >
-                ← Voltar
-              </Link>
-            </div>
-
-            {carregando ? (
-              <div className="p-12 text-center text-gray-600 animate-pulse font-medium">
-                Carregando informações do livro...
-              </div>
-            ) : erro ? (
-              <div className="p-12 text-center text-red-600 font-medium">
-                {erro}
-              </div>
-            ) : livro ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                  <div className="md:col-span-5 flex flex-col items-center gap-3">
-                    <div className="w-full aspect-[3/4] bg-gray-400 rounded-lg overflow-hidden flex items-center justify-center shadow-inner">
-                      {capa ? (
-                        <img
-                          src={capa}
-                          alt={titulo || "Capa do livro"}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-gray-700 font-medium">Sem Capa</span>
-                      )}
-                    </div>
-
-                    <div className="w-full bg-[#3e3e3e] text-white text-center py-2 px-4 rounded-full font-bold text-xs uppercase tracking-wider">
-                      {status || "Disponível"}
-                    </div>
+                {carregando ? (
+                  <div
+                    className="space-y-4 py-10"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <LoaderCircle
+                      size={28}
+                      className="mx-auto animate-spin text-[var(--brand-500)]"
+                      aria-hidden="true"
+                    />
+                    <p className="text-center text-sm text-[var(--text-muted)]">
+                      Carregando informações do livro...
+                    </p>
                   </div>
+                ) : erro ? (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-3 rounded-[var(--radius-card)] bg-[var(--status-danger)]/10 p-4 text-sm font-medium text-[var(--status-danger)]"
+                  >
+                    <AlertCircle
+                      size={20}
+                      className="shrink-0"
+                      aria-hidden="true"
+                    />
+                    <p>{erro}</p>
+                  </div>
+                ) : livro ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-12">
+                      <div className="flex flex-col items-center gap-3 md:col-span-5">
+                        <div className="flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface-warm)]">
+                          {capa ? (
+                            <img
+                              src={capa}
+                              alt={titulo || "Capa do livro"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="font-medium text-[var(--text-muted)]">
+                              Sem Capa
+                            </span>
+                          )}
+                        </div>
 
-                  <div className="md:col-span-7 flex flex-col justify-between space-y-4">
-                    <div>
-                      <h1 className="text-2xl md:text-3xl font-extrabold text-black uppercase mb-2">
-                        {titulo || "Título Indefinido"}
-                      </h1>
+                        <div className="w-full rounded-full bg-[var(--brand-400)] px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide text-[var(--text-inverse)]">
+                          {status || "Disponível"}
+                        </div>
+                      </div>
 
-                      {genero && (
-                        <span
-                          style={{ backgroundColor: corGenero }}
-                          className="inline-block text-[var(--color-text-primary)] text-xs font-bold uppercase px-4 py-1.5 rounded-full mb-4 leading-none"
-                        >
-                          {genero}
-                        </span>
-                      )}
+                      <div className="flex flex-col justify-between space-y-5 md:col-span-7">
+                        <div>
+                          <h1 className="mb-2 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">
+                            {titulo || "Título Indefinido"}
+                          </h1>
 
-                      <div className="space-y-1.5 text-black text-sm md:text-base">
-                        <p>
-                          <span className="font-semibold">Autor:</span>{" "}
-                          {autor || "Não informado"}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Ano de publicação:</span>{" "}
-                          {ano || "Não informado"}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Editora:</span>{" "}
-                          {editora || "Não informada"}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Cópias totais:</span>{" "}
-                          {copiasTotais}
-                        </p>
+                          {genero && (
+                            <span
+                              style={{ backgroundColor: corGenero }}
+                              className="mb-4 inline-block rounded-full px-3 py-1.5 text-xs font-semibold uppercase leading-none text-[var(--text-primary)]"
+                            >
+                              {genero}
+                            </span>
+                          )}
 
-                        <p>
-                          <span className="font-semibold">Cópias disponíveis:</span>{" "}
-                          <span
-                            className={
-                              copiasDisponiveis === 0
-                                ? "text-red-600 font-bold"
-                                : "text-green-700 font-bold"
-                            }
-                          >
-                            {copiasDisponiveis}
-                            {copiasDisponiveis === 0 ? " (Indisponível)" : ""}
-                          </span>
-                        </p>
+                          <div className="space-y-2 rounded-[var(--radius-card)] bg-[var(--surface-hover)] p-4 text-sm text-[var(--text-secondary)] sm:text-base">
+                            <p>
+                              <span className="font-semibold">Autor:</span>{" "}
+                              {autor || "Não informado"}
+                            </p>
+                            <p>
+                              <span className="font-semibold">
+                                Ano de publicação:
+                              </span>{" "}
+                              {ano || "Não informado"}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Editora:</span>{" "}
+                              {editora || "Não informada"}
+                            </p>
+                            <p>
+                              <span className="font-semibold">
+                                Cópias totais:
+                              </span>{" "}
+                              {copiasTotais}
+                            </p>
+
+                            <p>
+                              <span className="font-semibold">
+                                Cópias disponíveis:
+                              </span>{" "}
+                              <span
+                                className={
+                                  copiasDisponiveis === 0
+                                    ? "font-semibold text-[var(--status-danger)]"
+                                    : "font-semibold text-[var(--status-success)]"
+                                }
+                              >
+                                {copiasDisponiveis}
+                                {copiasDisponiveis === 0
+                                  ? " (Indisponível)"
+                                  : ""}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 text-sm text-[var(--text-secondary)]">
+                      <span className="font-semibold">Localização:</span>{" "}
+                      {localizacao || "Não informada"}
+                    </div>
+
+                    <div className="space-y-2">
+                      <h2 className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
+                        Sinopse
+                      </h2>
+                      <p className="whitespace-pre-line rounded-[var(--radius-card)] bg-[var(--surface-hover)] p-4 text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
+                        {sinopse ||
+                          "Nenhuma sinopse cadastrada para este livro."}
+                      </p>
+                    </div>
                   </div>
-                </div>
-
-                <div className="text-black text-base pt-2">
-                  <span className="font-semibold">Localização:</span>{" "}
-                  {localizacao || "Não informada"}
-                </div>
-
-                <div className="space-y-2">
-                  <h2 className="text-xl font-extrabold text-black">Sinopse</h2>
-                  <p className="text-gray-800 text-sm md:text-base leading-relaxed whitespace-pre-line">
-                    {sinopse || "Nenhuma sinopse cadastrada para este livro."}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </main>
-      </div>
-
-      <Footer />
-    </div>
+                ) : null}
+        </div>
+      </main>
+    </>
   );
 }

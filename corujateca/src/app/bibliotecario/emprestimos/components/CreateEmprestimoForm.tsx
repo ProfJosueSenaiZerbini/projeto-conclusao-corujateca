@@ -3,6 +3,12 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+const campoClasse =
+  "w-full min-w-0 rounded-[var(--radius-input)] border border-[var(--border-default)] bg-[var(--surface)] px-3 py-3 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
+
+const botaoPrimario =
+  "inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--button-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-inverse)] transition hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+
 type Frequentador = {
   id_freq: number;
   nome_freq: string;
@@ -88,84 +94,119 @@ export default function CreateEmprestimoForm({
   }
 
   return (
-    <div className="mb-6 rounded-2xl bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-lg font-bold text-[var(--color-text-primary)]">
-        Criar Empréstimo
-      </h3>
-      <p className="mb-3 text-sm text-brand-600">
+    <section className="mb-6 min-w-0 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6">
+      <h2 className="text-lg font-bold sm:text-xl">Criar empréstimo</h2>
+      <p className="mt-1 mb-5 text-sm leading-relaxed text-[var(--text-secondary)]">
         Cada frequentador pode manter até 2 empréstimos ativos por vez.
       </p>
 
       {erro && (
-        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+        <p
+          role="alert"
+          className="mb-4 rounded-md border-none bg-[var(--status-danger)]/5 p-3 text-sm text-[var(--status-danger)]"
+        >
           {erro}
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-4">
-        <select
-          name="fk_frequentador_id_freq"
-          defaultValue=""
-          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
-          required
-        >
-          <option value="" disabled>
-            Selecione o frequentador
-          </option>
-          {frequentadores.map((frequentador) => (
-            <option key={frequentador.id_freq} value={frequentador.id_freq}>
-              {frequentador.nome_freq}
+      <form onSubmit={handleSubmit} className="grid min-w-0 gap-4 sm:grid-cols-2">
+        <div className="min-w-0">
+          <label
+            htmlFor="frequentador-emprestimo"
+            className="mb-1.5 block text-sm font-semibold"
+          >
+            Frequentador
+          </label>
+          <select
+            id="frequentador-emprestimo"
+            name="fk_frequentador_id_freq"
+            defaultValue=""
+            className={campoClasse}
+            required
+          >
+            <option value="" disabled>
+              Selecione o frequentador
             </option>
-          ))}
-        </select>
+            {frequentadores.map((frequentador) => (
+              <option key={frequentador.id_freq} value={frequentador.id_freq}>
+                {frequentador.nome_freq}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          name="fk_exemplar_id_exemplar"
-          defaultValue=""
-          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
-          required
-        >
-          <option value="" disabled>
-            Selecione o exemplar
-          </option>
-          {exemplaresDisponiveis.map((exemplar) => (
-            <option key={exemplar.id_exemplar} value={exemplar.id_exemplar}>
-              {exemplar.livro.titulo_livro}
+        <div className="min-w-0">
+          <label
+            htmlFor="exemplar-emprestimo"
+            className="mb-1.5 block text-sm font-semibold"
+          >
+            Exemplar
+          </label>
+          <select
+            id="exemplar-emprestimo"
+            name="fk_exemplar_id_exemplar"
+            defaultValue=""
+            className={campoClasse}
+            required
+          >
+            <option value="" disabled>
+              Selecione o exemplar
             </option>
-          ))}
-        </select>
+            {exemplaresDisponiveis.map((exemplar) => (
+              <option key={exemplar.id_exemplar} value={exemplar.id_exemplar}>
+                {exemplar.livro.titulo_livro}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          name="prazo_dias"
-          defaultValue=""
-          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500"
-          required
-        >
-          <option value="" disabled>
+        <div className="min-w-0">
+          <label
+            htmlFor="prazo-emprestimo"
+            className="mb-1.5 block text-sm font-semibold"
+          >
             Prazo do empréstimo
-          </option>
-          <option value="7">7 dias</option>
-          <option value="15">15 dias</option>
-          <option value="30">30 dias</option>
-        </select>
+          </label>
+          <select
+            id="prazo-emprestimo"
+            name="prazo_dias"
+            defaultValue=""
+            className={campoClasse}
+            required
+          >
+            <option value="" disabled>
+              Selecione o prazo
+            </option>
+            <option value="7">7 dias</option>
+            <option value="15">15 dias</option>
+            <option value="30">30 dias</option>
+          </select>
+        </div>
 
-        <button
-          type="submit"
-          disabled={enviando}
-          className="rounded-xl bg-[var(--color-button-primary)] px-4 py-2 font-bold text-text-inverse transition hover:brightness-110 disabled:opacity-60"
-        >
-          {enviando ? "Criando..." : "Criar Empréstimo"}
-        </button>
+        <div className="min-w-0">
+          <label
+            htmlFor="senha-frequentador"
+            className="mb-1.5 block text-sm font-semibold"
+          >
+            Senha do frequentador
+          </label>
+          <input
+            id="senha-frequentador"
+            type="password"
+            name="senha"
+            placeholder="Informe a senha"
+            autoComplete="current-password"
+            required
+            className={campoClasse}
+          />
+        </div>
 
-        <input
-          type="password"
-          name="senha"
-          placeholder="Senha do frequentador"
-          autoComplete="current-password"
-          required
-          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-brand-600 outline-none focus:ring-2 focus:ring-brand-500 md:col-span-3"
-        />
+        <div className="border-t border-[var(--border-default)] pt-4 sm:col-span-2">
+          <button type="submit" disabled={enviando} className={botaoPrimario}>
+            {enviando ? "Criando..." : "Criar empréstimo"}
+          </button>
+        </div>
       </form>
-    </div>
+    </section>
   );
 }

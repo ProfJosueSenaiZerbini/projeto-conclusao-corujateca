@@ -2,6 +2,13 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
+const campoClasse =
+  "w-full rounded-[var(--radius-input)] border border-[var(--border-default)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
+const botaoPrimarioClasse =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-button)] bg-[var(--button-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--text-inverse)] transition hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+const botaoSecundarioClasse =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+
 type LivroOption = {
   id_livro: number;
   titulo_livro: string;
@@ -105,19 +112,19 @@ export default function CadastrarExemplarModal({
 
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) fecharModal();
       }}
     >
-      <div className="w-full max-w-lg rounded-2xl bg-[var(--color-background)] p-6 shadow-2xl">
-        <div className="mb-6 flex items-center justify-between">
+      <div className="w-full max-w-lg rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-default)] pb-4">
           <div>
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
-              Cadastrar Novas Cópias
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
+              Cadastrar novas cópias
             </h2>
 
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Adicione uma ou mais cópias a este livro.
             </p>
           </div>
@@ -126,8 +133,8 @@ export default function CadastrarExemplarModal({
             type="button"
             onClick={fecharModal}
             disabled={carregando}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-brand-100)] hover:text-[var(--color-text-primary)]"
-            aria-label="Fechar"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-button)] text-xl text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed"
+            aria-label="Fechar cadastro de cópias"
           >
             ×
           </button>
@@ -137,7 +144,7 @@ export default function CadastrarExemplarModal({
           <div>
             <label
               htmlFor="livro"
-              className="mb-2 block text-sm font-bold text-[var(--color-text-primary)]"
+              className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]"
             >
               Livro selecionado
             </label>
@@ -148,11 +155,11 @@ export default function CadastrarExemplarModal({
               value={livro?.titulo_livro ?? ""}
               readOnly
               disabled={!livro}
-              className="w-full rounded-lg border border-[var(--color-brand-300)] bg-gray-100 px-3 py-3 text-sm text-gray-700 outline-none"
+              className={`${campoClasse} bg-[var(--surface-hover)]`}
             />
 
             {livro?.isbn && (
-              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
                 ISBN: {livro.isbn}
               </p>
             )}
@@ -161,7 +168,7 @@ export default function CadastrarExemplarModal({
           <div>
             <label
               htmlFor="quantidade"
-              className="mb-2 block text-sm font-bold text-[var(--color-text-primary)]"
+              className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]"
             >
               Quantidade de cópias
             </label>
@@ -175,14 +182,14 @@ export default function CadastrarExemplarModal({
               onChange={(event) => setQuantidade(event.target.value)}
               disabled={carregando}
               required
-              className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none"
+              className={campoClasse}
             />
           </div>
 
           <div>
             <label
               htmlFor="status-exemplar"
-              className="mb-2 block text-sm font-bold text-[var(--color-text-primary)]"
+              className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]"
             >
               Status das cópias
             </label>
@@ -192,30 +199,36 @@ export default function CadastrarExemplarModal({
               value={statusExemplar}
               onChange={(event) => setStatusExemplar(event.target.value)}
               disabled={carregando}
-              className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none"
+              className={campoClasse}
             >
               <option value="Dispon_vel">Disponível</option>
             </select>
           </div>
 
           {erro && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div
+              role="alert"
+              className="rounded-lg bg-[var(--status-danger)]/10 px-4 py-3 text-sm text-[var(--status-danger)]"
+            >
               {erro}
             </div>
           )}
 
           {mensagem && (
-            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            <div
+              role="status"
+              className="rounded-lg bg-[var(--status-success)]/10 px-4 py-3 text-sm text-[var(--status-success)]"
+            >
               {mensagem}
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={fecharModal}
               disabled={carregando}
-              className="rounded-lg border border-[var(--color-brand-500)] px-5 py-2.5 font-bold text-[var(--color-brand-500)] transition-colors hover:bg-[var(--color-brand-100)]"
+              className={`${botaoSecundarioClasse} w-full sm:w-auto`}
             >
               Cancelar
             </button>
@@ -223,7 +236,7 @@ export default function CadastrarExemplarModal({
             <button
               type="submit"
               disabled={carregando || !livro}
-              className="rounded-lg bg-[var(--color-brand-500)] px-5 py-2.5 font-bold text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-brand-400)] disabled:cursor-not-allowed disabled:opacity-60"
+              className={`${botaoPrimarioClasse} w-full sm:w-auto`}
             >
               {carregando ? "Cadastrando..." : "Cadastrar Cópias"}
             </button>

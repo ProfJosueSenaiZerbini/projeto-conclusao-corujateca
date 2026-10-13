@@ -2,11 +2,31 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import Header from "@/components/Header";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import { useRouter } from "next/navigation";
+import {
+  AlertCircle,
+  ArrowLeft,
+  BookOpen,
+  Boxes,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import CadastrarExemplarModal from "@/app/bibliotecario/acervo/components/CadastrarExemplarModal";
 import { generos } from "@/lib/generos";
+
+const campoClasse =
+  "w-full rounded-[var(--radius-input)] border border-[var(--border-default)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
+const botaoPrimarioClasse =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--button-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-inverse)] transition hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+const botaoSecundarioClasse =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+const botaoPerigoClasse =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--status-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-90 focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+const rotuloClasse =
+  "mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]";
 
 type Exemplar = {
   id_exemplar: number;
@@ -94,6 +114,7 @@ const coresGenero: Record<string, string> = {
 export default function DetalhesLivroBibPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const id = resolvedParams?.id;
+  const router = useRouter();
 
   const [livro, setLivro] = useState<Livro | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -101,6 +122,7 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
 
   // Estados dos Modais
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
+  const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const [modalCadastrarExemplarAberto, setModalCadastrarExemplarAberto] =
     useState(false);
@@ -120,6 +142,9 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   const [dataEmprestimo, setDataEmprestimo] = useState("");
   const [dataDevolucao, setDataDevolucao] = useState("");
   const [enviandoEmprestimo, setEnviandoEmprestimo] = useState(false);
+  const [erroEmprestimo, setErroEmprestimo] = useState("");
+  const [excluindoLivro, setExcluindoLivro] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState("");
 
   // Formulário de Edição do Livro
   const [formLivro, setFormLivro] = useState({
@@ -155,22 +180,13 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   }
 
   function abrirModalEmprestimo() {
-    const listaExemplares = livro?.exemplar || livro?.exemplares || [];
-    const copiasDisponiveis = listaExemplares.filter(
-      (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel",
-    ).length;
-
-    if (copiasDisponiveis <= 0) {
-      alert("Aviso: Não há exemplares disponíveis para empréstimo no momento.");
-      return;
-    }
-
     const hoje = new Date().toISOString().split("T")[0];
     setDataEmprestimo(hoje);
     setPrazoDias(15);
     setDataDevolucao(calcularDataDevolucao(hoje, 15));
     setIdFrequentadorSelecionado("");
     setSenhaFrequentador("");
+    setErroEmprestimo("");
     carregarFrequentadores();
     setModalEmprestimoAberto(true);
   }
@@ -226,23 +242,25 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
 
   async function handleExcluirLivro() {
     if (!id) return;
-    if (!confirm("Tem certeza que deseja excluir este livro?")) return;
 
     try {
+      setExcluindoLivro(true);
+      setErroExclusao("");
       const res = await fetch(`/api/livros/${id}/desativar`, {
         method: "PATCH",
       });
 
       if (res.ok) {
-        alert("Livro excluído com sucesso!");
-        window.location.href = "/bibliotecario/acervo";
+        router.push("/bibliotecario/acervo");
       } else {
         const dadosErro = await res.json().catch(() => ({}));
-        alert(dadosErro.erro || "Erro ao excluir o livro.");
+        setErroExclusao(dadosErro.erro || "Erro ao excluir o livro.");
       }
     } catch (error) {
       console.error(error);
-      alert("Erro de conexão ao excluir o livro.");
+      setErroExclusao("Erro de conexão ao excluir o livro.");
+    } finally {
+      setExcluindoLivro(false);
     }
   }
 
@@ -282,24 +300,25 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
     );
 
     if (!exemplarAtivo) {
-      alert(
-        "Não é possível realizar o empréstimo pois não há exemplares disponíveis.",
+      setErroEmprestimo(
+        "Não é possível realizar o empréstimo porque não há exemplares disponíveis.",
       );
       return;
     }
 
     if (!idFrequentadorSelecionado) {
-      alert("Por favor, selecione um frequentador.");
+      setErroEmprestimo("Selecione um frequentador para continuar.");
       return;
     }
 
     if (!senhaFrequentador) {
-      alert("Por favor, digite a senha do frequentador.");
+      setErroEmprestimo("Digite a senha do frequentador para continuar.");
       return;
     }
 
     try {
       setEnviandoEmprestimo(true);
+      setErroEmprestimo("");
 
       const res = await fetch("/api/emprestimos", {
         method: "POST",
@@ -313,18 +332,19 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       });
 
       if (res.ok) {
-        alert("Empréstimo cadastrado e realizado com sucesso!");
         setModalEmprestimoAberto(false);
         setIdFrequentadorSelecionado("");
         setSenhaFrequentador("");
         window.location.reload();
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || err.erro || "Erro ao cadastrar empréstimo.");
+        setErroEmprestimo(
+          err.error || err.erro || "Erro ao cadastrar empréstimo.",
+        );
       }
     } catch (error) {
       console.error(error);
-      alert("Erro de conexão ao cadastrar empréstimo.");
+      setErroEmprestimo("Erro de conexão ao cadastrar empréstimo.");
     } finally {
       setEnviandoEmprestimo(false);
     }
@@ -381,589 +401,739 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   const capa = livro?.imgcapa_livro || livro?.capa;
 
   const listaExemplares = livro?.exemplar || livro?.exemplares || [];
+  const exemplaresDisponiveis = listaExemplares.filter(
+    (ex) => !ex.inativo_exemplar && ex.status_exemplar === "Dispon_vel",
+  ).length;
 
   const generoChave = genero?.trim().toLowerCase() ?? "";
   const corGenero =
     livro?.cor_genero || coresGenero[generoChave] || "var(--color-brand-500)";
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
-      <Header />
+    <>
+      <section className="min-w-0">
+        <div className="min-w-0">
+          <div className="flex flex-1">
+            <main className="min-w-0 flex-1">
+              <div className="mx-auto w-full max-w-5xl space-y-6 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6 lg:p-8">
+                <div>
+                  <Link
+                    href="/bibliotecario/acervo"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-button)] px-3 text-sm font-semibold text-[var(--brand-700)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                  >
+                    <ArrowLeft size={17} aria-hidden="true" />
+                    Voltar ao acervo
+                  </Link>
+                </div>
 
-      <div className="flex flex-1">
-        <Nav />
-
-        <main className="flex-1 min-w-0 p-6 md:p-10">
-          <div className="max-w-4xl mx-auto bg-gray-100/85 rounded-3xl p-6 md:p-8 shadow-sm">
-            <div className="mb-6">
-              <Link
-                href="/bibliotecario/acervo"
-                className="inline-flex items-center text-black font-semibold text-base hover:opacity-75 transition-opacity"
-              >
-                ← Voltar
-              </Link>
-            </div>
-
-            {carregando ? (
-              <div className="p-12 text-center text-gray-600 animate-pulse font-medium">
-                Carregando informações do livro...
-              </div>
-            ) : erro ? (
-              <div className="p-12 text-center text-red-600 font-medium">
-                {erro}
-              </div>
-            ) : livro ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                  <div className="md:col-span-5 flex flex-col items-center gap-3">
-                    <div className="w-full aspect-[3/4] bg-gray-400 rounded-lg overflow-hidden flex items-center justify-center shadow-inner">
-                      {capa ? (
-                        <img
-                          src={capa}
-                          alt={titulo || "Capa do livro"}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-gray-700 font-medium">
-                          Sem Capa
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="w-full bg-[#3e3e3e] text-white text-center py-2 px-4 rounded-full font-bold text-xs uppercase tracking-wider">
-                      {status || "Disponível"}
-                    </div>
+                {carregando ? (
+                  <div
+                    className="space-y-4 py-10"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <LoaderCircle
+                      size={28}
+                      className="mx-auto animate-spin text-[var(--brand-500)]"
+                      aria-hidden="true"
+                    />
+                    <p className="text-center text-sm text-[var(--text-muted)]">
+                      Carregando informações do livro...
+                    </p>
                   </div>
+                ) : erro ? (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-3 rounded-xl bg-[var(--status-danger)]/10 p-4 text-sm font-medium text-[var(--status-danger)]"
+                  >
+                    <AlertCircle size={20} className="shrink-0" aria-hidden="true" />
+                    <p>{erro}</p>
+                  </div>
+                ) : livro ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                      <div className="flex flex-col items-center gap-3 md:col-span-5">
+                        <div className="flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface-warm)]">
+                          {capa ? (
+                            <img
+                              src={capa}
+                              alt={titulo || "Capa do livro"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="font-medium text-[var(--text-muted)]">
+                              Sem Capa
+                            </span>
+                          )}
+                        </div>
 
-                  <div className="md:col-span-7 flex flex-col justify-between space-y-4">
-                    <div>
-                      <h1 className="text-2xl md:text-3xl font-extrabold text-black uppercase mb-2">
-                        {titulo || "Título Indefinido"}
-                      </h1>
+                        <div className="w-full rounded-full bg-[var(--brand-400)] px-4 py-2 text-center text-xs font-semibold uppercase tracking-wide text-[var(--text-inverse)]">
+                          {status || "Disponível"}
+                        </div>
+                      </div>
 
-                      {genero && (
-                        <span
-                          style={{ backgroundColor: corGenero }}
-                          className="inline-block text-[var(--color-text-primary)] text-xs font-bold uppercase px-4 py-1.5 rounded-full mb-4 leading-none"
-                        >
-                          {genero}
-                        </span>
-                      )}
+                      <div className="flex flex-col justify-between space-y-5 md:col-span-7">
+                        <div>
+                          <h1 className="mb-2 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">
+                            {titulo || "Título Indefinido"}
+                          </h1>
 
-                      <div className="space-y-1.5 text-black text-sm md:text-base">
-                        <p>
-                          <span className="font-semibold">Autor:</span>{" "}
-                          {autor || "Não informado"}
-                        </p>
-                        <p>
-                          <span className="font-semibold">
-                            Ano de publicação:
-                          </span>{" "}
-                          {ano || "Não informado"}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Editora:</span>{" "}
-                          {editora || "Não informada"}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Cópias totais:</span>{" "}
-                          {copiasTotais}
-                        </p>
+                          {genero && (
+                            <span
+                              style={{ backgroundColor: corGenero }}
+                              className="mb-4 inline-block rounded-full px-3 py-1.5 text-xs font-semibold uppercase leading-none text-[var(--text-primary)]"
+                            >
+                              {genero}
+                            </span>
+                          )}
 
-                        <p>
-                          <span className="font-semibold">
-                            Cópias disponíveis:
-                          </span>{" "}
-                          <span
-                            className={
-                              copiasDisponiveis === 0
-                                ? "text-red-600 font-bold"
-                                : "text-green-700 font-bold"
-                            }
+                          <div className="space-y-2 rounded-[var(--radius-card)] bg-[var(--surface-hover)] p-4 text-sm text-[var(--text-secondary)] sm:text-base">
+                            <p>
+                              <span className="font-semibold">Autor:</span>{" "}
+                              {autor || "Não informado"}
+                            </p>
+                            <p>
+                              <span className="font-semibold">
+                                Ano de publicação:
+                              </span>{" "}
+                              {ano || "Não informado"}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Editora:</span>{" "}
+                              {editora || "Não informada"}
+                            </p>
+                            <p>
+                              <span className="font-semibold">
+                                Cópias totais:
+                              </span>{" "}
+                              {copiasTotais}
+                            </p>
+
+                            <p>
+                              <span className="font-semibold">
+                                Cópias disponíveis:
+                              </span>{" "}
+                              <span
+                                className={
+                                  copiasDisponiveis === 0
+                                    ? "font-semibold text-[var(--status-danger)]"
+                                    : "font-semibold text-[var(--status-success)]"
+                                }
+                              >
+                                {copiasDisponiveis}
+                                {copiasDisponiveis === 0
+                                  ? " (Indisponível)"
+                                  : ""}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={abrirModalEmprestimo}
+                            className={`${botaoPrimarioClasse} w-full`}
                           >
-                            {copiasDisponiveis}
-                            {copiasDisponiveis === 0 ? " (Indisponível)" : ""}
-                          </span>
-                        </p>
+                            <BookOpen size={18} aria-hidden="true" />
+                            Criar Empréstimo
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="pt-2">
+                    <div className="rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 text-sm text-[var(--text-secondary)]">
+                      <span className="font-semibold">Localização:</span>{" "}
+                      {localizacao || "Não informada"}
+                    </div>
+
+                    <div className="space-y-2">
+                      <h2 className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
+                        Sinopse
+                      </h2>
+                      <p className="rounded-[var(--radius-card)] bg-[var(--surface-hover)] p-4 text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base whitespace-pre-line">
+                        {sinopse ||
+                          "Nenhuma sinopse cadastrada para este livro."}
+                      </p>
+                    </div>
+
+                    {/* Botões Administrativos */}
+                    <div className="grid grid-cols-1 gap-3 border-t border-[var(--border-default)] pt-4 sm:grid-cols-2">
                       <button
                         type="button"
-                        onClick={abrirModalEmprestimo}
-                        className="w-full text-center bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors cursor-pointer"
+                        onClick={() => setModalEditarAberto(true)}
+                        className={`${botaoSecundarioClasse} w-full`}
                       >
-                        Criar Empréstimo
+                        <Pencil size={17} aria-hidden="true" />
+                        Atualizar Livro
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setModalCadastrarExemplarAberto(true)}
+                        className={`${botaoSecundarioClasse} w-full`}
+                      >
+                        <Plus size={17} aria-hidden="true" />
+                        Cadastrar Nova Cópia
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setErroExclusao("");
+                          setModalExcluirAberto(true);
+                        }}
+                        className={`${botaoPerigoClasse} w-full`}
+                      >
+                        <Trash2 size={17} aria-hidden="true" />
+                        Excluir Livro
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setModalGerenciarExemplaresAberto(true)}
+                        className={`${botaoSecundarioClasse} w-full`}
+                      >
+                        <Boxes size={17} aria-hidden="true" />
+                        Gerenciar Exemplares
                       </button>
                     </div>
                   </div>
+                ) : null}
+              </div>
+            </main>
+          </div>
+
+          <CadastrarExemplarModal
+            aberto={modalCadastrarExemplarAberto}
+            onFechar={() => setModalCadastrarExemplarAberto(false)}
+            onSucesso={() => window.location.reload()}
+            livro={
+              livro
+                ? {
+                    id_livro: livro.id_livro,
+                    titulo_livro:
+                      livro.titulo_livro || livro.titulo || "Livro sem título",
+                  }
+                : null
+            }
+          />
+
+          {/* ==================== MODAL GERENCIAR EXEMPLARES ==================== */}
+          {modalGerenciarExemplaresAberto && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5">
+              <div className="max-h-[85vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6">
+                <div className="flex items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
+                  <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                    Gerenciar Exemplares
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setModalGerenciarExemplaresAberto(false)}
+                    aria-label="Fechar gerenciamento de exemplares"
+                    className="inline-flex size-9 cursor-pointer items-center justify-center rounded-[var(--radius-button)] text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                  >
+                    <X size={19} aria-hidden="true" />
+                  </button>
                 </div>
 
-                <div className="text-black text-base pt-2">
-                  <span className="font-semibold">Localização:</span>{" "}
-                  {localizacao || "Não informada"}
+                <p className="text-sm leading-relaxed text-[var(--text-muted)]">
+                  Visualize abaixo todas as cópias deste livro e escolha qual
+                  deseja desativar ou reativar de forma prática:
+                </p>
+
+                <div className="space-y-3 pt-2">
+                  {listaExemplares.length === 0 ? (
+                    <p className="rounded-lg bg-[var(--surface-hover)] px-4 py-6 text-center text-sm text-[var(--text-muted)]">
+                      Nenhum exemplar cadastrado.
+                    </p>
+                  ) : (
+                    listaExemplares.map((ex, index) => {
+                      const isInativo = ex.inativo_exemplar;
+                      const statusTexto = isInativo
+                        ? "Inativo"
+                        : ex.status_exemplar === "Em_posse"
+                          ? "Em Posse (Emprestado)"
+                          : "Disponível";
+
+                      return (
+                        <div
+                          key={ex.id_exemplar}
+                          className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
+                        >
+                          <div>
+                            <span className="block font-semibold text-[var(--text-primary)]">
+                              Cópia #{index + 1} (ID: {ex.id_exemplar})
+                            </span>
+                            <span
+                              className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                isInativo
+                                  ? "bg-[var(--status-danger)]/10 text-[var(--status-danger)]"
+                                  : ex.status_exemplar === "Em_posse"
+                                    ? "bg-[var(--status-warning)]/10 text-[var(--status-warning)]"
+                                    : "bg-[var(--status-success)]/10 text-[var(--status-success)]"
+                              }`}
+                            >
+                              {statusTexto}
+                            </span>
+                          </div>
+
+                          <div>
+                            {isInativo ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleMudarStatusCopia(ex.id_exemplar, true)
+                                }
+                                className={`${botaoPrimarioClasse} min-h-9 px-3 py-2 text-xs`}
+                              >
+                                Reativar
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleMudarStatusCopia(ex.id_exemplar, false)
+                                }
+                                className={`${botaoPerigoClasse} min-h-9 px-3 py-2 text-xs`}
+                              >
+                                Desativar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <h2 className="text-xl font-extrabold text-black">Sinopse</h2>
-                  <p className="text-gray-800 text-sm md:text-base leading-relaxed whitespace-pre-line">
-                    {sinopse || "Nenhuma sinopse cadastrada para este livro."}
+                <div className="flex justify-end border-t border-[var(--border-default)] pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setModalGerenciarExemplaresAberto(false)}
+                    className={botaoSecundarioClasse}
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {modalExcluirAberto && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirmar-exclusao-titulo"
+                className="w-full max-w-md space-y-4 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
+                  <h3
+                    id="confirmar-exclusao-titulo"
+                    className="text-xl font-bold text-[var(--text-primary)]"
+                  >
+                    Excluir livro
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setModalExcluirAberto(false)}
+                    disabled={excluindoLivro}
+                    aria-label="Fechar confirmação de exclusão"
+                    className="inline-flex size-9 cursor-pointer items-center justify-center rounded-[var(--radius-button)] text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <X size={19} aria-hidden="true" />
+                  </button>
+                </div>
+
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                  Tem certeza de que deseja excluir{" "}
+                  <span className="font-semibold text-[var(--text-primary)]">
+                    {titulo || "este livro"}
+                  </span>
+                  ? O livro será desativado no acervo.
+                </p>
+
+                {erroExclusao && (
+                  <p
+                    role="alert"
+                    className="rounded-[var(--radius-input)] border border-[var(--status-danger)]/30 bg-[var(--status-danger)]/10 px-3 py-2.5 text-sm font-medium text-[var(--status-danger)]"
+                  >
+                    {erroExclusao}
                   </p>
-                </div>
+                )}
 
-                {/* Botões Administrativos */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
-                    onClick={() => setModalEditarAberto(true)}
-                    className="w-full text-center bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors cursor-pointer"
+                    onClick={() => setModalExcluirAberto(false)}
+                    disabled={excluindoLivro}
+                    className={`${botaoSecundarioClasse} w-full sm:w-auto`}
                   >
-                    Atualizar Livro
+                    Cancelar
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setModalCadastrarExemplarAberto(true)}
-                    className="w-full text-center bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors cursor-pointer"
-                  >
-                    Cadastrar Nova Cópia
-                  </button>
-
                   <button
                     type="button"
                     onClick={handleExcluirLivro}
-                    className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-red-200 hover:text-red-700 transition-colors cursor-pointer"
+                    disabled={excluindoLivro}
+                    className={`${botaoPerigoClasse} w-full sm:w-auto`}
                   >
-                    Excluir Livro
+                    {excluindoLivro ? "Excluindo..." : "Confirmar exclusão"}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
 
+          {/* ==================== MODAL CRIAR EMPRÉSTIMO ==================== */}
+          {modalEmprestimoAberto && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="criar-emprestimo-titulo"
+                className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
+                  <h3
+                    id="criar-emprestimo-titulo"
+                    className="text-xl font-bold text-[var(--text-primary)]"
+                  >
+                    Criar Empréstimo
+                  </h3>
                   <button
                     type="button"
-                    onClick={() => setModalGerenciarExemplaresAberto(true)}
-                    className="w-full bg-gray-300 text-black font-semibold py-3 px-6 rounded-lg hover:bg-blue-200 hover:text-blue-800 transition-colors cursor-pointer"
+                    onClick={() => setModalEmprestimoAberto(false)}
+                    aria-label="Fechar cadastro de empréstimo"
+                    className="inline-flex size-9 cursor-pointer items-center justify-center rounded-[var(--radius-button)] text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
                   >
-                    Gerenciar Exemplares
+                    <X size={19} aria-hidden="true" />
                   </button>
                 </div>
-              </div>
-            ) : null}
-          </div>
-        </main>
-      </div>
 
-      <Footer />
-
-      <CadastrarExemplarModal
-        aberto={modalCadastrarExemplarAberto}
-        onFechar={() => setModalCadastrarExemplarAberto(false)}
-        onSucesso={() => window.location.reload()}
-        livro={
-          livro
-            ? {
-                id_livro: livro.id_livro,
-                titulo_livro:
-                  livro.titulo_livro || livro.titulo || "Livro sem título",
-              }
-            : null
-        }
-      />
-
-      {/* ==================== MODAL GERENCIAR EXEMPLARES ==================== */}
-      {modalGerenciarExemplaresAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-xl font-bold text-black">
-                Gerenciar Exemplares
-              </h3>
-              <button
-                type="button"
-                onClick={() => setModalGerenciarExemplaresAberto(false)}
-                className="text-gray-500 hover:text-black font-bold text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-600">
-              Visualize abaixo todas as cópias deste livro e escolha qual deseja
-              desativar ou reativar de forma prática:
-            </p>
-
-            <div className="space-y-3 pt-2">
-              {listaExemplares.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">
-                  Nenhum exemplar cadastrado.
-                </p>
-              ) : (
-                listaExemplares.map((ex, index) => {
-                  const isInativo = ex.inativo_exemplar;
-                  const statusTexto = isInativo
-                    ? "Inativo"
-                    : ex.status_exemplar === "Em_posse"
-                      ? "Em Posse (Emprestado)"
-                      : "Disponível";
-
-                  return (
+                {exemplaresDisponiveis === 0 ? (
+                  <>
                     <div
-                      key={ex.id_exemplar}
-                      className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50"
+                      role="status"
+                      className="flex min-h-24 items-center justify-center rounded-[var(--radius-input)] bg-[var(--status-danger)] p-4 text-center text-sm font-semibold leading-relaxed text-white"
                     >
-                      <div>
-                        <span className="font-bold text-black block">
-                          Cópia #{index + 1} (ID: {ex.id_exemplar})
-                        </span>
-                        <span
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-1 ${
-                            isInativo
-                              ? "bg-red-100 text-red-700"
-                              : ex.status_exemplar === "Em_posse"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-green-100 text-green-700"
-                          }`}
-                        >
-                          {statusTexto}
-                        </span>
-                      </div>
-
-                      <div>
-                        {isInativo ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleMudarStatusCopia(ex.id_exemplar, true)
-                            }
-                            className="bg-green-600 text-white font-semibold text-xs py-2 px-4 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-                          >
-                            Reativar
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleMudarStatusCopia(ex.id_exemplar, false)
-                            }
-                            className="bg-orange-600 text-white font-semibold text-xs py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
-                          >
-                            Desativar
-                          </button>
-                        )}
-                      </div>
+                      Este livro está sem exemplares disponíveis para
+                      empréstimo. Cadastre ou reative um exemplar para
+                      continuar.
                     </div>
-                  );
-                })
-              )}
-            </div>
+                    <button
+                      type="button"
+                      onClick={() => setModalEmprestimoAberto(false)}
+                      className={`${botaoSecundarioClasse} w-full`}
+                    >
+                      Fechar
+                    </button>
+                  </>
+                ) : (
+                  <form onSubmit={handleCriarEmprestimo} className="space-y-4">
+                    {erroEmprestimo && (
+                      <p
+                        role="alert"
+                        className="rounded-[var(--radius-input)] border border-[var(--status-danger)]/30 bg-[var(--status-danger)]/10 px-3 py-2.5 text-sm font-medium text-[var(--status-danger)]"
+                      >
+                        {erroEmprestimo}
+                      </p>
+                    )}
+                  <div>
+                    <label className={rotuloClasse}>
+                      Livro:
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={titulo || ""}
+                      className={`${campoClasse} bg-[var(--surface-hover)]`}
+                    />
+                  </div>
 
-            <div className="pt-4 border-t flex justify-end">
-              <button
-                type="button"
-                onClick={() => setModalGerenciarExemplaresAberto(false)}
-                className="py-2 px-5 bg-gray-200 text-black font-semibold rounded-lg hover:bg-gray-300"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ==================== MODAL CRIAR EMPRÉSTIMO ==================== */}
-      {modalEmprestimoAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-xl font-bold text-black">Criar Empréstimo</h3>
-              <button
-                type="button"
-                onClick={() => setModalEmprestimoAberto(false)}
-                className="text-gray-500 hover:text-black font-bold text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleCriarEmprestimo} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-black mb-1">
-                  Livro:
-                </label>
-                <input
-                  type="text"
-                  disabled
-                  value={titulo || ""}
-                  className="w-full p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-black mb-1">
-                  Nome do Frequentador *
-                </label>
-                <select
-                  required
-                  value={idFrequentadorSelecionado}
-                  onChange={(e) => setIdFrequentadorSelecionado(e.target.value)}
-                  className="w-full p-2.5 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="" disabled>
-                    Selecione um frequentador...
-                  </option>
-                  {listaFrequentadores.map((freq) => (
-                    <option key={freq.id} value={freq.id}>
-                      {freq.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-black mb-1">
-                  Senha do Frequentador *
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={senhaFrequentador}
-                  onChange={(e) => setSenhaFrequentador(e.target.value)}
-                  placeholder="Digite a senha do frequentador"
-                  className="w-full p-2.5 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-black"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-black mb-1">
-                  Data de Empréstimo
-                </label>
-                <input
-                  type="date"
-                  value={dataEmprestimo}
-                  disabled
-                  className="w-full p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-semibold cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-black mb-1">
-                  Prazo de Empréstimo
-                </label>
-                <select
-                  value={prazoDias}
-                  onChange={(e) => handlePrazoChange(Number(e.target.value))}
-                  className="w-full p-2.5 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value={7}>7 dias</option>
-                  <option value={15}>15 dias</option>
-                  <option value={30}>30 dias</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-black mb-1">
-                  Data Limite de Devolução
-                </label>
-                <input
-                  type="date"
-                  value={dataDevolucao}
-                  readOnly
-                  className="w-full p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-black font-semibold"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalEmprestimoAberto(false)}
-                  className="w-1/2 py-2.5 bg-gray-200 text-black font-semibold rounded-lg hover:bg-gray-300"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={enviandoEmprestimo}
-                  className="w-1/2 py-2.5 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50"
-                >
-                  {enviandoEmprestimo ? "Cadastrando..." : "Cadastrar"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ==================== MODAL ATUALIZAR LIVRO ==================== */}
-      {modalEditarAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-xl font-bold text-black">Atualizar Livro</h3>
-              <button
-                type="button"
-                onClick={() => setModalEditarAberto(false)}
-                className="text-gray-500 hover:text-black font-bold text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSalvarLivro} className="space-y-4 text-black">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Título
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formLivro.titulo}
-                    onChange={(e) =>
-                      setFormLivro({ ...formLivro, titulo: e.target.value })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Autor
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formLivro.autor}
-                    onChange={(e) =>
-                      setFormLivro({ ...formLivro, autor: e.target.value })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Gênero
-                  </label>
-                  <select
-                    value={formLivro.genero}
-                    onChange={(e) =>
-                      setFormLivro({ ...formLivro, genero: e.target.value })
-                    }
-                    required
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  >
-                    <option value="" disabled>
-                      Selecione um gênero
-                    </option>
-                    {formLivro.genero &&
-                      !generos.some(
-                        (genero) => genero === formLivro.genero,
-                      ) && (
-                        <option value={formLivro.genero}>
-                          {formLivro.genero}
-                        </option>
-                      )}
-                    {generos.map((genero) => (
-                      <option key={genero} value={genero}>
-                        {genero}
+                  <div>
+                    <label className={rotuloClasse}>
+                      Nome do Frequentador *
+                    </label>
+                    <select
+                      required
+                      value={idFrequentadorSelecionado}
+                      onChange={(e) =>
+                        setIdFrequentadorSelecionado(e.target.value)
+                      }
+                      className={campoClasse}
+                    >
+                      <option value="" disabled>
+                        Selecione um frequentador...
                       </option>
-                    ))}
-                  </select>
-                </div>
+                      {listaFrequentadores.map((freq) => (
+                        <option key={freq.id} value={freq.id}>
+                          {freq.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Editora
-                  </label>
-                  <input
-                    type="text"
-                    value={formLivro.editora}
-                    onChange={(e) =>
-                      setFormLivro({ ...formLivro, editora: e.target.value })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
-                </div>
+                  <div>
+                    <label className={rotuloClasse}>
+                      Senha do Frequentador *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={senhaFrequentador}
+                      onChange={(e) => setSenhaFrequentador(e.target.value)}
+                      placeholder="Digite a senha do frequentador"
+                      className={campoClasse}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Ano
-                  </label>
-                  <input
-                    type="number"
-                    value={formLivro.ano}
-                    onChange={(e) =>
-                      setFormLivro({ ...formLivro, ano: e.target.value })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
-                </div>
+                  <div>
+                    <label className={rotuloClasse}>
+                      Data de Empréstimo
+                    </label>
+                    <input
+                      type="date"
+                      value={dataEmprestimo}
+                      disabled
+                      className={`${campoClasse} bg-[var(--surface-hover)]`}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Localização
-                  </label>
-                  <input
-                    type="text"
-                    value={formLivro.localizacao}
-                    onChange={(e) =>
-                      setFormLivro({
-                        ...formLivro,
-                        localizacao: e.target.value,
-                      })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-lg"
-                  />
-                </div>
+                  <div>
+                    <label className={rotuloClasse}>
+                      Prazo de Empréstimo
+                    </label>
+                    <select
+                      value={prazoDias}
+                      onChange={(e) =>
+                        handlePrazoChange(Number(e.target.value))
+                      }
+                      className={`${campoClasse} cursor-pointer`}
+                    >
+                      <option value={7}>7 dias</option>
+                      <option value={15}>15 dias</option>
+                      <option value={30}>30 dias</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={rotuloClasse}>
+                      Data Limite de Devolução
+                    </label>
+                    <input
+                      type="date"
+                      value={dataDevolucao}
+                      readOnly
+                      className={`${campoClasse} bg-[var(--surface-hover)]`}
+                    />
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => setModalEmprestimoAberto(false)}
+                      className={`${botaoSecundarioClasse} w-full sm:flex-1`}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={enviandoEmprestimo}
+                      className={`${botaoPrimarioClasse} w-full sm:flex-1`}
+                    >
+                      {enviandoEmprestimo ? "Cadastrando..." : "Cadastrar"}
+                    </button>
+                  </div>
+                  </form>
+                )}
               </div>
+            </div>
+          )}
 
-              <div>
-                <label className="block text-sm font-semibold mb-1">
-                  URL da Capa
-                </label>
-                <input
-                  type="text"
-                  value={formLivro.capa}
-                  onChange={(e) =>
-                    setFormLivro({ ...formLivro, capa: e.target.value })
-                  }
-                  className="w-full p-2.5 border border-gray-300 rounded-lg"
-                />
-              </div>
+          {/* ==================== MODAL ATUALIZAR LIVRO ==================== */}
+          {modalEditarAberto && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5">
+              <div className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6">
+                <div className="flex items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
+                  <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                    Atualizar Livro
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setModalEditarAberto(false)}
+                    aria-label="Fechar edição do livro"
+                    className="inline-flex size-9 cursor-pointer items-center justify-center rounded-[var(--radius-button)] text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                  >
+                    <X size={19} aria-hidden="true" />
+                  </button>
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-1">
-                  Sinopse
-                </label>
-                <textarea
-                  rows={4}
-                  value={formLivro.sinopse}
-                  onChange={(e) =>
-                    setFormLivro({ ...formLivro, sinopse: e.target.value })
-                  }
-                  className="w-full p-2.5 border border-gray-300 rounded-lg"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalEditarAberto(false)}
-                  className="w-1/2 py-2.5 bg-gray-200 text-black font-semibold rounded-lg hover:bg-gray-300"
+                <form
+                  onSubmit={handleSalvarLivro}
+                  className="space-y-4"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={salvandoEdicao}
-                  className="w-1/2 py-2.5 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50"
-                >
-                  {salvandoEdicao ? "Salvando..." : "Salvar Alterações"}
-                </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className={rotuloClasse}>
+                        Título
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formLivro.titulo}
+                        onChange={(e) =>
+                          setFormLivro({ ...formLivro, titulo: e.target.value })
+                        }
+                        className={campoClasse}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={rotuloClasse}>
+                        Autor
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formLivro.autor}
+                        onChange={(e) =>
+                          setFormLivro({ ...formLivro, autor: e.target.value })
+                        }
+                        className={campoClasse}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={rotuloClasse}>
+                        Gênero
+                      </label>
+                      <select
+                        value={formLivro.genero}
+                        onChange={(e) =>
+                          setFormLivro({ ...formLivro, genero: e.target.value })
+                        }
+                        required
+                        className={`${campoClasse} cursor-pointer`}
+                      >
+                        <option value="" disabled>
+                          Selecione um gênero
+                        </option>
+                        {formLivro.genero &&
+                          !generos.some(
+                            (genero) => genero === formLivro.genero,
+                          ) && (
+                            <option value={formLivro.genero}>
+                              {formLivro.genero}
+                            </option>
+                          )}
+                        {generos.map((genero) => (
+                          <option key={genero} value={genero}>
+                            {genero}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={rotuloClasse}>
+                        Editora
+                      </label>
+                      <input
+                        type="text"
+                        value={formLivro.editora}
+                        onChange={(e) =>
+                          setFormLivro({
+                            ...formLivro,
+                            editora: e.target.value,
+                          })
+                        }
+                        className={campoClasse}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={rotuloClasse}>
+                        Ano
+                      </label>
+                      <input
+                        type="number"
+                        value={formLivro.ano}
+                        onChange={(e) =>
+                          setFormLivro({ ...formLivro, ano: e.target.value })
+                        }
+                        className={campoClasse}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={rotuloClasse}>
+                        Localização
+                      </label>
+                      <input
+                        type="text"
+                        value={formLivro.localizacao}
+                        onChange={(e) =>
+                          setFormLivro({
+                            ...formLivro,
+                            localizacao: e.target.value,
+                          })
+                        }
+                        className={campoClasse}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={rotuloClasse}>
+                      URL da Capa
+                    </label>
+                    <input
+                      type="text"
+                      value={formLivro.capa}
+                      onChange={(e) =>
+                        setFormLivro({ ...formLivro, capa: e.target.value })
+                      }
+                      className={campoClasse}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={rotuloClasse}>
+                      Sinopse
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={formLivro.sinopse}
+                      onChange={(e) =>
+                        setFormLivro({ ...formLivro, sinopse: e.target.value })
+                      }
+                      className={`${campoClasse} resize-y`}
+                    />
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => setModalEditarAberto(false)}
+                      className={`${botaoSecundarioClasse} w-full sm:flex-1`}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={salvandoEdicao}
+                      className={`${botaoPrimarioClasse} w-full sm:flex-1`}
+                    >
+                      {salvandoEdicao ? "Salvando..." : "Salvar Alterações"}
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </section>
+    </>
   );
 }

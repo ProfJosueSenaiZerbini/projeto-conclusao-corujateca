@@ -1,12 +1,10 @@
 import { db } from "@/app/db";
-import Header from "@/components/Header";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
 
 import DashboardCard from "./components/DashboardCard";
 import SearchFilters from "./components/SearchFilters";
 import LoansSection, { type LoanView } from "./components/LoansSection";
 import { Prisma } from "@prisma/client";
+import { CalendarClock, Clock3 } from "lucide-react";
 
 function formatarData(data: Date | string | null) {
   if (!data) return "-";
@@ -66,33 +64,33 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
 
   // Filtro por uma única data:
   // encontra empréstimos cuja data de início OU de devolução
-if (dataFiltro) {
-  const [ano, mes, dia] = dataFiltro.split("-").map(Number);
+  if (dataFiltro) {
+    const [ano, mes, dia] = dataFiltro.split("-").map(Number);
 
-  const inicioDia = new Date(Date.UTC(ano, mes - 1, dia));
-  const inicioProximoDia = new Date(Date.UTC(ano, mes - 1, dia + 1));
+    const inicioDia = new Date(Date.UTC(ano, mes - 1, dia));
+    const inicioProximoDia = new Date(Date.UTC(ano, mes - 1, dia + 1));
 
-  whereClause.OR = [
-    {
-      dta_emprestimo: {
-        gte: inicioDia,
-        lt: inicioProximoDia,
+    whereClause.OR = [
+      {
+        dta_emprestimo: {
+          gte: inicioDia,
+          lt: inicioProximoDia,
+        },
       },
-    },
-    {
-      dta_devolucao: {
-        gte: inicioDia,
-        lt: inicioProximoDia,
+      {
+        dta_devolucao: {
+          gte: inicioDia,
+          lt: inicioProximoDia,
+        },
       },
-    },
-    {
-      dta_devolucao_real: {
-        gte: inicioDia,
-        lt: inicioProximoDia,
+      {
+        dta_devolucao_real: {
+          gte: inicioDia,
+          lt: inicioProximoDia,
+        },
       },
-    },
-  ];
-}
+    ];
+  }
 
   // Filtro pelo título do livro.
   if (nomeLivro) {
@@ -217,43 +215,63 @@ if (dataFiltro) {
   }).length;
 
   return (
-    <div
-      className="min-h-screen bg-[var(--color-background)] flex flex-col"
-      suppressHydrationWarning
-    >
-      <Header />
+    <main className="min-w-0 flex-1 overflow-x-clip bg-[var(--app-background)] px-3 py-5 text-[var(--text-primary)] min-[375px]:px-4 sm:px-6 sm:py-8 lg:px-10">
+      <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6 sm:space-y-8">
+        <header>
+          <h1 className="break-words text-2xl font-bold leading-tight min-[375px]:text-3xl sm:text-4xl">
+            Gerenciamento de empréstimos
+          </h1>
 
-      <div className="flex flex-1 min-w-0">
-        <Nav />
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
+            Consulte os empréstimos, acompanhe os prazos e gerencie as
+            devoluções.
+          </p>
+        </header>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
-          <div className="mx-auto w-full max-w-6xl space-y-8">
-            <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-              <DashboardCard
-                title="Empréstimos em Andamento:"
-                value={quantidadeEmAndamento}
-              />
+        <section
+          aria-label="Resumo dos empréstimos"
+          className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2"
+        >
+          <DashboardCard
+            title="Empréstimos em andamento"
+            value={quantidadeEmAndamento}
+            icon={Clock3}
+            tone="info"
+          />
 
-              <DashboardCard
-                title="Quantidade de Livros que Expiram Hoje:"
-                value={quantidadeExpirandoHoje}
-              />
-            </section>
+          <DashboardCard
+            title="Devoluções previstas para hoje"
+            value={quantidadeExpirandoHoje}
+            icon={CalendarClock}
+            tone="warning"
+          />
+        </section>
 
-            <section className="rounded-3xl bg-brand-200 p-4 shadow-sm md:p-6">
-              <h2 className="mb-5 text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
-                Pesquisar por Empréstimos
-              </h2>
+        <section
+          aria-labelledby="titulo-pesquisa-emprestimos"
+          className="min-w-0 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6"
+        >
+          <div className="mb-5">
+            <h2
+              id="titulo-pesquisa-emprestimos"
+              className="text-lg font-bold sm:text-xl"
+            >
+              Pesquisar empréstimos
+            </h2>
 
-              <SearchFilters />
-
-              <LoansSection loans={loans} />
-            </section>
+            <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
+              Filtre por frequentador, livro, data ou status.
+            </p>
           </div>
-        </main>
-      </div>
 
-      <Footer />
-    </div>
+          <SearchFilters />
+        </section>
+
+        <LoansSection
+          key={JSON.stringify([nome, status, nomeLivro, dataFiltro])}
+          loans={loans}
+        />
+      </div>
+    </main>
   );
 }

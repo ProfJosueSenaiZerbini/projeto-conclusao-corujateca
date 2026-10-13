@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-import Header from "@/components/Header";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import { AlertCircle, CalendarClock, Clock3, LoaderCircle } from "lucide-react";
 
 import DashboardCard from "./components/DashboardCard";
 import SearchFilters from "./components/SearchFilters";
 import LoanCard from "./components/LoanCard";
+import Pagination from "@/components/Pagination";
 
 type Loan = {
   id: number;
@@ -19,18 +17,16 @@ type Loan = {
   loanDate: string;
 };
 
+const EMPRESTIMOS_POR_PAGINA = 10;
+
 export default function EmprestimosPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
-  // Filtros
   const [statusFiltro, setStatusFiltro] = useState("");
   const [dataFiltro, setDataFiltro] = useState("");
-
   const [paginaAtual, setPaginaAtual] = useState(1);
-
-  const EMPRESTIMOS_POR_PAGINA = 10;
 
   useEffect(() => {
     async function buscarEmprestimos() {
@@ -39,16 +35,17 @@ export default function EmprestimosPage() {
         setErro("");
 
         const resposta = await fetch("/api/emprestimos");
-
         const dados = await resposta.json();
 
         if (!resposta.ok) {
           throw new Error(
-            dados.error || "Não foi possível buscar os empréstimos.",
+            dados.error ||
+              dados.erro ||
+              "Não foi possível buscar os empréstimos.",
           );
         }
 
-        setLoans(dados.emprestimos);
+        setLoans(Array.isArray(dados.emprestimos) ? dados.emprestimos : []);
       } catch (erro) {
         console.error("Erro ao buscar empréstimos:", erro);
 
@@ -65,26 +62,16 @@ export default function EmprestimosPage() {
     buscarEmprestimos();
   }, []);
 
-  useEffect(() => {
-    setPaginaAtual(1);
-  }, [statusFiltro, dataFiltro]);
-
   const loansFiltrados = loans.filter((loan) => {
     let correspondeAoStatus = true;
 
     if (statusFiltro === "em_andamento") {
       correspondeAoStatus = loan.status === "Em andamento";
-    }
-
-    if (statusFiltro === "devolvido_no_prazo") {
+    } else if (statusFiltro === "devolvido_no_prazo") {
       correspondeAoStatus = loan.status === "Devolvido no prazo";
-    }
-
-    if (statusFiltro === "devolvido_com_atraso") {
+    } else if (statusFiltro === "devolvido_com_atraso") {
       correspondeAoStatus = loan.status === "Devolvido com atraso";
-    }
-
-    if (statusFiltro === "atrasado") {
+    } else if (statusFiltro === "atrasado") {
       correspondeAoStatus = loan.status === "Atrasado";
     }
 
@@ -92,7 +79,6 @@ export default function EmprestimosPage() {
 
     if (dataFiltro) {
       const [ano, mes, dia] = dataFiltro.split("-");
-
       const dataFormatada = `${dia}/${mes}/${ano}`;
 
       correspondeAData = loan.loanDate === dataFormatada;
@@ -105,20 +91,23 @@ export default function EmprestimosPage() {
     loansFiltrados.length / EMPRESTIMOS_POR_PAGINA,
   );
 
-  const inicio = (paginaAtual - 1) * EMPRESTIMOS_POR_PAGINA;
-  const fim = inicio + EMPRESTIMOS_POR_PAGINA;
+  const paginaSegura = Math.min(paginaAtual, Math.max(totalPaginas, 1));
 
-  const loansDaPagina = loansFiltrados.slice(inicio, fim);
+  const inicio = (paginaSegura - 1) * EMPRESTIMOS_POR_PAGINA;
+
+  const loansDaPagina = loansFiltrados.slice(
+    inicio,
+    inicio + EMPRESTIMOS_POR_PAGINA,
+  );
 
   const emprestimosEmAndamento = loans.filter(
-    (loan) =>
-      loan.status === "Em andamento" ||
-      loan.status === "Atrasado",
+    (loan) => loan.status === "Em andamento" || loan.status === "Atrasado",
   ).length;
 
   function dataEhHoje(data: string) {
-    const hoje = new Date();
+    if (!data || data === "-") return false;
 
+    const hoje = new Date();
     const [dia, mes, ano] = data.split("/");
 
     return (
@@ -134,107 +123,218 @@ export default function EmprestimosPage() {
       dataEhHoje(loan.expiration),
   ).length;
 
+  function limparFiltros() {
+    setStatusFiltro("");
+    setDataFiltro("");
+    setPaginaAtual(1);
+  }
+
+  function atualizarStatusFiltro(status: string) {
+    setStatusFiltro(status);
+    setPaginaAtual(1);
+  }
+
+  function atualizarDataFiltro(data: string) {
+    setDataFiltro(data);
+    setPaginaAtual(1);
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <main className="min-w-0 flex-1 overflow-x-clip bg-[var(--app-background)] px-3 py-5 text-[var(--text-primary)] min-[375px]:px-4 sm:px-6 sm:py-8 lg:px-10">
+      <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6 sm:space-y-8">
+        <header>
+          <h1 className="break-words text-2xl font-bold leading-tight min-[375px]:text-3xl sm:text-4xl">
+            Meus empréstimos
+          </h1>
 
-      <div className="flex flex-1">
-        <Nav />
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
+            Acompanhe seus livros emprestados, consulte as datas de devolução e
+            confira o histórico dos seus empréstimos.
+          </p>
+        </header>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
-          <div className="mx-auto w-full max-w-6xl space-y-8">
-            {/* CARDS */}
-            <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-              <DashboardCard
-                title="Empréstimos em Andamento:"
-                value={emprestimosEmAndamento}
-              />
+        <section
+          aria-label="Resumo dos empréstimos"
+          className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-6"
+        >
+          <DashboardCard
+            title="Empréstimos em andamento"
+            value={emprestimosEmAndamento}
+            icon={Clock3}
+            tone="info"
+          />
 
-              <DashboardCard
-                title="Quantidade de empréstimos que Expiram Hoje:"
-                value={emprestimosQueExpiramHoje}
-              />
-            </section>
+          <DashboardCard
+            title="Devoluções previstas para hoje"
+            value={emprestimosQueExpiramHoje}
+            icon={CalendarClock}
+            tone="warning"
+          />
+        </section>
 
-            {/* PESQUISA */}
-            <section className="rounded-3xl bg-brand-200 p-4 shadow-sm md:p-6">
-              <h2 className="mb-5 text-xl font-bold text-(--color-text-primary) sm:text-2xl">
-                Pesquisar por Empréstimos
+        <section
+          aria-labelledby="titulo-pesquisa-emprestimos"
+          className="min-w-0 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6"
+        >
+          <div className="mb-5">
+            <h2
+              id="titulo-pesquisa-emprestimos"
+              className="text-lg font-bold sm:text-xl"
+            >
+              Pesquisar empréstimos
+            </h2>
+
+            <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
+              Filtre seus empréstimos por data ou status.
+            </p>
+          </div>
+
+          <SearchFilters
+            status={statusFiltro}
+            data={dataFiltro}
+            onStatusChange={atualizarStatusFiltro}
+            onDataChange={atualizarDataFiltro}
+            onClear={limparFiltros}
+          />
+        </section>
+
+        <section aria-labelledby="titulo-lista-emprestimos" className="min-w-0">
+          <div className="mb-4 flex min-w-0 flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <h2
+                id="titulo-lista-emprestimos"
+                className="break-words text-xl font-bold sm:text-2xl"
+              >
+                Histórico de empréstimos
               </h2>
 
-              <SearchFilters
-                status={statusFiltro}
-                data={dataFiltro}
-                onStatusChange={setStatusFiltro}
-                onDataChange={setDataFiltro}
+              {!carregando && !erro && (
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                  {loansFiltrados.length === 1
+                    ? "1 empréstimo encontrado"
+                    : `${loansFiltrados.length} empréstimos encontrados`}
+                </p>
+              )}
+            </div>
+
+            {!carregando &&
+              !erro &&
+              loansFiltrados.length > 0 &&
+              loansFiltrados.length <= EMPRESTIMOS_POR_PAGINA && (
+                <p className="text-xs text-[var(--text-muted)]">
+                  Exibindo {inicio + 1}–
+                  {Math.min(
+                    inicio + EMPRESTIMOS_POR_PAGINA,
+                    loansFiltrados.length,
+                  )}{" "}
+                  de {loansFiltrados.length}
+                </p>
+              )}
+          </div>
+
+          {carregando && (
+            <div
+              role="status"
+              className="flex min-w-0 flex-col items-center justify-center gap-3 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-10 text-center shadow-[var(--shadow-card)]"
+            >
+              <LoaderCircle
+                size={28}
+                className="animate-spin text-[var(--text-secondary)]"
+                aria-hidden="true"
+              />
+              <p className="text-sm text-[var(--text-secondary)]">
+                Carregando seus empréstimos...
+              </p>
+            </div>
+          )}
+
+          {!carregando && erro && (
+            <div
+              role="alert"
+              className="flex min-w-0 items-start gap-3 rounded-[var(--radius-card)] border border-[var(--status-danger)]/30 bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-5"
+            >
+              <AlertCircle
+                size={22}
+                className="mt-0.5 shrink-0 text-[var(--status-danger)]"
+                aria-hidden="true"
               />
 
-              <div className="mt-8 space-y-5">
-                {carregando && (
-                  <p className="text-center">Carregando empréstimos...</p>
-                )}
+              <div className="min-w-0">
+                <h3 className="font-semibold text-[var(--text-primary)]">
+                  Não foi possível carregar os empréstimos
+                </h3>
+                <p className="mt-1 break-words text-sm leading-relaxed text-[var(--text-secondary)]">
+                  {erro}
+                </p>
+              </div>
+            </div>
+          )}
 
-                {!carregando && erro && <p className="text-center">{erro}</p>}
-
-                {!carregando && !erro && loans.length === 0 && (
-                  <p className="text-center">Você não possui empréstimos.</p>
-                )}
-
-                {!carregando &&
-                  !erro &&
-                  loans.length > 0 &&
-                  loansFiltrados.length === 0 && (
-                    <p className="text-center">
-                      Nenhum empréstimo encontrado com esses filtros.
-                    </p>
-                  )}
-
-                {!carregando &&
-                  !erro &&
-                  loansDaPagina.map((loan) => (
-                    <LoanCard key={loan.id} loan={loan} />
-                  ))}
+          {!carregando && !erro && loans.length === 0 && (
+            <div className="rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-10 text-center shadow-[var(--shadow-card)] sm:py-12">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface-warm)] text-[var(--text-primary)]">
+                <Clock3 size={26} aria-hidden="true" />
               </div>
 
-              {!carregando &&
-                !erro &&
-                loansFiltrados.length > EMPRESTIMOS_POR_PAGINA && (
-                  <div className="mt-6 flex items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPaginaAtual((pagina) => Math.max(pagina - 1, 1))
-                      }
-                      disabled={paginaAtual === 1}
-                      className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-(--color-text-inverse) transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Anterior
-                    </button>
+              <h3 className="mt-4 font-bold">
+                Você ainda não possui empréstimos
+              </h3>
 
-                    <span className="px-3 text-sm font-semibold text-(--color-text-primary)">
-                      Página {paginaAtual} de {totalPaginas}
-                    </span>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--text-secondary)]">
+                Quando você realizar um empréstimo na biblioteca, as informações
+                aparecerão nesta página.
+              </p>
+            </div>
+          )}
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPaginaAtual((pagina) =>
-                          Math.min(pagina + 1, totalPaginas),
-                        )
-                      }
-                      disabled={paginaAtual === totalPaginas}
-                      className="rounded-xl bg-brand-400 px-4 py-2 text-sm font-semibold text-(--color-text-inverse) transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Próxima
-                    </button>
-                  </div>
-                )}
-            </section>
-          </div>
-        </main>
+          {!carregando &&
+            !erro &&
+            loans.length > 0 &&
+            loansFiltrados.length === 0 && (
+              <div className="rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-10 text-center shadow-[var(--shadow-card)] sm:py-12">
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                  Nenhum empréstimo corresponde aos filtros selecionados.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={limparFiltros}
+                  className="mt-4 inline-flex hover:cursor-pointer min-h-11 max-w-full items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                >
+                  Limpar filtros
+                </button>
+              </div>
+            )}
+
+          {!carregando && !erro && loansFiltrados.length > 0 && (
+            <div className="min-w-0 space-y-3">
+              {loansDaPagina.map((loan) => (
+                <LoanCard key={loan.id} loan={loan} />
+              ))}
+            </div>
+          )}
+
+          {!carregando &&
+            !erro &&
+            loansFiltrados.length > EMPRESTIMOS_POR_PAGINA && (
+              <div className="mt-5">
+                <Pagination
+                  currentPage={paginaSegura}
+                  totalPages={totalPaginas}
+                  startItem={inicio + 1}
+                  endItem={Math.min(
+                    inicio + EMPRESTIMOS_POR_PAGINA,
+                    loansFiltrados.length,
+                  )}
+                  totalItems={loansFiltrados.length}
+                  itemLabel="empréstimos"
+                  ariaLabel="Paginação dos empréstimos"
+                  onPageChange={setPaginaAtual}
+                />
+              </div>
+            )}
+        </section>
       </div>
-
-      <Footer />
-    </div>
+    </main>
   );
 }

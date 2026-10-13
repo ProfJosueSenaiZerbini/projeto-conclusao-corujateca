@@ -6,10 +6,10 @@ export async function GET() {
   try {
     const emprestimos = await db.emprestimo.findMany({
       where: {
-        inativo_emprestimo: false,
-        dta_devolucao_real: {
-          not: null,
-        },
+        OR: [
+          { inativo_emprestimo: false },
+          { dta_devolucao_real: { not: null } },
+        ],
       },
       include: {
         exemplar: {

@@ -3,6 +3,13 @@
 import { FormEvent, useState } from "react";
 import { generos } from "@/lib/generos";
 
+const campoClasse =
+  "w-full rounded-[var(--radius-input)] border border-[var(--border-default)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
+const botaoPrimarioClasse =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-button)] bg-[var(--button-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--text-inverse)] transition hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+const botaoSecundarioClasse =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50";
+
 type LivroForm = {
   isbn: string;
   titulo_livro: string;
@@ -170,21 +177,21 @@ export default function CadastrarLivroModal({
 
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           fecharModal();
         }
       }}
     >
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[var(--color-background)] p-6 shadow-2xl">
-        <div className="flex items-start justify-between gap-4 mb-5">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-4 border-b border-[var(--border-default)] pb-4">
           <div>
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
               Cadastrar Novo Livro
             </h2>
 
-            <p className="mt-1 text-sm text-[var(--color-text-primary)]">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Cadastre uma nova obra no acervo.
             </p>
           </div>
@@ -193,7 +200,8 @@ export default function CadastrarLivroModal({
             type="button"
             onClick={fecharModal}
             disabled={carregando || buscandoIsbn}
-            className="text-lg font-bold text-[var(--color-text-primary)] cursor-pointer disabled:cursor-not-allowed"
+            aria-label="Fechar cadastro de livro"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-button)] text-xl text-[var(--text-muted)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed"
           >
             ×
           </button>
@@ -204,7 +212,7 @@ export default function CadastrarLivroModal({
           className="flex flex-col gap-4"
         >
           <div>
-            <label className="block text-sm font-bold mb-2">
+            <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
               ISBN
             </label>
 
@@ -216,14 +224,14 @@ export default function CadastrarLivroModal({
                 onChange={handleChange}
                 placeholder="Ex: 9788535902778"
                 required
-                className="min-w-0 flex-1 rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               />
 
               <button
                 type="button"
                 onClick={buscarDadosPorIsbn}
                 disabled={buscandoIsbn}
-                className="shrink-0 rounded-lg bg-[var(--color-button-primary)] px-4 py-2 font-bold text-[var(--color-text-inverse)] cursor-pointer disabled:cursor-not-allowed"
+                className="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-button)] bg-[var(--button-primary)] px-4 py-2 text-sm font-semibold text-[var(--text-inverse)] transition hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {buscandoIsbn ? "Buscando..." : "Buscar ISBN"}
               </button>
@@ -232,7 +240,7 @@ export default function CadastrarLivroModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-bold mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
                 Título
               </label>
 
@@ -242,12 +250,12 @@ export default function CadastrarLivroModal({
                 value={form.titulo_livro}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
                 Autor
               </label>
 
@@ -257,12 +265,12 @@ export default function CadastrarLivroModal({
                 value={form.autor_livro}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
                 Editora
               </label>
 
@@ -272,12 +280,12 @@ export default function CadastrarLivroModal({
                 value={form.editora_livro}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
                 Ano de Publicação
               </label>
 
@@ -287,12 +295,12 @@ export default function CadastrarLivroModal({
                 value={form.anopub_livro}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
                 Gênero
               </label>
 
@@ -301,7 +309,7 @@ export default function CadastrarLivroModal({
                 value={form.genero_livro}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               >
                 <option value="" disabled>
                   Selecione um gênero
@@ -316,7 +324,7 @@ export default function CadastrarLivroModal({
             </div>
 
             <div>
-              <label className="block text-sm font-bold mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
                 Localização
               </label>
 
@@ -326,12 +334,12 @@ export default function CadastrarLivroModal({
                 value={form.localizacao_livro}
                 onChange={handleChange}
                 placeholder="Estante / Prateleira"
-                className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-bold mb-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
                 URL da Capa
               </label>
 
@@ -341,13 +349,13 @@ export default function CadastrarLivroModal({
                 value={form.imgcapa_livro}
                 onChange={handleChange}
                 placeholder="https://..."
-                className="w-full rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+                className={campoClasse}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold mb-2">
+            <label className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">
               Sinopse
             </label>
 
@@ -356,28 +364,28 @@ export default function CadastrarLivroModal({
               value={form.sinopse_livro}
               onChange={handleChange}
               rows={4}
-              className="w-full resize-y rounded-lg border border-[var(--color-brand-300)] bg-[var(--color-background)] px-3 py-2"
+              className={`${campoClasse} resize-y`}
             />
           </div>
 
           {mensagem && (
-            <p className="text-sm font-bold text-green-700">
+            <p role="status" className="rounded-lg bg-[var(--status-success)]/10 px-3 py-2 text-sm font-medium text-[var(--status-success)]">
               {mensagem}
             </p>
           )}
 
           {erro && (
-            <p className="text-sm font-bold text-red-700">
+            <p role="alert" className="rounded-lg bg-[var(--status-danger)]/10 px-3 py-2 text-sm font-medium text-[var(--status-danger)]">
               {erro}
             </p>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={fecharModal}
               disabled={carregando || buscandoIsbn}
-              className="rounded-lg border border-[var(--color-brand-500)] px-5 py-2.5 font-bold text-[var(--color-brand-500)] cursor-pointer disabled:cursor-not-allowed"
+              className={`${botaoSecundarioClasse} w-full sm:w-auto`}
             >
               Cancelar
             </button>
@@ -385,7 +393,7 @@ export default function CadastrarLivroModal({
             <button
               type="submit"
               disabled={carregando || buscandoIsbn}
-              className="rounded-lg bg-[var(--color-button-primary)] px-5 py-2.5 font-bold text-[var(--color-text-inverse)] cursor-pointer disabled:cursor-not-allowed"
+              className={`${botaoPrimarioClasse} w-full sm:w-auto`}
             >
               {carregando ? "Cadastrando..." : "Cadastrar Livro"}
             </button>

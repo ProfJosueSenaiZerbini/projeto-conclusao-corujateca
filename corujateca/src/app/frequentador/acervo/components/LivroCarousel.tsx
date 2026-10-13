@@ -11,18 +11,19 @@ type Livro = {
   autor_livro: string;
   genero_livro: string;
   imgcapa_livro: string | null;
+  possui_exemplar_disponivel?: boolean;
 };
 
 type LivroCarouselProps = {
   titulo: string;
   livros: Livro[];
-  baseUrl?: string; // Ex: "/bibliotecario/acervo" ou "/frequentador/acervo"
+  baseUrl?: string;
 };
 
 export default function LivroCarousel({
   titulo,
   livros,
-  baseUrl = "/bibliotecario/acervo",
+  baseUrl = "/frequentador/acervo",
 }: LivroCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -47,15 +48,8 @@ export default function LivroCarousel({
   return (
     <section className="mb-8">
       {/* Título e setas */}
-      <div className="flex items-center justify-between mb-4">
-        <h2
-          className="
-            text-lg
-            sm:text-xl
-            font-bold
-            text-[var(--color-text-primary)]
-          "
-        >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
           {titulo}
         </h2>
 
@@ -65,19 +59,7 @@ export default function LivroCarousel({
             type="button"
             onClick={voltar}
             aria-label="Livros anteriores"
-            className="
-              w-9
-              h-9
-              rounded-full
-              bg-[var(--color-brand-500)]
-              text-[var(--color-text-inverse)]
-              flex
-              items-center
-              justify-center
-              hover:bg-[var(--color-brand-400)]
-              transition-colors
-              cursor-pointer
-            "
+            className="inline-flex size-10 cursor-pointer items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] text-[var(--text-secondary)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
           >
             <ChevronLeft size={20} />
           </button>
@@ -87,19 +69,7 @@ export default function LivroCarousel({
             type="button"
             onClick={avancar}
             aria-label="Próximos livros"
-            className="
-              w-9
-              h-9
-              rounded-full
-              bg-[var(--color-brand-500)]
-              text-[var(--color-text-inverse)]
-              flex
-              items-center
-              justify-center
-              hover:bg-[var(--color-brand-400)]
-              transition-colors
-              cursor-pointer
-            "
+            className="inline-flex size-10 cursor-pointer items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] text-[var(--text-secondary)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
           >
             <ChevronRight size={20} />
           </button>
@@ -109,32 +79,13 @@ export default function LivroCarousel({
       {/* Carrossel */}
       <div
         ref={carouselRef}
-        className="
-          flex
-          gap-1
-          overflow-x-auto
-          scroll-smooth
-          snap-x
-          snap-mandatory
-          py-2
-          px-1
-
-          [scrollbar-width:none]
-          [&::-webkit-scrollbar]:hidden
-        "
+        className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory px-0.5 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
       >
         {livros.map((livro) => (
           <Link
             key={livro.id_livro}
             href={`${baseUrl}/${livro.id_livro}`}
-            className="
-              shrink-0
-              snap-start
-              w-[255px]
-              block
-              transition-transform
-              hover:scale-[1.02]
-            "
+            className="block w-[min(42vw,190px)] shrink-0 snap-start rounded-lg transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] sm:w-[190px]"
           >
             <LivroCard livro={livro} />
           </Link>
