@@ -1,3 +1,5 @@
+import { BookOpen, CalendarDays, Clock3 } from "lucide-react";
+
 type Loan = {
   title: string;
   author: string;
@@ -6,61 +8,111 @@ type Loan = {
   loanDate: string;
 };
 
-function CalendarIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-      />
-    </svg>
-  );
+function obterStatusVisual(status: string) {
+  switch (status) {
+    case "Atrasado":
+      return {
+        classe: "bg-[var(--status-danger)]/10 text-[var(--status-danger)]",
+        mensagem: status,
+      };
+
+    case "Devolvido no prazo":
+      return {
+        classe: "bg-[var(--status-success)]/10 text-[var(--status-success)]",
+        mensagem: status,
+      };
+
+    case "Devolvido com atraso":
+      return {
+        classe: "bg-[var(--status-warning)]/10 text-[var(--status-warning)]",
+        mensagem: status,
+      };
+
+    case "Em andamento":
+      return {
+        classe: "bg-[var(--status-info)]/10 text-[var(--status-info)]",
+        mensagem: status,
+      };
+
+    default:
+      return {
+        classe: "bg-[var(--surface-warm)] text-[var(--text-secondary)]",
+        mensagem: status,
+      };
+  }
 }
 
 export default function LoanCard({ loan }: { loan: Loan }) {
+  const statusVisual = obterStatusVisual(loan.status);
+
   return (
-    <div className="rounded-2xl bg-brand-400 p-4 shadow-sm transition hover:shadow-md sm:p-6">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+    <article className="min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition hover:border-[var(--border-strong)]">
+      <div className="flex min-w-0 flex-col gap-4 p-4 sm:p-5 lg:p-6">
+        <div className="flex min-w-0 flex-col gap-3 min-[400px]:flex-row min-[400px]:items-start min-[400px]:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--surface-warm)] text-[var(--text-primary)]">
+              <BookOpen size={20} aria-hidden="true" />
+            </div>
 
-        <div>
-          <h3 className="text-2xl font-bold text-text-inverse">
-            {loan.title}
-          </h3>
+            <div className="min-w-0">
+              <h3 className="break-words font-bold text-[var(--text-primary)] sm:text-lg">
+                {loan.title}
+              </h3>
 
-          <p className="text-sm text-text-inverse mb-4">
-            {loan.author}
-          </p>
+              <p className="mt-1 break-words text-sm text-[var(--text-secondary)]">
+                {loan.author}
+              </p>
+            </div>
+          </div>
 
-          <span className="inline-flex rounded-full bg-brand-700 px-4 py-1 text-sm font-semibold text-text-inverse">
-            {loan.status}
+          <span
+            className={`inline-flex w-fit max-w-full shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${statusVisual.classe}`}
+          >
+            {loan.status === "Atrasado" && (
+              <Clock3 size={14} aria-hidden="true" />
+            )}
+            {statusVisual.mensagem}
           </span>
         </div>
 
-        <div className="min-w-0 space-y-2 text-sm text-text-inverse sm:text-base">
-          <div className="flex items-start gap-2 sm:items-center sm:gap-4">
-            <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
-            <p className="min-w-0">
-              <strong>Data de Devolução:</strong> {loan.expiration}
-            </p>
+        <div className="grid min-w-0 grid-cols-1 gap-4 min-[400px]:grid-cols-2">
+          <div className="flex min-w-0 items-start gap-2">
+            <CalendarDays
+              size={17}
+              className="mt-0.5 shrink-0 text-[var(--text-secondary)]"
+              aria-hidden="true"
+            />
+
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-[var(--text-secondary)]">
+                Data de devolução
+              </p>
+
+              <p className="mt-1 break-words text-sm font-semibold text-[var(--text-primary)]">
+                {loan.expiration}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-start gap-2 sm:items-center sm:gap-4">
-            <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
-            <p className="min-w-0">
-              <strong>Data do Empréstimo:</strong> {loan.loanDate}
-            </p>
+          <div className="flex min-w-0 items-start gap-2">
+            <CalendarDays
+              size={17}
+              className="mt-0.5 shrink-0 text-[var(--text-secondary)]"
+              aria-hidden="true"
+            />
+
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-[var(--text-secondary)]">
+                Data do empréstimo
+              </p>
+
+              <p className="mt-1 break-words text-sm font-semibold text-[var(--text-primary)]">
+                {loan.loanDate}
+              </p>
+            </div>
           </div>
         </div>
-
       </div>
-    </div>
+    </article>
   );
 }

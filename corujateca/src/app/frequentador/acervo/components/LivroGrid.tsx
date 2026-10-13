@@ -4,62 +4,43 @@ import Link from "next/link";
 import LivroCard from "./LivroCard";
 
 type Livro = {
-    id_livro: number;
-    titulo_livro: string;
-    autor_livro: string;
-    genero_livro: string;
-    imgcapa_livro: string | null;
+  id_livro: number;
+  titulo_livro: string;
+  autor_livro: string;
+  genero_livro: string;
+  imgcapa_livro: string | null;
+  possui_exemplar_disponivel?: boolean;
 };
 
 type LivroGridProps = {
-    titulo: string;
-    livros: Livro[];
-    baseUrl?: string; // Adicionado para suportar o redirecionamento
+  titulo: string;
+  livros: Livro[];
+  baseUrl?: string;
 };
 
 export default function LivroGrid({
-    titulo,
-    livros,
-    baseUrl = "/bibliotecario/acervo", // Valor padrão alinhado com o carousel
+  titulo,
+  livros,
+  baseUrl = "/frequentador/acervo",
 }: LivroGridProps) {
-    return (
-        <section className="mb-8">
-            <h2
-                className="
-                    text-lg
-                    sm:text-xl
-                    font-bold
-                    text-[var(--color-text-primary)]
-                    mb-4
-                "
-            >
-                {titulo}
-            </h2>
+  const tituloClasse =
+    "mb-4 text-lg font-bold text-[var(--text-primary)] sm:text-xl";
 
-            <div
-                className="
-                    grid
-                    grid-cols-1
-                    sm:grid-cols-2
-                    lg:grid-cols-4
-                    gap-4
-                "
-            >
-                {livros.map((livro) => (
-                    <Link
-                        key={livro.id_livro}
-                        href={`${baseUrl}/${livro.id_livro}`}
-                        className="
-                            min-w-0
-                            block
-                            transition-transform
-                            hover:scale-[1.02]
-                        "
-                    >
-                        <LivroCard livro={livro} />
-                    </Link>
-                ))}
-            </div>
-        </section>
-    );
+  return (
+    <section className="mb-8">
+      <h2 className={tituloClasse}>{titulo}</h2>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+        {livros.map((livro) => (
+          <Link
+            key={livro.id_livro}
+            href={`${baseUrl}/${livro.id_livro}`}
+            className="block min-w-0 rounded-lg transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
+            <LivroCard livro={livro} />
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
 }

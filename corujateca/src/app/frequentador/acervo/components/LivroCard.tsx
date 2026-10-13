@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 type LivroCardProps = {
   livro: {
     id_livro: number;
@@ -5,7 +7,7 @@ type LivroCardProps = {
     autor_livro: string;
     genero_livro: string;
     imgcapa_livro: string | null;
-    possui_exemplar_disponivel: boolean;
+    possui_exemplar_disponivel?: boolean;
   };
 };
 
@@ -71,91 +73,47 @@ export default function LivroCard({ livro }: LivroCardProps) {
     "var(--color-brand-500)";
 
   return (
-    <article className="w-full max-w-36">
-
-      {/* Capa do livro */}
-      <div className="w-full aspect-[3/4] rounded-lg overflow-hidden bg-[var(--color-brand-400)]">
-        {livro.imgcapa_livro ? (
-          <img
-            src={livro.imgcapa_livro}
-            alt={`Capa do livro ${livro.titulo_livro}`}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <img
-            src="/images/placeholder_capaNaoCatalogada.png"
-            alt="Capa não disponível"
-            className="w-full h-full object-cover"
-          />
-        )}
+    <article className="h-full min-w-0 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-colors hover:border-[var(--border-strong)]">
+      <div className="relative aspect-[3/4] w-full bg-[var(--surface-warm)]">
+        <Image
+          src={
+            livro.imgcapa_livro ||
+            "/images/placeholder_capaNaoCatalogada.png"
+          }
+          alt={
+            livro.imgcapa_livro
+              ? `Capa do livro ${livro.titulo_livro}`
+              : "Capa não disponível"
+          }
+          fill
+          sizes="(max-width: 640px) 42vw, 190px"
+          unoptimized
+          className="object-cover"
+        />
       </div>
 
-
-      {/* Gênero */}
-      <div className="mt-2">
+      <div className="flex min-h-40 flex-col p-3 sm:p-4">
         <span
-          style={{
-            backgroundColor: corGenero,
-          }}
-          className="
-            inline-block
-            text-[var(--color-text-primary)]
-            rounded-full
-            px-4
-            py-1.5
-            text-[10px]
-            font-bold
-            uppercase
-            leading-none
-          "
+          style={{ backgroundColor: corGenero }}
+          className="inline-flex w-fit max-w-full items-center truncate rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase leading-tight text-[var(--text-primary)]"
         >
           {livro.genero_livro}
         </span>
-      </div>
 
-      {/* Título */}
-      <h3
-        className="
-          text-sm
-          font-bold
-          leading-tight
-          mt-2
-          line-clamp-2
-          text-[var(--color-text-primary)]
-        "
-      >
-        {livro.titulo_livro}
-      </h3>
+        <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-[var(--text-primary)] sm:text-base">
+          {livro.titulo_livro}
+        </h3>
 
-      {/* Autor */}
-      <p
-        className="
-          text-sm
-          mt-1
-          leading-tight
-          line-clamp-2
-          text-[var(--color-text-primary)]
-        "
-      >
-        {livro.autor_livro}
-      </p>
-
-      {/* Aviso de falta de exemplar para empréstimo */}
-      {!livro.possui_exemplar_disponivel && (
-        <p
-          className="
-      mt-2
-      text-xs
-      font-semibold
-      leading-tight
-      text-red-600
-    "
-        >
-          Sem exemplares disponíveis
+        <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--text-secondary)]">
+          {livro.autor_livro}
         </p>
-      )}
 
-
+        {livro.possui_exemplar_disponivel === false && (
+          <p className="mt-3 rounded-md bg-[var(--status-danger)] px-2 py-2 text-center text-xs font-semibold text-white">
+            Sem exemplares disponíveis
+          </p>
+        )}
+      </div>
     </article>
   );
 }

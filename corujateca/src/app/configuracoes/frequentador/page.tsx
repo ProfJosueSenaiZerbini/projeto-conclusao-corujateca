@@ -3,17 +3,31 @@
 import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+
+import { getSession, clearSession, UserSession } from "@/lib/auth";
+
+import {
+  AlertCircle,
+  IdCard,
+  LoaderCircle,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  Phone,
+  X,
+} from "lucide-react";
+
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { getSession, clearSession, UserSession } from "@/lib/auth";
-
 export default function ConfiguracoesFrequent() {
+  const router = useRouter();
+
+  const [session, setSession] = useState<UserSession | null>(null);
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [excluindoConta, setExcluindoConta] = useState(false);
-  const router = useRouter();
-  const [session, setSession] = useState<UserSession | null>(null);
+  const [erroExclusao, setErroExclusao] = useState("");
 
   useEffect(() => {
     const currentSession = getSession();
@@ -31,8 +45,23 @@ export default function ConfiguracoesFrequent() {
     setSession(currentSession);
   }, [router]);
 
+  const abrirModalExclusao = () => {
+    setErroExclusao("");
+    setModalExcluirAberto(true);
+  };
+
+  const fecharModalExclusao = () => {
+    if (excluindoConta) return;
+
+    setErroExclusao("");
+    setModalExcluirAberto(false);
+  };
+
   const excluirConta = async () => {
+    if (excluindoConta) return;
+
     setExcluindoConta(true);
+    setErroExclusao("");
 
     try {
       const resposta = await fetch("/api/conta", {
@@ -42,102 +71,307 @@ export default function ConfiguracoesFrequent() {
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        throw new Error(dados.erro || "Não foi possível excluir a conta.");
+        throw new Error(dados?.erro || "NÃ£o foi possÃ­vel excluir a conta.");
       }
 
       clearSession();
-
       router.replace("/login");
     } catch (erro) {
       console.error("Erro ao excluir conta:", erro);
 
-      alert(
+      setErroExclusao(
         erro instanceof Error
           ? erro.message
-          : "Não foi possível excluir a conta.",
+          : "NÃ£o foi possÃ­vel excluir a conta. Tente novamente.",
       );
 
       setExcluindoConta(false);
-      setModalExcluirAberto(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+  if (!session) {
+    return null;
+  }
 
-      <div className="flex flex-1">
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--app-background)]">
+      <div className="flex flex-1 items-stretch">
         <Nav />
 
-        <main
-          className="
-          flex-1
-          min-w-0
-          p-6
-          flex flex-col items-center justify-center
-        "
-        >
-          <Image
-            src="/images/pfp.png"
-            alt="Coruja de perfil"
-            className="mb-8 rounded-full mt-8"
-            width={170}
-            height={170}
-          />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Header />
 
-          <p className="text-3xl mb-3">{session?.nome}</p>
+          <main className="min-w-0 flex-1 px-3 py-6 text-[var(--text-primary)] min-[375px]:px-4 sm:px-6 sm:py-8 lg:px-10">
+            <div className="mx-auto w-full max-w-4xl space-y-6 sm:space-y-8">
+              {/* CabeÃ§alho */}
+              <header className="space-y-2">
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Configurações da conta
+                </h1>
 
-          <p className="text-1xl mb-1">
-            Código de identificação: {session?.id}
-          </p>
+                <p className="text-sm leading-relaxed text-[var(--text-muted)] sm:text-base">
+                  Consulte seus dados pessoais e gerencie sua conta na Corujateca.
+                </p>
+              </header>
 
-          <p className="text-1xl mb-8">
-            Telefone: ({session?.ddd}) {session?.telefone}
-          </p>
+              {/* Perfil */}
+              <section
+                aria-labelledby="perfil-titulo"
+                className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-card)]"
+              >
+                <div className="border-b border-[var(--border-default)] bg-[var(--surface-warm)]/50 px-4 py-4 sm:px-6">
+                  <h2 id="perfil-titulo" className="text-lg font-bold sm:text-xl">
+                    Meu perfil
+                  </h2>
 
-          <button
-            onClick={() => setModalExcluirAberto(true)}
-            className="cursor-pointer w-64 bg-button-secondary text-text-inverse font-medium py-3 mb-8 rounded-2xl hover:brightness-110 transition shadow-sm"
-          >
-            Excluir Conta
-          </button>
-        </main>
+                  <p className="mt-1 text-sm text-[var(--text-muted)]">
+                    Informações associadas à sua conta de frequentador.
+                  </p>
+                </div>
 
-        {modalExcluirAberto && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-            <div className="w-full max-w-md rounded-3xl bg-background p-8 shadow-xl">
-              <h2 className="text-2xl font-semibold text-text-primary mb-4">
-                Excluir conta?
-              </h2>
+                <div className="flex flex-col items-center gap-5 p-4 sm:p-6 md:flex-row md:items-start md:gap-8">
+                  {/* Imagem e tipo de conta */}
+                  <div className="flex shrink-0 flex-col items-center gap-3">
+                    <div className="overflow-hidden rounded-full border-4 border-[var(--border-strong)] bg-[var(--surface-warm)]">
+                      <Image
+                        src="/images/pfp.png"
+                        alt="Imagem de perfil da Corujateca"
+                        width={140}
+                        height={140}
+                        priority
+                        className="size-28 object-cover sm:size-36"
+                      />
+                    </div>
 
-              <p className="text-base text-text-secondary leading-relaxed mb-8">
-                Tem certeza de que deseja excluir sua conta? Essa ação não
-                poderá ser desfeita.
-              </p>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-warm)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                      <ShieldCheck size={14} aria-hidden="true" />
+                      Frequentador
+                    </span>
+                  </div>
 
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setModalExcluirAberto(false)}
-                  disabled={excluindoConta}
-                  className="cursor-pointer px-5 py-3 rounded-2xl font-medium bg-button-secondary text-text-inverse hover:brightness-110 transition"
-                >
-                  Cancelar
-                </button>
+                  {/* Dados da conta */}
+                  <div className="w-full min-w-0 flex-1">
+                    <h3 className="break-words text-center text-xl font-bold sm:text-2xl md:text-left">
+                      {session.nome}
+                    </h3>
 
-                <button
-                  onClick={excluirConta}
-                  disabled={excluindoConta}
-                  className="cursor-pointer px-5 py-3 rounded-2xl font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
-                >
-                  {excluindoConta ? "Excluindo..." : "Excluir conta"}
-                </button>
+                    <p className="mt-1 text-center text-sm text-[var(--text-muted)] md:text-left">
+                      Confira os dados cadastrados na sua conta.
+                    </p>
+
+                    <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="flex min-w-0 items-start gap-3 rounded-xl border border-[var(--border-default)] p-3 sm:p-4">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[var(--surface-warm)] text-[var(--text-primary)]">
+                          <IdCard size={20} aria-hidden="true" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Código de identificação
+                          </p>
+
+                          <p className="mt-1 break-words font-semibold">
+                            {session.id}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Telefone */}
+                      <div className="flex min-w-0 items-start gap-3 rounded-xl border border-[var(--border-default)] p-3 sm:p-4">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[var(--surface-warm)] text-[var(--text-primary)]">
+                          <Phone size={20} aria-hidden="true" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Telefone
+                          </p>
+
+                          <p className="mt-1 break-words font-semibold">
+                            ({session.ddd}) {session.telefone}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Nome completo */}
+                      <div className="flex min-w-0 items-start gap-3 rounded-xl border border-[var(--border-default)] p-3 sm:col-span-2 sm:p-4">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[var(--surface-warm)] text-[var(--text-primary)]">
+                          <UserRound size={20} aria-hidden="true" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Nome completo
+                          </p>
+
+                          <p className="mt-1 break-words font-semibold">
+                            {session.nome}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AÃ§Ã£o de exclusÃ£o */}
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={abrirModalExclusao}
+                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--status-danger)]/40 bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--status-danger)] transition-colors hover:bg-[var(--status-danger)]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                      >
+                        <Trash2 size={18} aria-hidden="true" />
+                        Excluir conta
+                      </button>
+                    </div>
+
+                    <p className="mt-3 text-xs leading-relaxed text-[var(--text-muted)]">
+                      A exclusão da conta pode ser permanente. Confira se
+                      realmente deseja realizar essa ação antes de continuar.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Aviso informativo */}
+              <div className="flex items-start gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface)] p-4">
+                <AlertCircle
+                  size={20}
+                  className="mt-0.5 shrink-0 text-[var(--text-secondary)]"
+                  aria-hidden="true"
+                />
+
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                  Mantenha seus dados de contato atualizados. Eles ajudam a
+                  biblioteca a identificar sua conta e entrar em contato quando
+                  necessário.
+                </p>
               </div>
             </div>
-          </div>
-        )}
+          </main>
+        </div>
       </div>
 
       <Footer />
+
+      {/* Modal de confirmaÃ§Ã£o de exclusÃ£o */}
+      {modalExcluirAberto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 px-3 py-6 sm:px-5"
+          onMouseDown={(evento) => {
+            if (evento.target === evento.currentTarget) {
+              fecharModalExclusao();
+            }
+          }}
+        >
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="excluir-conta-titulo"
+            aria-describedby="excluir-conta-descricao"
+            className="my-auto w-full max-w-md overflow-hidden rounded-[var(--radius-modal)] border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-modal)]"
+          >
+            {/* CabeÃ§alho do modal */}
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--border-default)] px-5 py-5 sm:px-6">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--status-danger)]/10 text-[var(--status-danger)]">
+                  <Trash2 size={22} aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <h2
+                    id="excluir-conta-titulo"
+                    className="text-lg font-bold text-[var(--text-primary)] sm:text-xl"
+                  >
+                    Excluir conta?
+                  </h2>
+
+                  <p className="mt-1 text-sm text-[var(--text-muted)]">
+                    Confirme se deseja continuar.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={fecharModalExclusao}
+                disabled={excluindoConta}
+                aria-label="Fechar janela de confirmaÃ§Ã£o"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* ConteÃºdo do modal */}
+            <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+              <p
+                id="excluir-conta-descricao"
+                className="text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base"
+              >
+                Tem certeza de que deseja excluir sua conta? Essa aÃ§Ã£o poderÃ¡
+                ser permanente e vocÃª precisarÃ¡ entrar novamente para usar a
+                Corujateca, caso volte a se cadastrar.
+              </p>
+
+              <div className="flex items-start gap-2 rounded-lg border border-[var(--status-danger)]/20 bg-[var(--status-danger)]/5 p-3">
+                <AlertCircle
+                  size={18}
+                  className="mt-0.5 shrink-0 text-[var(--status-danger)]"
+                  aria-hidden="true"
+                />
+
+                <p className="text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
+                  Antes de excluir, verifique se existem emprÃ©stimos ou multas
+                  pendentes vinculados Ã  sua conta.
+                </p>
+              </div>
+
+              {erroExclusao && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-[var(--status-danger)]/30 bg-[var(--status-danger)]/5 p-3 text-sm leading-relaxed text-[var(--status-danger)]"
+                >
+                  {erroExclusao}
+                </div>
+              )}
+            </div>
+
+            {/* AÃ§Ãµes */}
+            <div className="flex flex-col-reverse gap-3 border-t border-[var(--border-default)] bg-[var(--surface-warm)]/30 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+              <button
+                type="button"
+                onClick={fecharModalExclusao}
+                disabled={excluindoConta}
+                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={excluirConta}
+                disabled={excluindoConta}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--status-danger)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {excluindoConta ? (
+                  <>
+                    <LoaderCircle
+                      size={18}
+                      className="animate-spin"
+                      aria-hidden="true"
+                    />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} aria-hidden="true" />
+                    Excluir conta
+                  </>
+                )}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

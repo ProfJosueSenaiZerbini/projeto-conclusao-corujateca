@@ -1,3 +1,19 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  LoaderCircle,
+  Trash2,
+  UserRound,
+  X,
+  AlertCircle,
+} from "lucide-react";
+
 type Loan = {
   id: number;
   title: string;
@@ -9,39 +25,114 @@ type Loan = {
   loanDate: string;
 };
 
-function CalendarIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-      />
-    </svg>
-  );
+type ModalInfo = {
+  tipo: "confirmacao" | "sucesso" | "erro";
+  titulo: string;
+  mensagem: string;
+};
+
+function obterStatusVisual(status: string) {
+  switch (status) {
+    case "Atrasado":
+      return {
+        classe: "bg-[var(--status-danger)]/10 text-[var(--status-danger)]",
+        mensagem: "Atrasado",
+      };
+
+    case "Devolvido no prazo":
+      return {
+        classe: "bg-[var(--status-success)]/10 text-[var(--status-success)]",
+        mensagem: status,
+      };
+
+    case "Devolvido com atraso":
+      return {
+        classe: "bg-[var(--status-warning)]/10 text-[var(--status-warning)]",
+        mensagem: status,
+      };
+
+    default:
+      return {
+        classe: "bg-[var(--status-info)]/10 text-[var(--status-info)]",
+        mensagem: status,
+      };
+  }
 }
 
-export default function LoanCard({
-  loan,
-  onConcluir,
-}: {
-  loan: Loan;
-  onConcluir?: (formData: FormData) => Promise<void> | void;
-}) {
+const botaoPrimario =
+  "inline-flex min-h-11 w-full hover:cursor-pointer min-w-0 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--button-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-inverse)] transition hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
 
-  async function cancelarEmprestimo() {
-    const confirmar = window.confirm(
-      "Tem certeza que deseja cancelar este empréstimo?",
-    );
+const botaoSecundario =
+  "inline-flex min-h-11 w-full hover:cursor-pointer min-w-0 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
 
-    if (!confirmar) return;
+export default function LoanCard({ loan }: { loan: Loan }) {
+  const router = useRouter();
+
+  const [modal, setModal] = useState<ModalInfo | null>(null);
+  const [processando, setProcessando] = useState(false);
+
+  const statusVisual = obterStatusVisual(loan.status);
+
+  function abrirConfirmacaoCancelamento() {
+    setModal({
+      tipo: "confirmacao",
+      titulo: "Cancelar empréstimo",
+      mensagem:
+        "Tem certeza de que deseja cancelar este empréstimo? Essa ação removerá o empréstimo da listagem de ativos.",
+    });
+  }
+
+  async function concluirDevolucao() {
+    if (processando) return;
+
+    setProcessando(true);
+
+    try {
+      // Endpoint utilizado para registrar a devolução do empréstimo.
+      const resposta = await fetch(`/api/emprestimos/${loan.id}`, {
+        method: "PATCH",
+      });
+
+      const resultado = await resposta.json().catch(() => null);
+
+      if (!resposta.ok) {
+        setModal({
+          tipo: "erro",
+          titulo: "Não foi possível concluir",
+          mensagem:
+            resultado?.erro ??
+            resultado?.mensagem ??
+            "Ocorreu um erro ao concluir a devolução. Tente novamente.",
+        });
+        return;
+      }
+
+      setModal({
+        tipo: "sucesso",
+        titulo: "Devolução concluída!",
+        mensagem:
+          resultado?.mensagem ??
+          "A devolução do livro foi registrada com sucesso.",
+      });
+
+    } catch (error) {
+      console.error("Erro ao concluir devolução:", error);
+
+      setModal({
+        tipo: "erro",
+        titulo: "Erro de conexão",
+        mensagem:
+          "Não foi possível comunicar com o servidor. Verifique sua conexão e tente novamente.",
+      });
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  async function confirmarCancelamento() {
+    if (processando) return;
+
+    setProcessando(true);
 
     try {
       const resposta = await fetch(`/api/emprestimos/${loan.id}/desativar`, {
@@ -51,84 +142,250 @@ export default function LoanCard({
       const resultado = await resposta.json().catch(() => null);
 
       if (!resposta.ok) {
-        alert(resultado?.erro ?? "Erro ao cancelar o empréstimo.");
+        setModal({
+          tipo: "erro",
+          titulo: "Não foi possível cancelar",
+          mensagem:
+            resultado?.erro ??
+            resultado?.mensagem ??
+            "Ocorreu um erro ao cancelar o empréstimo. Tente novamente.",
+        });
         return;
       }
 
-      alert(resultado?.mensagem ?? "Empréstimo cancelado com sucesso.");
+      setModal({
+        tipo: "sucesso",
+        titulo: "Empréstimo cancelado!",
+        mensagem:
+          resultado?.mensagem ?? "O empréstimo foi cancelado com sucesso.",
+      });
 
-      window.location.reload();
     } catch (error) {
-      console.error(error);
-      alert("Não foi possível cancelar o empréstimo.");
+      console.error("Erro ao cancelar empréstimo:", error);
+
+      setModal({
+        tipo: "erro",
+        titulo: "Erro de conexão",
+        mensagem:
+          "Não foi possível comunicar com o servidor. Verifique sua conexão e tente novamente.",
+      });
+    } finally {
+      setProcessando(false);
     }
   }
 
+  function fecharModal() {
+    if (processando) return;
+    setModal(null);
+  }
+
   return (
-    <div className="rounded-2xl border border-brand-400 bg-brand-400 p-4 shadow-sm sm:p-6">
-      <form action={onConcluir} className="grid grid-cols-1 gap-y-4 gap-x-6 md:grid-cols-2">
-        <input type="hidden" name="id_emprestimo" value={loan.id} />
+    <>
+      <article className="min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition hover:border-[var(--border-strong)]">
+        <div className="flex min-w-0 flex-col gap-4 p-4 sm:p-5 lg:p-6">
+          <div className="flex min-w-0 flex-col gap-3 min-[400px]:flex-row min-[400px]:items-start min-[400px]:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--surface-warm)] text-[var(--text-primary)]">
+                <BookOpen size={20} aria-hidden="true" />
+              </div>
 
-        <div className="flex flex-col justify-between gap-1">
-          <div>
-            <h3 className="text-2xl font-bold text-text-inverse leading-tight">
-              {loan.title}
-            </h3>
-            <p className="text-sm text-text-inverse font-medium">
-              {loan.author}
-            </p>
-          </div>
+              <div className="min-w-0">
+                <h3 className="break-words font-bold sm:text-lg">
+                  {loan.title}
+                </h3>
 
-          <p className="mt-3 text-base font-semibold text-text-inverse">
-            {loan.userName}
-          </p>
-        </div>
+                <p className="mt-1 break-words text-sm text-[var(--text-secondary)]">
+                  {loan.author}
+                </p>
 
-        <div className="flex flex-col justify-between text-left gap-1">
-          <div className="text-sm md:text-base text-text-inverse space-y-2">
-            <div className="flex items-start gap-2 sm:items-center sm:gap-4">
-              <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
-              <p>
-                <span className="font-bold">Data de Devolução:</span>{" "}
-                <span className="font-normal">{loan.expiration}</span>
-              </p>
+                <p className="mt-2 flex min-w-0 items-start gap-1.5 text-sm font-medium text-[var(--text-secondary)]">
+                  <UserRound
+                    size={16}
+                    className="mt-0.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="break-words">{loan.userName}</span>
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-start gap-2 sm:items-center sm:gap-4">
-              <CalendarIcon className="w-5 h-5 shrink-0 text-text-inverse" />
-              <p>
-                <span className="font-bold">Data do Empréstimo:</span>{" "}
-                <span className="font-normal">{loan.loanDate}</span>
-              </p>
+            <span
+              className={`inline-flex w-fit max-w-full shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${statusVisual.classe}`}
+            >
+              {loan.status === "Atrasado" && (
+                <Clock3 size={14} aria-hidden="true" />
+              )}
+
+              {loan.status === "Atrasado"
+                ? `${statusVisual.mensagem} há ${loan.daysOverdue} ${
+                    loan.daysOverdue === 1 ? "dia" : "dias"
+                  }`
+                : statusVisual.mensagem}
+            </span>
+          </div>
+
+          <div className="grid min-w-0 grid-cols-1 gap-4 min-[400px]:grid-cols-2">
+            <div className="flex min-w-0 items-start gap-2">
+              <CalendarDays
+                size={17}
+                className="mt-0.5 shrink-0 text-[var(--text-secondary)]"
+                aria-hidden="true"
+              />
+
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[var(--text-secondary)]">
+                  Data de devolução
+                </p>
+                <p className="mt-1 break-words text-sm font-semibold">
+                  {loan.expiration}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 items-start gap-2">
+              <CalendarDays
+                size={17}
+                className="mt-0.5 shrink-0 text-[var(--text-secondary)]"
+                aria-hidden="true"
+              />
+
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[var(--text-secondary)]">
+                  Data do empréstimo
+                </p>
+                <p className="mt-1 break-words text-sm font-semibold">
+                  {loan.loanDate}
+                </p>
+              </div>
             </div>
           </div>
 
-          <p className="mt-3 text-base font-semibold text-text-inverse">
-            {loan.status === "Atrasado"
-              ? `Atrasado há ${loan.daysOverdue} ${
-                  loan.daysOverdue === 1 ? "dia" : "dias"
-                }`
-              : loan.status}
-          </p>
-        </div>
+          {!loan.status.startsWith("Devolvido") &&
+            loan.status !== "Cancelado" && (
+              <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={concluirDevolucao}
+                  disabled={processando}
+                  className={botaoPrimario}
+                >
+                  {processando ? (
+                    <LoaderCircle
+                      size={17}
+                      className="animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <CheckCircle2 size={17} aria-hidden="true" />
+                  )}
 
-        <div className="col-span-1 md:col-span-2 grid grid-cols-1 gap-4 mt-2 sm:grid-cols-2">
-          <button
-            type="submit"
-            className="w-full bg-[var(--color-button-primary)] hover:brightness-110 text-brand-200 font-semibold py-2.5 px-4 rounded-xl transition duration-150 text-sm shadow-sm cursor-pointer"
-          >
-            Concluir devolução do livro
-          </button>
+                  <span className="break-words">
+                    Concluir devolução do livro
+                  </span>
+                </button>
 
-          <button
-            type="button"
-            onClick={cancelarEmprestimo}
-            className="w-full bg-[var(--color-button-secondary)] hover:brightness-110 text-brand-200 font-semibold py-2.5 px-4 rounded-xl transition duration-150 text-sm shadow-sm cursor-pointer"
-          >
-            Cancelar
-          </button>
+                <button
+                  type="button"
+                  onClick={abrirConfirmacaoCancelamento}
+                  disabled={processando}
+                  className="inline-flex min-h-11 w-full hover:cursor-pointer min-w-0 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--status-danger)]/30 px-4 py-2.5 text-sm font-semibold text-[var(--status-danger)] transition hover:bg-[var(--status-danger)]/10 focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Trash2 size={17} aria-hidden="true" />
+                  <span>Cancelar empréstimo</span>
+                </button>
+              </div>
+            )}
         </div>
-      </form>
-    </div>
+      </article>
+
+      {modal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/50 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-5"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) fecharModal();
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-modal-emprestimo"
+            aria-describedby="mensagem-modal-emprestimo"
+            className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full min-w-0 max-w-md overflow-y-auto overscroll-contain rounded-[var(--radius-modal)] border border-[var(--border-default)] bg-[var(--surface)] p-5 shadow-[var(--shadow-modal)] sm:max-h-[calc(100dvh-2.5rem)] sm:p-6"
+          >
+
+            <div className="flex min-w-0 flex-col items-center pt-2 text-center">
+              <div
+                className={`mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full ${
+                  modal.tipo === "sucesso"
+                    ? "bg-[var(--status-success)]/10 text-[var(--status-success)]"
+                    : modal.tipo === "erro"
+                      ? "bg-[var(--status-danger)]/10 text-[var(--status-danger)]"
+                      : "bg-[var(--surface-warm)] text-[var(--text-primary)]"
+                }`}
+              >
+                {modal.tipo === "sucesso" ? (
+                  <CheckCircle2 size={28} aria-hidden="true" />
+                ) : modal.tipo === "erro" ? (
+                  <AlertCircle size={28} aria-hidden="true" />
+                ) : (
+                  <Trash2 size={28} aria-hidden="true" />
+                )}
+              </div>
+
+              <h2
+                id="titulo-modal-emprestimo"
+                className="max-w-full break-words pr-5 text-xl font-bold text-[var(--text-primary)] sm:text-2xl"
+              >
+                {modal.titulo}
+              </h2>
+
+              <p
+                id="mensagem-modal-emprestimo"
+                className="mt-3 break-words text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base"
+              >
+                {modal.mensagem}
+              </p>
+
+              {modal.tipo === "confirmacao" ? (
+                <div className="mt-6 grid w-full min-w-0 grid-cols-1 gap-2 min-[400px]:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={fecharModal}
+                    disabled={processando}
+                    className={botaoSecundario}
+                  >
+                    Voltar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={confirmarCancelamento}
+                    disabled={processando}
+                    className="inline-flex hover:cursor-pointer min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--status-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {processando && (
+                      <LoaderCircle
+                        size={17}
+                        className="animate-spin"
+                        aria-hidden="true"
+                      />
+                    )}
+                    Confirmar cancelamento
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={fecharModal}
+                  className={`${botaoPrimario} mt-6`}
+                >
+                  Entendi
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+    </>
   );
 }

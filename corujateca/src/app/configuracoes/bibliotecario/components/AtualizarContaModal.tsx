@@ -1,307 +1,414 @@
 "use client";
 
+import {
+  AlertCircle,
+  Check,
+  ChevronLeft,
+  LoaderCircle,
+  Pencil,
+  Phone,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 type AtualizarContaModalProps = {
-    aberto: boolean;
-    idBibliotecario: number;
-    nomeAtual: string;
-    dddAtual: string;
-    telefoneAtual: string;
-    onFechar: () => void;
-    onSucesso: (dados: {
-        nome: string;
-        ddd: string;
-        telefone: string;
-    }) => void;
+  aberto: boolean;
+  idBibliotecario: number;
+  nomeAtual: string;
+  dddAtual: string;
+  telefoneAtual: string;
+  onFechar: () => void;
+  onSucesso: (dados: { nome: string; ddd: string; telefone: string }) => void;
 };
 
 export default function AtualizarContaModal({
-    aberto,
-    idBibliotecario,
-    nomeAtual,
-    dddAtual,
-    telefoneAtual,
-    onFechar,
-    onSucesso,
+  aberto,
+  idBibliotecario,
+  nomeAtual,
+  dddAtual,
+  telefoneAtual,
+  onFechar,
+  onSucesso,
 }: AtualizarContaModalProps) {
-    const [nome, setNome] = useState("");
-    const [ddd, setDdd] = useState("");
-    const [telefone, setTelefone] = useState("");
+  const [nome, setNome] = useState("");
+  const [ddd, setDdd] = useState("");
+  const [telefone, setTelefone] = useState("");
 
-    const [carregando, setCarregando] =
-        useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [confirmando, setConfirmando] = useState(false);
 
-    const [erro, setErro] = useState("");
+  useEffect(() => {
+    if (aberto) {
+      setNome(nomeAtual);
+      setDdd(dddAtual);
+      setTelefone(telefoneAtual);
+      setErro("");
+      setConfirmando(false);
+      setCarregando(false);
+    }
+  }, [aberto, nomeAtual, dddAtual, telefoneAtual]);
 
-    const [confirmando, setConfirmando] =
-        useState(false);
+  if (!aberto) {
+    return null;
+  }
 
-    /*
-     * Quando o modal abre, carrega os dados atuais.
-     */
-    useEffect(() => {
-        if (aberto) {
-            setNome(nomeAtual);
-            setDdd(dddAtual);
-            setTelefone(telefoneAtual);
+  function solicitarConfirmacao() {
+    setErro("");
 
-            setErro("");
-            setConfirmando(false);
-        }
-    }, [
-        aberto,
-        nomeAtual,
-        dddAtual,
-        telefoneAtual,
-    ]);
-
-    if (!aberto) {
-        return null;
+    if (!nome.trim()) {
+      setErro("O nome é obrigatório.");
+      return;
     }
 
-    /*
-     * Primeira etapa:
-     * usuário clica em concluir.
-     *
-     * Em vez de atualizar imediatamente,
-     * mostramos a confirmação.
-     */
-    function solicitarConfirmacao() {
-        setErro("");
-
-        if (!nome.trim()) {
-            setErro("O nome é obrigatório.");
-            return;
-        }
-
-        if (!ddd.trim()) {
-            setErro("O DDD é obrigatório.");
-            return;
-        }
-
-        if (!telefone.trim()) {
-            setErro("O telefone é obrigatório.");
-            return;
-        }
-
-        setConfirmando(true);
+    if (!ddd.trim()) {
+      setErro("O DDD é obrigatório.");
+      return;
     }
 
-    /*
-     * Segunda etapa:
-     * usuário confirmou a alteração.
-     */
-    async function atualizarConta() {
-        try {
-            setCarregando(true);
-            setErro("");
-
-            const resposta = await fetch(
-                `/api/bibliotecario/${idBibliotecario}/atualizar`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        nome: nome.trim(),
-                        ddd: ddd.trim(),
-                        telefone: telefone.trim(),
-                    }),
-                }
-            );
-
-            const dados = await resposta.json();
-
-            if (!resposta.ok) {
-                throw new Error(
-                    dados?.erro ||
-                    "Não foi possível atualizar a conta."
-                );
-            }
-
-            /*
-             * Atualiza os dados da sessão na página.
-             */
-            onSucesso({
-                nome: dados.nome,
-                ddd: dados.ddd,
-                telefone: dados.telefone,
-            });
-
-            setConfirmando(false);
-
-            onFechar();
-        } catch (error) {
-            console.error(error);
-
-            setErro(
-                error instanceof Error
-                    ? error.message
-                    : "Não foi possível atualizar a conta."
-            );
-
-            setConfirmando(false);
-        } finally {
-            setCarregando(false);
-        }
+    if (ddd.trim().length !== 2) {
+      setErro("Informe um DDD com 2 dígitos.");
+      return;
     }
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                {!confirmando ? (
-                    <>
-                        <h2 className="mb-6 text-2xl font-bold text-gray-800">
-                            Atualizar Conta
-                        </h2>
+    if (!telefone.trim()) {
+      setErro("O telefone é obrigatório.");
+      return;
+    }
 
-                        <div className="flex flex-col gap-4">
-                            <div>
-                                <label
-                                    htmlFor="nome"
-                                    className="mb-1 block text-sm font-medium text-gray-700"
-                                >
-                                    Nome
-                                </label>
+    if (telefone.trim().length < 8) {
+      setErro("Informe um telefone válido.");
+      return;
+    }
 
-                                <input
-                                    id="nome"
-                                    type="text"
-                                    value={nome}
-                                    onChange={(e) =>
-                                        setNome(e.target.value)
-                                    }
-                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-[var(--color-brand-500)]"
-                                />
-                            </div>
+    setConfirmando(true);
+  }
 
-                            <div>
-                                <label
-                                    htmlFor="ddd"
-                                    className="mb-1 block text-sm font-medium text-gray-700"
-                                >
-                                    DDD
-                                </label>
+  async function atualizarConta() {
+    try {
+      setCarregando(true);
+      setErro("");
 
-                                <input
-                                    id="ddd"
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={2}
-                                    value={ddd}
-                                    onChange={(e) =>
-                                        setDdd(
-                                            e.target.value.replace(/\D/g, "")
-                                        )
-                                    }
-                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-[var(--color-brand-500)]"
-                                />
-                            </div>
+      const resposta = await fetch(
+        `/api/bibliotecario/${idBibliotecario}/atualizar`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nome: nome.trim(),
+            ddd: ddd.trim(),
+            telefone: telefone.trim(),
+          }),
+        },
+      );
 
-                            <div>
-                                <label
-                                    htmlFor="telefone"
-                                    className="mb-1 block text-sm font-medium text-gray-700"
-                                >
-                                    Telefone
-                                </label>
+      const dados = await resposta.json();
 
-                                <input
-                                    id="telefone"
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={9}
-                                    value={telefone}
-                                    onChange={(e) =>
-                                        setTelefone(
-                                            e.target.value.replace(/\D/g, "")
-                                        )
-                                    }
-                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-[var(--color-brand-500)]"
-                                />
-                            </div>
-                        </div>
+      if (!resposta.ok) {
+        throw new Error(dados?.erro || "Não foi possível atualizar a conta.");
+      }
 
-                        {erro && (
-                            <p className="mt-4 text-sm font-medium text-red-600">
-                                {erro}
-                            </p>
-                        )}
+      onSucesso({
+        nome: dados.nome,
+        ddd: dados.ddd,
+        telefone: dados.telefone,
+      });
 
-                        <div className="mt-6 flex gap-3">
-                            <button
-                                type="button"
-                                onClick={onFechar}
-                                disabled={carregando}
-                                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 font-medium text-gray-700 hover:bg-gray-100"
-                            >
-                                Cancelar
-                            </button>
+      setConfirmando(false);
+      onFechar();
+    } catch (error) {
+      console.error("Erro ao atualizar a conta:", error);
 
-                            <button
-                                type="button"
-                                onClick={solicitarConfirmacao}
-                                disabled={carregando}
-                                className="flex-1 rounded-lg bg-[var(--color-button-primary)] px-4 py-3 font-medium text-[var(--color-text-inverse)] hover:brightness-110"
-                            >
-                                Concluir
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <h2 className="mb-4 text-2xl font-bold text-gray-800">
-                            Confirmar alteração
-                        </h2>
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar a conta.",
+      );
+    } finally {
+      setCarregando(false);
+    }
+  }
 
-                        <p className="text-gray-700">
-                            Tem certeza de que deseja atualizar os
-                            dados da sua conta?
-                        </p>
+  const classeCampo =
+    "w-full min-h-11 rounded-[var(--radius-input)] border border-[var(--border-default)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--focus-ring)]/20 disabled:cursor-not-allowed disabled:opacity-60";
 
-                        <div className="mt-6 rounded-lg bg-gray-100 p-4 text-sm text-gray-700">
-                            <p>
-                                <strong>Nome:</strong> {nome}
-                            </p>
+  const classeBotaoSecundario =
+    "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
 
-                            <p>
-                                <strong>Telefone:</strong> ({ddd}){" "}
-                                {telefone}
-                            </p>
-                        </div>
+  const classeBotaoPrimario =
+    "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--button-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-inverse)] transition-colors hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
 
-                        {erro && (
-                            <p className="mt-4 text-sm font-medium text-red-600">
-                                {erro}
-                            </p>
-                        )}
-
-                        <div className="mt-6 flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setConfirmando(false)}
-                                disabled={carregando}
-                                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 font-medium text-gray-700 hover:bg-gray-100"
-                            >
-                                Voltar
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={atualizarConta}
-                                disabled={carregando}
-                                className="flex-1 rounded-lg bg-[var(--color-button-primary)] px-4 py-3 font-medium text-[var(--color-text-inverse)] hover:brightness-110"
-                            >
-                                {carregando
-                                    ? "Atualizando..."
-                                    : "Sim, atualizar"}
-                            </button>
-                        </div>
-                    </>
-                )}
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5"
+      onMouseDown={(evento) => {
+        if (evento.target === evento.currentTarget && !carregando) {
+          onFechar();
+        }
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="atualizar-conta-titulo"
+        className="my-auto w-full max-w-lg overflow-hidden rounded-[var(--radius-modal)] border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-modal)]"
+      >
+        {/* Cabeçalho */}
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--border-default)] bg-[var(--surface-warm)]/50 p-4 sm:p-6">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-[var(--brand-400)] text-[var(--text-inverse)]">
+              {confirmando ? (
+                <Check size={22} aria-hidden="true" />
+              ) : (
+                <Pencil size={22} aria-hidden="true" />
+              )}
             </div>
+
+            <div className="min-w-0">
+              <h2
+                id="atualizar-conta-titulo"
+                className="text-lg font-bold text-[var(--text-primary)] sm:text-xl"
+              >
+                {confirmando ? "Confirmar alterações" : "Atualizar conta"}
+              </h2>
+
+              <p className="mt-1 text-sm leading-relaxed text-[var(--text-muted)]">
+                {confirmando
+                  ? "Confira os dados antes de confirmar."
+                  : "Edite as informações que deseja atualizar."}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onFechar}
+            disabled={carregando}
+            aria-label="Fechar modal"
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
         </div>
-    );
+
+        {/* Formulário ou confirmação */}
+        <div className="max-h-[calc(100dvh-12rem)] space-y-5 overflow-y-auto p-4 sm:p-6">
+          {!confirmando ? (
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="bibliotecario-nome"
+                  className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]"
+                >
+                  Nome completo
+                </label>
+
+                <div className="relative">
+                  <UserRound
+                    size={18}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                  />
+
+                  <input
+                    id="bibliotecario-nome"
+                    type="text"
+                    autoComplete="name"
+                    value={nome}
+                    onChange={(evento) => setNome(evento.target.value)}
+                    disabled={carregando}
+                    className={`${classeCampo} pl-10`}
+                    placeholder="Digite seu nome"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 min-[380px]:grid-cols-[100px_minmax(0,1fr)]">
+                <div>
+                  <label
+                    htmlFor="bibliotecario-ddd"
+                    className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]"
+                  >
+                    DDD
+                  </label>
+
+                  <input
+                    id="bibliotecario-ddd"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="tel-area-code"
+                    maxLength={2}
+                    value={ddd}
+                    onChange={(evento) =>
+                      setDdd(evento.target.value.replace(/\D/g, ""))
+                    }
+                    disabled={carregando}
+                    className={classeCampo}
+                    placeholder="11"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="bibliotecario-telefone"
+                    className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]"
+                  >
+                    Telefone
+                  </label>
+
+                  <div className="relative">
+                    <Phone
+                      size={18}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                    />
+
+                    <input
+                      id="bibliotecario-telefone"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      maxLength={9}
+                      value={telefone}
+                      onChange={(evento) =>
+                        setTelefone(evento.target.value.replace(/\D/g, ""))
+                      }
+                      disabled={carregando}
+                      className={`${classeCampo} pl-10`}
+                      placeholder="999999999"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs leading-relaxed text-[var(--text-muted)]">
+                Confira o DDD e o número de telefone antes de prosseguir.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                Deseja salvar as alterações abaixo na sua conta?
+              </p>
+
+              <div className="space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-hover)] p-4">
+                <div className="flex items-start gap-3">
+                  <UserRound
+                    size={18}
+                    className="mt-0.5 shrink-0 text-[var(--text-muted)]"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs text-[var(--text-muted)]">Nome</p>
+                    <p className="break-words text-sm font-semibold text-[var(--text-primary)]">
+                      {nome.trim()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Phone
+                    size={18}
+                    className="mt-0.5 shrink-0 text-[var(--text-muted)]"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs text-[var(--text-muted)]">Telefone</p>
+                    <p className="break-words text-sm font-semibold text-[var(--text-primary)]">
+                      ({ddd}) {telefone}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm leading-relaxed text-[var(--text-muted)]">
+                Confirme somente se os dados estiverem corretos.
+              </p>
+            </div>
+          )}
+
+          {erro && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-lg border border-[var(--status-danger)]/30 bg-[var(--status-danger)]/5 p-3 text-sm text-[var(--status-danger)]"
+            >
+              <AlertCircle
+                size={18}
+                className="mt-0.5 shrink-0"
+                aria-hidden="true"
+              />
+              <p>{erro}</p>
+            </div>
+          )}
+
+          {/* Ações */}
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--border-default)] pt-4 min-[380px]:flex-row">
+            {!confirmando ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onFechar}
+                  disabled={carregando}
+                  className={classeBotaoSecundario}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={solicitarConfirmacao}
+                  disabled={carregando}
+                  className={classeBotaoPrimario}
+                >
+                  Continuar
+                  <Check size={17} aria-hidden="true" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErro("");
+                    setConfirmando(false);
+                  }}
+                  disabled={carregando}
+                  className={classeBotaoSecundario}
+                >
+                  <ChevronLeft size={17} aria-hidden="true" />
+                  Voltar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={atualizarConta}
+                  disabled={carregando}
+                  className={classeBotaoPrimario}
+                >
+                  {carregando ? (
+                    <>
+                      <LoaderCircle
+                        size={17}
+                        className="animate-spin"
+                        aria-hidden="true"
+                      />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={17} aria-hidden="true" />
+                      Confirmar alterações
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }

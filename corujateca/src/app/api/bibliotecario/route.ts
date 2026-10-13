@@ -15,7 +15,7 @@ export async function GET() {
     console.error("Erro ao buscar bibliotecários:", error);
     return NextResponse.json(
       { erro: "Erro ao buscar bibliotecários no banco de dados." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -30,28 +30,28 @@ export async function POST(request: Request) {
       console.error("MASTER_SECRET não foi configurada.");
       return NextResponse.json(
         { erro: "A senha master não está configurada no servidor." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (senhaMaster !== senhaMasterConfigurada) {
       return NextResponse.json(
         { erro: "Senha master incorreta." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (!nome || typeof nome !== "string" || !nome.trim()) {
       return NextResponse.json(
         { erro: "O nome do bibliotecário é obrigatório." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!senha || typeof senha !== "string") {
       return NextResponse.json(
         { erro: "A senha do bibliotecário é obrigatória." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     if (senhaTratada.length < 8) {
       return NextResponse.json(
         { erro: "A senha deve ter no mínimo 8 caracteres." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -86,16 +86,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        id: novoBibliotecario.id_bibliotecario,
-        nome: novoBibliotecario.nome_bibliotecario,
+        mensagem: "Bibliotecário cadastrado com sucesso.",
+        id_bibliotecario: novoBibliotecario.id_bibliotecario,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Erro ao cadastrar bibliotecário:", error);
     return NextResponse.json(
       { erro: "Erro ao cadastrar bibliotecário no banco de dados." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

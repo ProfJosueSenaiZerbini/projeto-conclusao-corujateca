@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Header from "@/components/Header";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
-import { ArrowRight } from "lucide-react";
+import { ArrowDown, Info } from "lucide-react";
 import { getSession } from "@/lib/auth";
 
 const perguntasFrequentes = [
@@ -67,94 +64,124 @@ export default function AjudaFreq() {
 
   useEffect(() => {
     const session = getSession();
+
     if (session?.nome) {
       setNomeUsuario(session.nome);
     }
   }, []);
 
   const alternarPergunta = (id: number) => {
-    if (indexAberto === id) {
-      setIndexAberto(null);
-    } else {
-      setIndexAberto(id);
-    }
+    setIndexAberto((atual) => (atual === id ? null : id));
   };
-  /*Parte da Maria */
+
+  const classeCartao =
+    "w-full min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-colors";
+
   return (
-    <>
-      <div className="min-h-screen flex flex-col">
-        <Header />
+    <main className="min-w-0 flex-1 bg-[var(--app-background)] px-3 py-5 text-[var(--text-primary)] min-[375px]:px-4 sm:px-6 sm:py-8 lg:px-10">
+      <div className="mx-auto w-full min-w-0 max-w-5xl">
+        <section aria-labelledby="titulo-perguntas" className="min-w-0">
+          <div className="mb-5 sm:mb-6">
+            <h1
+              id="titulo-perguntas"
+              className="text-2xl font-bold leading-tight min-[375px]:text-2xl sm:text-2xl md:text-3xl"
+            >
+              Perguntas frequentes
+            </h1>
 
-        <div className="flex flex-1">
-          <Nav />
+            <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)] sm:mb-4 sm:text-base">
+              Selecione uma pergunta para consultar a resposta.
+            </p>
+          </div>
 
-          <main
-            className="
-                        flex-1
-                        min-w-0
-                        p-6
-                    "
-          >
-            {/* 🖥️ Mudamos de min-h-screen comum para uma estrutura flexível que joga o footer para baixo */}
-            <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-brand-800)] antialiased font-sans">
-              {/* Seção de Categorias - Adicionado flex-grow para empurrar o rodapé */}
-              <div className="flex-grow max-w-5xl w-full mx-auto px-4 py-12">
-                <section className="mb-6">
-                  <p className="text-base sm:text-lg text-[var(--color-text-primary)]">
-                    Olá, <strong className="font-bold">{nomeUsuario}</strong>
-                  </p>
-                </section>
+          <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+            {perguntasFrequentes.map((item, index) => {
+              const estaAberto = indexAberto === index;
+              const idPergunta = `pergunta-ajuda-${index}`;
+              const idResposta = `resposta-ajuda-${index}`;
 
-                <h3 className="text-xl md:text-2xl font-bold mb-6 text-[var(--color-text-primary)]">
-                  Perguntas Frequentes
-                </h3>
+              return (
+                <article key={index} className={classeCartao}>
+                  <h2 className="min-w-0">
+                    <button
+                      id={idPergunta}
+                      type="button"
+                      aria-expanded={estaAberto}
+                      aria-controls={idResposta}
+                      onClick={() => alternarPergunta(index)}
+                      className="
+                        group flex min-h-14 w-full min-w-0 items-center
+                        gap-2.5 px-3 py-3.5 text-left transition-colors
+                        hover:bg-[var(--surface-hover)]
+                        focus-visible:outline-2 focus-visible:outline-offset-[-3px]
+                        focus-visible:outline-[var(--focus-ring)]
+                        min-[375px]:gap-3 min-[375px]:px-4
+                        sm:min-h-16 sm:gap-3 sm:px-5 sm:py-4
+                      "
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-semibold text-[var(--text-primary)] min-[375px]:h-8 min-[375px]:w-8 min-[375px]:text-xs">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
 
-                {/* 🛠️ AQUI: O flex-col junta a lista inteira, e o index funciona sem BO dentro do .map */}
-                <div className="flex flex-col gap-4">
-                  {perguntasFrequentes.map((item, index) => {
-                    const estaAberto = indexAberto === index;
+                      <span className="min-w-0 flex-1 break-words text-[13px] font-semibold leading-relaxed text-[var(--text-primary)] min-[375px]:text-sm sm:text-base">
+                        {item.pergunta}
+                      </span>
 
-                    return (
-                      <div
-                        key={index}
-                        className="bg-[var(--color-brand-300)] border border-[var(--color-brand-400)] rounded-xl overflow-hidden shadow-sm transition-all duration-300 w-full"
-                      >
-                        {/* Botão com a Pergunta */}
-                        <button
-                          onClick={() => alternarPergunta(index)}
-                          className="w-full flex items-center justify-between p-4 hover:bg-[var(--color-brand-400)] text-left transition-all group"
-                        >
-                          <span className="text-[var(--color-brand-600)] group-hover:text-[var(--color-brand-800)] font-medium text-sm md:text-base pr-4">
-                            {item.pergunta}
-                          </span>
-                          <ArrowRight
-                            className={`h-4 w-4 text-[var(--color-brand-500)] group-hover:text-[var(--color-brand-700)] transition-transform duration-300 flex-shrink-0 ${
-                              estaAberto
-                                ? "rotate-90 text-[var(--color-brand-700)]"
-                                : ""
-                            }`}
-                          />
-                        </button>
+                      <ArrowDown
+                        size={18}
+                        aria-hidden="true"
+                        className={`
+                          shrink-0 text-[var(--text-muted)]
+                          transition-transform duration-200
+                          group-hover:text-[var(--text-primary)]
+                          sm:h-5 sm:w-5
+                          ${estaAberto ? "rotate-180" : ""}
+                        `}
+                      />
+                    </button>
+                  </h2>
 
-                        {/* Resposta curta que aparece ao clicar */}
-                        {estaAberto && (
-                          <div className="px-4 pt-3 pb-4 pt-1 text-sm md:text-base text-[var(--color-brand-800)] border-t border-[var(--color-brand-400)] bg-[var(--color-background)]">
-                            <p className="leading-relaxed font-normal">
-                              {item.resposta}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                  {estaAberto && (
+                    <div
+                      id={idResposta}
+                      role="region"
+                      aria-labelledby={idPergunta}
+                      className="min-w-0 border-t border-[var(--border-default)] px-3 py-4 min-[375px]:px-4 sm:px-5 sm:py-5"
+                    >
+                      <p className="break-words text-sm leading-6 text-[var(--text-secondary)] min-[375px]:leading-7 sm:pl-11 sm:text-base">
+                        {item.resposta}
+                      </p>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--brand-400)] p-4 min-[375px]:p-5 sm:mt-8 sm:p-6">
+          <div className="flex min-w-0 items-start gap-2.5 min-[375px]:gap-3 sm:gap-4">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center min-[375px]:h-10 min-[375px]:w-10">
+              <Info
+                size={21}
+                className="text-[var(--text-inverse)]"
+                aria-hidden="true"
+              />
             </div>
-          </main>
-        </div>
 
-        <Footer />
+            <div className="min-w-0 flex-1">
+              <h2 className="break-words text-sm font-bold text-[var(--text-inverse)] min-[375px]:text-base">
+                Ainda precisa de ajuda?
+              </h2>
+
+              <p className="mt-1 break-words text-sm leading-relaxed text-[var(--text-inverse)]">
+                Se sua dúvida não estiver entre as perguntas acima, entre em
+                contato com o bibliotecário da sua unidade.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
-    </>
+    </main>
   );
 }

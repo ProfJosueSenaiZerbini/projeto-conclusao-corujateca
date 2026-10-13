@@ -1,94 +1,93 @@
+"use client";
+
+import Image from "next/image";
+
 export default function Footer() {
-    const anoAtual = new Date().getFullYear();
+  const anoAtual = new Date().getFullYear();
 
-    return (
-        <footer className="
-            w-full
-            bg-[var(--brand-700)]
-            text-gray-300
-            py-4
-        ">
+  const membros = [
+    "Maria Luiza",
+    "Stephanny Borrozzino",
+    "Rogério Malto",
+    "Enzo Barbino",
+    "Alexandra Pereira",
+  ];
 
-            <div className="
-                container
-                mx-auto
-                px-8
-                flex
-                flex-row
-                justify-between
-                items-start
-                gap-8
-                mb-6
-            ">
+  return (
+    <footer
+      className="
+      w-full border-t border-[var(--color-horror)]/30
+      bg-[var(--brand-700)]
+      text-[var(--text-inverse)]
+    "
+    >
+      <div
+        className="
+        mx-auto grid w-full max-w-7xl
+        grid-cols-1 gap-8
+        px-5 py-8
+        sm:px-8
+        md:grid-cols-2 md:gap-12
+        lg:px-10
+      "
+      >
+        {/* Identidade do projeto */}
+        <section className="min-w-0">
+          <Image
+            src="/images/logo_corujatecaFooter.png"
+            alt=""
+            width={400}
+            height={200}
+            priority
+            // className="object-contain md:hidden"
+          />
+        </section>
 
-                <div className="max-w-xs">
-                    <h3 className="
-                        text-[var(--brand-400)]
-                        font-bold
-                        text-lg
-                        mb-3
-                    ">
-                        Corujateca
-                    </h3>
+        {/* Integrantes */}
+        <section className="min-w-0">
+          <h2
+            className="
+            mb-3 text-base font-semibold
+            text-[var(--brand-400)]
+          "
+          >
+            Membros do projeto
+          </h2>
 
-                    <p className="
-                        text-[var(--brand-200)]
-                        font-medium
-                        text-sm
-                        leading-relaxed
-                    ">
-                        Tecnologia que apoia, simplifica
-                        e valoriza as bibliotecas.
-                    </p>
-                </div>
+          <ul
+            className="
+            grid grid-cols-1 gap-x-6 gap-y-2
+            text-sm
+            sm:grid-cols-2
+          "
+          >
+            {membros.map((membro) => (
+              <li key={membro} className="min-w-0 leading-6">
+                {membro}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
 
-                <div className="text-left">
-                    <h3 className="
-                        text-[var(--brand-400)]
-                        font-bold
-                        text-lg
-                        mb-3
-                    ">
-                        Membros
-                    </h3>
-
-                    <div className="
-                        grid
-                        grid-cols-2
-                        gap-x-12
-                        gap-y-1
-                        text-[var(--brand-200)]
-                        text-sm
-                    ">
-
-                        <div className="flex flex-col gap-1">
-                            <p>Maria Luiza</p>
-                            <p>Stephanny Borrozzino</p>
-                            <p>Rogério Malto</p>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                            <p>Enzo Barbino</p>
-                            <p>Alexandra Pereira</p>
-                        </div>
-
-                    </div>
-                </div>
-
-            </div>
-
-            <div className="
-                container
-                mx-auto
-                px-8
-                text-sm
-                text-[var(--brand-400)]
-                mt-3
-            ">
-                &copy; {anoAtual} Corujateca.
-                Todos os direitos reservados.
-            </div>
-
-        </footer>
-    );
+      {/* Copyright */}
+      <div
+        className="
+        border-t border-[var(--color-horror)]/30
+        px-5 py-4 sm:px-8 lg:px-10
+      "
+      >
+        <p
+          className="
+          mx-auto max-w-7xl
+          text-xs leading-5
+          text-center
+          text-[var(--brand-400)]
+        "
+        >
+          &copy; {anoAtual} Corujateca. Todos os direitos reservados.
+        </p>
+      </div>
+    </footer>
+  );
 }
