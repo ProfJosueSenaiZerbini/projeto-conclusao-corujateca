@@ -139,10 +139,8 @@ export default function AcervoBib() {
       }
     }
 
-    if (!pesquisaRealizada) {
-      carregarDadosAcervo();
-    }
-  }, [paginaAtual, pesquisaRealizada]);
+    carregarDadosAcervo();
+  }, [paginaAtual]);
 
   /*
    * Busca livros utilizando os filtros.

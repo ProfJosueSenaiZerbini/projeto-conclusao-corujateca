@@ -109,10 +109,8 @@ export default function AcervoFreq() {
       }
     }
 
-    if (!pesquisaRealizada) {
-      carregarDadosAcervo();
-    }
-  }, [paginaAtual, pesquisaRealizada]);
+    carregarDadosAcervo();
+  }, [paginaAtual]);
 
   /*
    * Busca os livros.
