@@ -165,7 +165,7 @@ export default function ConfiguracoesBibli() {
                       <button
                         type="button"
                         onClick={() => setModalAtualizarConta(true)}
-                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--button-primary)] px-5 py-3 text-sm font-semibold text-[var(--text-inverse)] transition-colors hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--button-primary)] px-5 py-3 text-sm font-semibold text-[var(--text-inverse)] transition-colors hover:bg-[var(--button-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] cursor-pointer"
                       >
                         <Pencil size={18} aria-hidden="true" />
                         Atualizar conta
@@ -173,7 +173,7 @@ export default function ConfiguracoesBibli() {
 
                       <button
                         type="button"
-                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--status-danger)]/40 bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--status-danger)] transition-colors hover:bg-[var(--status-danger)]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--status-danger)]/40 bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--status-danger)] transition-colors hover:bg-[var(--status-danger)]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] cursor-pointer"
                       >
                         <Trash2 size={18} aria-hidden="true" />
                         Excluir conta
