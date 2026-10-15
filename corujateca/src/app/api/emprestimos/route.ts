@@ -6,6 +6,18 @@ import bcrypt from "bcrypt";
 import { db } from "@/app/db";
 import { SESSION_COOKIE, decodeSession } from "@/lib/auth";
 
+const MILISSEGUNDOS_POR_DIA = 24 * 60 * 60 * 1000;
+
+function inicioDoDiaUTC(data: Date | string) {
+  const convertida = new Date(data);
+
+  return Date.UTC(
+    convertida.getUTCFullYear(),
+    convertida.getUTCMonth(),
+    convertida.getUTCDate(),
+  );
+}
+
 function formatarData(data: Date) {
   return data.toLocaleDateString("pt-BR", {
     timeZone: "UTC",
@@ -15,7 +27,6 @@ function formatarData(data: Date) {
 export async function GET() {
   try {
     const cookieStore = await cookies();
-
     const sessionCookie = cookieStore.get(SESSION_COOKIE)?.value;
 
     if (!sessionCookie) {
@@ -28,7 +39,10 @@ export async function GET() {
     const session = decodeSession(sessionCookie);
 
     if (!session) {
-      return NextResponse.json({ error: "Sessão inválida." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Sessão inválida." },
+        { status: 401 },
+      );
     }
 
     if (session.role !== "frequentador") {
@@ -44,7 +58,6 @@ export async function GET() {
       where: {
         fk_frequentador_id_freq: session.id,
       },
-
       include: {
         exemplar: {
           include: {
@@ -52,32 +65,50 @@ export async function GET() {
           },
         },
       },
-
       orderBy: {
         dta_devolucao: "asc",
       },
     });
 
-    const emprestimosFormatados = emprestimos.map((emprestimo) => ({
-      id: emprestimo.id_emprestimo,
+    const hoje = inicioDoDiaUTC(new Date());
 
-      title: emprestimo.exemplar.livro.titulo_livro,
+    const emprestimosFormatados = emprestimos.map((emprestimo) => {
+      const vencimento = inicioDoDiaUTC(
+        emprestimo.dta_devolucao,
+      );
 
-      author: emprestimo.exemplar.livro.autor_livro,
+      let status: string;
+      let diasAtraso = 0;
 
-      status: emprestimo.dta_devolucao_real
-        ? new Date(emprestimo.dta_devolucao_real) >
-          new Date(emprestimo.dta_devolucao)
-          ? "Devolvido com atraso"
-          : "Devolvido no prazo"
-        : new Date() > new Date(emprestimo.dta_devolucao)
-          ? "Atrasado"
-          : "Em andamento",
+      if (emprestimo.dta_devolucao_real) {
+        const devolucaoReal = inicioDoDiaUTC(
+          emprestimo.dta_devolucao_real,
+        );
 
-      expiration: formatarData(emprestimo.dta_devolucao),
+        status =
+          devolucaoReal <= vencimento
+            ? "Devolvido no prazo"
+            : "Devolvido com atraso";
+      } else if (vencimento < hoje) {
+        status = "Atrasado";
 
-      loanDate: formatarData(emprestimo.dta_emprestimo),
-    }));
+        diasAtraso = Math.floor(
+          (hoje - vencimento) / MILISSEGUNDOS_POR_DIA,
+        );
+      } else {
+        status = "Em andamento";
+      }
+
+      return {
+        id: emprestimo.id_emprestimo,
+        title: emprestimo.exemplar.livro.titulo_livro,
+        author: emprestimo.exemplar.livro.autor_livro,
+        status,
+        expiration: formatarData(emprestimo.dta_devolucao),
+        loanDate: formatarData(emprestimo.dta_emprestimo),
+        daysOverdue: diasAtraso,
+      };
+    });
 
     return NextResponse.json({
       emprestimos: emprestimosFormatados,
@@ -86,9 +117,7 @@ export async function GET() {
     console.error("Erro ao buscar empréstimos:", error);
 
     return NextResponse.json(
-      {
-        error: "Não foi possível buscar os empréstimos.",
-      },
+      { error: "Não foi possível buscar os empréstimos." },
       { status: 500 },
     );
   }
@@ -101,10 +130,13 @@ export async function POST(request: Request) {
     const fkFrequentador = Number(body.fk_frequentador_id_freq);
     const idEnviado = Number(body.fk_exemplar_id_exemplar);
     const prazoDias = Number(body.prazo_dias);
+
     const senhaInformada =
       typeof body.senha === "string" ? body.senha.trim() : "";
 
-    let bibliotecarioId = Number(body.fk_bibliotecario_id_bibliotecario);
+    let bibliotecarioId = Number(
+      body.fk_bibliotecario_id_bibliotecario,
+    );
 
     if (!fkFrequentador) {
       return NextResponse.json(
@@ -122,18 +154,14 @@ export async function POST(request: Request) {
 
     if (!senhaInformada) {
       return NextResponse.json(
-        {
-          error: "Informe a senha do frequentador.",
-        },
+        { error: "Informe a senha do frequentador." },
         { status: 400 },
       );
     }
 
     if (!Number.isInteger(prazoDias) || prazoDias <= 0) {
       return NextResponse.json(
-        {
-          error: "Informe a quantidade de dias do empréstimo.",
-        },
+        { error: "Informe a quantidade de dias do empréstimo." },
         { status: 400 },
       );
     }
@@ -146,9 +174,7 @@ export async function POST(request: Request) {
 
     if (!frequentador) {
       return NextResponse.json(
-        {
-          error: "Frequentador não encontrado.",
-        },
+        { error: "Frequentador não encontrado." },
         { status: 404 },
       );
     }
@@ -160,9 +186,7 @@ export async function POST(request: Request) {
 
     if (!senhaValida) {
       return NextResponse.json(
-        {
-          error: "Senha incorreta.",
-        },
+        { error: "Senha incorreta." },
         { status: 401 },
       );
     }
@@ -206,93 +230,69 @@ export async function POST(request: Request) {
     }
 
     const dataEmprestimo = new Date();
-
     const dataDevolucao = new Date(dataEmprestimo);
 
-    dataDevolucao.setDate(dataEmprestimo.getDate() + prazoDias);
-
-    const dataAtual = new Date();
-
-    const inicioDoDia = new Date(
-      Date.UTC(
-        dataAtual.getFullYear(),
-        dataAtual.getMonth(),
-        dataAtual.getDate(),
-      ),
+    dataDevolucao.setUTCDate(
+      dataDevolucao.getUTCDate() + prazoDias,
     );
+
+    const inicioHoje = new Date(inicioDoDiaUTC(new Date()));
 
     const resultado = await db.$transaction(async (tx) => {
       await tx.$queryRaw`
-          SELECT id_freq
-          FROM frequentador
-          WHERE id_freq = ${fkFrequentador}
-          FOR UPDATE
-        `;
+        SELECT id_freq
+        FROM frequentador
+        WHERE id_freq = ${fkFrequentador}
+        FOR UPDATE
+      `;
 
       const multasAtivas = await tx.multa.count({
         where: {
           fk_frequentador_id_frequentador: fkFrequentador,
-
           inativo_multa: false,
-
           dta_termino_multa: {
-            gt: inicioDoDia,
+            gt: inicioHoje,
           },
         },
       });
 
       if (multasAtivas > 0) {
-        return {
-          tipo: "multa-ativa" as const,
-        };
+        return { tipo: "multa-ativa" as const };
       }
 
       const emprestimosAtivos = await tx.emprestimo.count({
         where: {
           fk_frequentador_id_freq: fkFrequentador,
-
           inativo_emprestimo: false,
-
           dta_devolucao_real: null,
         },
       });
 
       if (emprestimosAtivos >= 2) {
-        return {
-          tipo: "limite-atingido" as const,
-        };
+        return { tipo: "limite-atingido" as const };
       }
 
       const exemplarAtualizado = await tx.exemplar.updateMany({
         where: {
           id_exemplar: exemplar.id_exemplar,
-
           inativo_exemplar: false,
-
           status_exemplar: "Dispon_vel",
         },
-
         data: {
           status_exemplar: "Em_posse",
         },
       });
 
       if (exemplarAtualizado.count === 0) {
-        return {
-          tipo: "exemplar-indisponivel" as const,
-        };
+        return { tipo: "exemplar-indisponivel" as const };
       }
 
       const novoEmprestimo = await tx.emprestimo.create({
         data: {
           dta_emprestimo: dataEmprestimo,
-
           dta_devolucao: dataDevolucao,
-
           fk_bibliotecario_id_bibliotecario: bibliotecarioId,
-
           fk_exemplar_id_exemplar: exemplar.id_exemplar,
-
           fk_frequentador_id_freq: fkFrequentador,
         },
       });
@@ -305,9 +305,7 @@ export async function POST(request: Request) {
 
     if (resultado.tipo === "multa-ativa") {
       return NextResponse.json(
-        {
-          error: "O frequentador possui uma multa ativa.",
-        },
+        { error: "O frequentador possui uma multa ativa." },
         { status: 409 },
       );
     }
@@ -331,24 +329,21 @@ export async function POST(request: Request) {
     }
 
     revalidatePath("/bibliotecario/emprestimos");
-
     revalidatePath("/bibliotecario/acervo");
 
-    revalidatePath(`/bibliotecario/acervo/${exemplar.fk_livro_id_livro}`);
+    revalidatePath(
+      `/bibliotecario/acervo/${exemplar.fk_livro_id_livro}`,
+    );
 
     return NextResponse.json(
-      {
-        emprestimo: resultado.emprestimo,
-      },
+      { emprestimo: resultado.emprestimo },
       { status: 201 },
     );
   } catch (error) {
     console.error("Erro ao criar empréstimo:", error);
 
     return NextResponse.json(
-      {
-        error: "Erro interno ao criar empréstimo.",
-      },
+      { error: "Erro interno ao criar empréstimo." },
       { status: 500 },
     );
   }
