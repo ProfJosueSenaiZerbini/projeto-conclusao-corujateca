@@ -574,6 +574,7 @@ export default function AcervoBib() {
                   <LivroGrid
                     titulo="Resultados da pesquisa"
                     livros={livros}
+                    baseUrl="/bibliotecario/acervo"
                   />
 
                   {/* Paginação - Resultados da Pesquisa */}
