@@ -392,7 +392,7 @@ export default function AcervoBib() {
                     Religião e Mitologia
                   </option>
 
-                  <option value="Ficção Científica">Ficção</option>
+                  <option value="Ficção">Ficção</option>
 
                   <option value="Arte e Cultura">Arte e Cultura</option>
 
