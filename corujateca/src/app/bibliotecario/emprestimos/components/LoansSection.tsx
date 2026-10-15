@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import LoanCard from "./LoanCard";
 
@@ -24,6 +25,7 @@ const EMPRESTIMOS_POR_PAGINA = 10;
 
 export default function LoansSection({ loans }: LoansSectionProps) {
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const [mensagemAtualizacao, setMensagemAtualizacao] = useState("");
 
   const totalPaginas = Math.ceil(loans.length / EMPRESTIMOS_POR_PAGINA);
 
@@ -35,6 +37,16 @@ export default function LoansSection({ loans }: LoansSectionProps) {
 
   return (
     <section aria-labelledby="titulo-lista-emprestimos" className="min-w-0">
+      {mensagemAtualizacao && (
+        <p
+          role="status"
+          className="mb-4 flex items-center gap-2 rounded-md bg-[var(--status-success)]/10 p-3 text-sm font-medium text-[var(--status-success)]"
+        >
+          <CheckCircle2 size={18} aria-hidden="true" />
+          {mensagemAtualizacao}
+        </p>
+      )}
+
       <div className="mb-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h2
@@ -77,7 +89,11 @@ export default function LoansSection({ loans }: LoansSectionProps) {
       ) : (
         <div className="min-w-0 space-y-3">
           {loansDaPagina.map((loan) => (
-            <LoanCard key={loan.id} loan={loan} />
+            <LoanCard
+              key={loan.id}
+              loan={loan}
+              onMutationSuccess={setMensagemAtualizacao}
+            />
           ))}
         </div>
       )}

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { db } from '@/app/db';
 
 export async function PATCH(
@@ -26,6 +27,8 @@ export async function PATCH(
       },
     });
 
+    revalidatePath('/bibliotecario/emprestimos');
+
     return NextResponse.json({
       mensagem: 'Empréstimo desativado/cancelado com sucesso!',
       emprestimo: emprestimoAtualizado,
@@ -39,4 +42,3 @@ export async function PATCH(
     );
   }
 }
-

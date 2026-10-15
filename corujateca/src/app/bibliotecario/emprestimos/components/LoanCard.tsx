@@ -10,7 +10,6 @@ import {
   LoaderCircle,
   Trash2,
   UserRound,
-  X,
   AlertCircle,
 } from "lucide-react";
 
@@ -26,7 +25,7 @@ type Loan = {
 };
 
 type ModalInfo = {
-  tipo: "confirmacao" | "sucesso" | "erro";
+  tipo: "confirmacao" | "erro";
   titulo: string;
   mensagem: string;
 };
@@ -65,7 +64,13 @@ const botaoPrimario =
 const botaoSecundario =
   "inline-flex min-h-11 w-full hover:cursor-pointer min-w-0 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60";
 
-export default function LoanCard({ loan }: { loan: Loan }) {
+export default function LoanCard({
+  loan,
+  onMutationSuccess,
+}: {
+  loan: Loan;
+  onMutationSuccess: (message: string) => void;
+}) {
   const router = useRouter();
 
   const [modal, setModal] = useState<ModalInfo | null>(null);
@@ -107,14 +112,11 @@ export default function LoanCard({ loan }: { loan: Loan }) {
         return;
       }
 
-      setModal({
-        tipo: "sucesso",
-        titulo: "Devolução concluída!",
-        mensagem:
-          resultado?.mensagem ??
+      onMutationSuccess(
+        resultado?.mensagem ??
           "A devolução do livro foi registrada com sucesso.",
-      });
-
+      );
+      router.refresh();
     } catch (error) {
       console.error("Erro ao concluir devolução:", error);
 
@@ -153,13 +155,10 @@ export default function LoanCard({ loan }: { loan: Loan }) {
         return;
       }
 
-      setModal({
-        tipo: "sucesso",
-        titulo: "Empréstimo cancelado!",
-        mensagem:
-          resultado?.mensagem ?? "O empréstimo foi cancelado com sucesso.",
-      });
-
+      onMutationSuccess(
+        resultado?.mensagem ?? "O empréstimo foi cancelado com sucesso.",
+      );
+      router.refresh();
     } catch (error) {
       console.error("Erro ao cancelar empréstimo:", error);
 
@@ -316,16 +315,12 @@ export default function LoanCard({ loan }: { loan: Loan }) {
             <div className="flex min-w-0 flex-col items-center pt-2 text-center">
               <div
                 className={`mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full ${
-                  modal.tipo === "sucesso"
-                    ? "bg-[var(--status-success)]/10 text-[var(--status-success)]"
-                    : modal.tipo === "erro"
-                      ? "bg-[var(--status-danger)]/10 text-[var(--status-danger)]"
-                      : "bg-[var(--surface-warm)] text-[var(--text-primary)]"
+                  modal.tipo === "erro"
+                    ? "bg-[var(--status-danger)]/10 text-[var(--status-danger)]"
+                    : "bg-[var(--surface-warm)] text-[var(--text-primary)]"
                 }`}
               >
-                {modal.tipo === "sucesso" ? (
-                  <CheckCircle2 size={28} aria-hidden="true" />
-                ) : modal.tipo === "erro" ? (
+                {modal.tipo === "erro" ? (
                   <AlertCircle size={28} aria-hidden="true" />
                 ) : (
                   <Trash2 size={28} aria-hidden="true" />
