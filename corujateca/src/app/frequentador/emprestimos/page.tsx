@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, CalendarClock, Clock3, LoaderCircle } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarClock,
+  Clock3,
+  LoaderCircle,
+} from "lucide-react";
 
 import DashboardCard from "./components/DashboardCard";
 import SearchFilters from "./components/SearchFilters";
@@ -18,6 +23,45 @@ type Loan = {
 };
 
 const EMPRESTIMOS_POR_PAGINA = 10;
+
+function inicioDoDia(data: Date) {
+  return new Date(
+    data.getFullYear(),
+    data.getMonth(),
+    data.getDate(),
+  ).getTime();
+}
+
+function dataFormatadaParaTimestamp(data: string) {
+  if (!data || data === "-") return null;
+
+  const [dia, mes, ano] = data.split("/").map(Number);
+
+  if (!dia || !mes || !ano) return null;
+
+  return new Date(ano, mes - 1, dia).getTime();
+}
+
+function corrigirStatus(loan: Loan): Loan {
+  // Os status de devolução não devem ser alterados.
+  if (
+    loan.status !== "Em andamento" &&
+    loan.status !== "Atrasado"
+  ) {
+    return loan;
+  }
+
+  const vencimento = dataFormatadaParaTimestamp(loan.expiration);
+
+  if (vencimento === null) return loan;
+
+  const hoje = inicioDoDia(new Date());
+
+  return {
+    ...loan,
+    status: vencimento < hoje ? "Atrasado" : "Em andamento",
+  };
+}
 
 export default function EmprestimosPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -40,12 +84,18 @@ export default function EmprestimosPage() {
         if (!resposta.ok) {
           throw new Error(
             dados.error ||
-              dados.erro ||
-              "Não foi possível buscar os empréstimos.",
+            dados.erro ||
+            "Não foi possível buscar os empréstimos.",
           );
         }
 
-        setLoans(Array.isArray(dados.emprestimos) ? dados.emprestimos : []);
+        const emprestimosRecebidos: Loan[] = Array.isArray(
+          dados.emprestimos,
+        )
+          ? dados.emprestimos
+          : [];
+
+        setLoans(emprestimosRecebidos.map(corrigirStatus));
       } catch (erro) {
         console.error("Erro ao buscar empréstimos:", erro);
 
@@ -91,7 +141,10 @@ export default function EmprestimosPage() {
     loansFiltrados.length / EMPRESTIMOS_POR_PAGINA,
   );
 
-  const paginaSegura = Math.min(paginaAtual, Math.max(totalPaginas, 1));
+  const paginaSegura = Math.min(
+    paginaAtual,
+    Math.max(totalPaginas, 1),
+  );
 
   const inicio = (paginaSegura - 1) * EMPRESTIMOS_POR_PAGINA;
 
@@ -101,20 +154,16 @@ export default function EmprestimosPage() {
   );
 
   const emprestimosEmAndamento = loans.filter(
-    (loan) => loan.status === "Em andamento" || loan.status === "Atrasado",
+    (loan) =>
+      loan.status === "Em andamento" || loan.status === "Atrasado",
   ).length;
 
   function dataEhHoje(data: string) {
-    if (!data || data === "-") return false;
+    const timestamp = dataFormatadaParaTimestamp(data);
 
-    const hoje = new Date();
-    const [dia, mes, ano] = data.split("/");
+    if (timestamp === null) return false;
 
-    return (
-      Number(dia) === hoje.getDate() &&
-      Number(mes) === hoje.getMonth() + 1 &&
-      Number(ano) === hoje.getFullYear()
-    );
+    return timestamp === inicioDoDia(new Date());
   }
 
   const emprestimosQueExpiramHoje = loans.filter(
@@ -198,7 +247,10 @@ export default function EmprestimosPage() {
           />
         </section>
 
-        <section aria-labelledby="titulo-lista-emprestimos" className="min-w-0">
+        <section
+          aria-labelledby="titulo-lista-emprestimos"
+          className="min-w-0"
+        >
           <div className="mb-4 flex min-w-0 flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <h2

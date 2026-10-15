@@ -1,10 +1,19 @@
 import { db } from "@/app/db";
-
 import DashboardCard from "./components/DashboardCard";
 import SearchFilters from "./components/SearchFilters";
 import LoansSection, { type LoanView } from "./components/LoansSection";
 import { Prisma } from "@prisma/client";
 import { CalendarClock, Clock3 } from "lucide-react";
+
+function inicioDoDiaUTC(data: Date | string) {
+  const dataConvertida = new Date(data);
+
+  return Date.UTC(
+    dataConvertida.getUTCFullYear(),
+    dataConvertida.getUTCMonth(),
+    dataConvertida.getUTCDate(),
+  );
+}
 
 function formatarData(data: Date | string | null) {
   if (!data) return "-";
@@ -27,14 +36,16 @@ interface PageProps {
   }>;
 }
 
-export default async function EmprestimosPage({ searchParams }: PageProps) {
-  const { nome, status, data: nomeLivro, dataFiltro } = await searchParams;
+export default async function EmprestimosPage({
+  searchParams,
+}: PageProps) {
+  const { nome, status, data: nomeLivro, dataFiltro } =
+    await searchParams;
 
-  const hoje = new Date();
+  const hoje = inicioDoDiaUTC(new Date());
+  const amanha = hoje + 24 * 60 * 60 * 1000;
 
-  const whereClause: Prisma.emprestimoWhereInput = {
-    inativo_emprestimo: false,
-  };
+  const whereClause: Prisma.emprestimoWhereInput = {};
 
   // Filtro pelo nome do frequentador.
   if (nome) {
@@ -47,46 +58,46 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
   }
 
   // Filtro por status.
-  if (status) {
-    if (status === "Em andamento") {
-      whereClause.dta_devolucao_real = null;
-      whereClause.dta_devolucao = { gte: hoje };
-    } else if (status === "Atrasado") {
-      whereClause.dta_devolucao_real = null;
-      whereClause.dta_devolucao = { lt: hoje };
-    } else if (
-      status === "Devolvido no prazo" ||
-      status === "Devolvido com atraso"
-    ) {
-      whereClause.dta_devolucao_real = { not: null };
-    }
+  if (status === "Em andamento") {
+    whereClause.inativo_emprestimo = false;
+    whereClause.dta_devolucao_real = null;
+    whereClause.dta_devolucao = { gte: new Date(hoje) };
+  } else if (status === "Atrasado") {
+    whereClause.inativo_emprestimo = false;
+    whereClause.dta_devolucao_real = null;
+    whereClause.dta_devolucao = { lt: new Date(hoje) };
+  } else if (
+    status === "Devolvido no prazo" ||
+    status === "Devolvido com atraso"
+  ) {
+    whereClause.dta_devolucao_real = { not: null };
   }
 
-  // Filtro por uma única data:
-  // encontra empréstimos cuja data de início OU de devolução
+  // Filtro por data de início ou devolução.
   if (dataFiltro) {
     const [ano, mes, dia] = dataFiltro.split("-").map(Number);
 
-    const inicioDia = new Date(Date.UTC(ano, mes - 1, dia));
-    const inicioProximoDia = new Date(Date.UTC(ano, mes - 1, dia + 1));
+    const inicioDia = Date.UTC(ano, mes - 1, dia);
+    const inicioProximoDia =
+      inicioDia + 24 * 60 * 60 * 1000;
 
     whereClause.OR = [
       {
         dta_emprestimo: {
-          gte: inicioDia,
-          lt: inicioProximoDia,
+          gte: new Date(inicioDia),
+          lt: new Date(inicioProximoDia),
         },
       },
       {
         dta_devolucao: {
-          gte: inicioDia,
-          lt: inicioProximoDia,
+          gte: new Date(inicioDia),
+          lt: new Date(inicioProximoDia),
         },
       },
       {
         dta_devolucao_real: {
-          gte: inicioDia,
-          lt: inicioProximoDia,
+          gte: new Date(inicioDia),
+          lt: new Date(inicioProximoDia),
         },
       },
     ];
@@ -104,52 +115,54 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     };
   }
 
-  // Busca empréstimos filtrados e dados para os cards de resumo.
-  const [emprestimosFiltrados, todosEmprestimosAtivos] = await Promise.all([
-    db.emprestimo.findMany({
-      where: whereClause,
-      include: {
-        exemplar: {
-          include: {
-            livro: true,
+  const [emprestimosFiltrados, todosEmprestimosAtivos] =
+    await Promise.all([
+      db.emprestimo.findMany({
+        where: whereClause,
+        include: {
+          exemplar: {
+            include: {
+              livro: true,
+            },
           },
+          frequentador: true,
         },
-        frequentador: true,
-      },
-      orderBy: {
-        dta_emprestimo: "desc",
-      },
-    }),
+        orderBy: {
+          dta_emprestimo: "desc",
+        },
+      }),
 
-    db.emprestimo.findMany({
-      where: {
-        inativo_emprestimo: false,
-      },
-      select: {
-        dta_devolucao_real: true,
-        dta_devolucao: true,
-      },
-    }),
-  ]);
+      db.emprestimo.findMany({
+        where: {
+          inativo_emprestimo: false,
+        },
+        select: {
+          dta_devolucao_real: true,
+          dta_devolucao: true,
+        },
+      }),
+    ]);
 
+  // Os status de devolução são filtrados pelo dia, não pelo horário.
   let emprestimosProcessados = emprestimosFiltrados;
 
-  // Diferencia devoluções realizadas no prazo das devoluções atrasadas.
   if (status === "Devolvido no prazo") {
     emprestimosProcessados = emprestimosFiltrados.filter((emp) => {
-      if (!emp.dta_devolucao_real) {
-        return false;
-      }
+      if (!emp.dta_devolucao_real) return false;
 
-      return new Date(emp.dta_devolucao_real) <= new Date(emp.dta_devolucao);
+      return (
+        inicioDoDiaUTC(emp.dta_devolucao_real) <=
+        inicioDoDiaUTC(emp.dta_devolucao)
+      );
     });
   } else if (status === "Devolvido com atraso") {
     emprestimosProcessados = emprestimosFiltrados.filter((emp) => {
-      if (!emp.dta_devolucao_real) {
-        return false;
-      }
+      if (!emp.dta_devolucao_real) return false;
 
-      return new Date(emp.dta_devolucao_real) > new Date(emp.dta_devolucao);
+      return (
+        inicioDoDiaUTC(emp.dta_devolucao_real) >
+        inicioDoDiaUTC(emp.dta_devolucao)
+      );
     });
   }
 
@@ -157,32 +170,24 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     let statusCalculado = "Em andamento";
     let daysOverdue = 0;
 
+    const vencimento = inicioDoDiaUTC(
+      emprestimo.dta_devolucao,
+    );
+
     if (emprestimo.dta_devolucao_real) {
-      const real = new Date(emprestimo.dta_devolucao_real);
-      const prevista = new Date(emprestimo.dta_devolucao);
+      const devolucaoReal = inicioDoDiaUTC(
+        emprestimo.dta_devolucao_real,
+      );
 
       statusCalculado =
-        real <= prevista ? "Devolvido no prazo" : "Devolvido com atraso";
-    } else if (new Date(emprestimo.dta_devolucao) < hoje) {
+        devolucaoReal <= vencimento
+          ? "Devolvido no prazo"
+          : "Devolvido com atraso";
+    } else if (vencimento < hoje) {
       statusCalculado = "Atrasado";
 
-      const dataPrevista = new Date(emprestimo.dta_devolucao);
-
-      const vencimento = Date.UTC(
-        dataPrevista.getUTCFullYear(),
-        dataPrevista.getUTCMonth(),
-        dataPrevista.getUTCDate(),
-      );
-
-      const hojeSemHorario = Date.UTC(
-        hoje.getFullYear(),
-        hoje.getMonth(),
-        hoje.getDate(),
-      );
-
-      daysOverdue = Math.max(
-        1,
-        Math.floor((hojeSemHorario - vencimento) / (1000 * 60 * 60 * 24)),
+      daysOverdue = Math.floor(
+        (hoje - vencimento) / (24 * 60 * 60 * 1000),
       );
     }
 
@@ -198,20 +203,16 @@ export default async function EmprestimosPage({ searchParams }: PageProps) {
     };
   });
 
-  // Quantidade de empréstimos ainda não devolvidos.
   const quantidadeEmAndamento = todosEmprestimosAtivos.filter(
     (emp) => !emp.dta_devolucao_real,
   ).length;
 
-  // Quantidade de empréstimos com devolução prevista para hoje.
   const quantidadeExpirandoHoje = todosEmprestimosAtivos.filter((emp) => {
-    if (emp.dta_devolucao_real) {
-      return false;
-    }
+    if (emp.dta_devolucao_real) return false;
 
-    const dataExpiracao = new Date(emp.dta_devolucao);
-
-    return dataExpiracao.toDateString() === hoje.toDateString();
+    return (
+      inicioDoDiaUTC(emp.dta_devolucao) === hoje
+    );
   }).length;
 
   return (
