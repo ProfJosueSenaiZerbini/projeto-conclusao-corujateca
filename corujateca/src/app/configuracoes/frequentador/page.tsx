@@ -71,7 +71,7 @@ export default function ConfiguracoesFrequent() {
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        throw new Error(dados?.erro || "NÃ£o foi possÃ­vel excluir a conta.");
+        throw new Error(dados?.erro || "Não foi possível excluir a conta.");
       }
 
       clearSession();
@@ -82,7 +82,7 @@ export default function ConfiguracoesFrequent() {
       setErroExclusao(
         erro instanceof Error
           ? erro.message
-          : "NÃ£o foi possÃ­vel excluir a conta. Tente novamente.",
+          : "Não foi possível excluir a conta. Tente novamente.",
       );
 
       setExcluindoConta(false);
@@ -103,7 +103,7 @@ export default function ConfiguracoesFrequent() {
 
           <main className="min-w-0 flex-1 px-3 py-6 text-[var(--text-primary)] min-[375px]:px-4 sm:px-6 sm:py-8 lg:px-10">
             <div className="mx-auto w-full max-w-4xl space-y-6 sm:space-y-8">
-              {/* CabeÃ§alho */}
+              {/* Cabeçalho */}
               <header className="space-y-2">
                 <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
                   Configurações da conta
@@ -211,12 +211,12 @@ export default function ConfiguracoesFrequent() {
                       </div>
                     </div>
 
-                    {/* AÃ§Ã£o de exclusÃ£o */}
+                    {/* Ação de exclusão */}
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                       <button
                         type="button"
                         onClick={abrirModalExclusao}
-                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--status-danger)]/40 bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--status-danger)] transition-colors hover:bg-[var(--status-danger)]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--status-danger)]/40 bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--status-danger)] transition-colors hover:bg-[var(--status-danger)]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] cursor-pointer"
                       >
                         <Trash2 size={18} aria-hidden="true" />
                         Excluir conta
@@ -252,7 +252,7 @@ export default function ConfiguracoesFrequent() {
 
       <Footer />
 
-      {/* Modal de confirmaÃ§Ã£o de exclusÃ£o */}
+      {/* Modal de confirmação de exclusão */}
       {modalExcluirAberto && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 px-3 py-6 sm:px-5"
@@ -269,7 +269,7 @@ export default function ConfiguracoesFrequent() {
             aria-describedby="excluir-conta-descricao"
             className="my-auto w-full max-w-md overflow-hidden rounded-[var(--radius-modal)] border border-[var(--border-default)] bg-[var(--surface)] shadow-[var(--shadow-modal)]"
           >
-            {/* CabeÃ§alho do modal */}
+            {/* Cabeçalho do modal */}
             <div className="flex items-start justify-between gap-4 border-b border-[var(--border-default)] px-5 py-5 sm:px-6">
               <div className="flex min-w-0 items-start gap-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--status-danger)]/10 text-[var(--status-danger)]">
@@ -294,21 +294,21 @@ export default function ConfiguracoesFrequent() {
                 type="button"
                 onClick={fecharModalExclusao}
                 disabled={excluindoConta}
-                aria-label="Fechar janela de confirmaÃ§Ã£o"
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Fechar janela de confirmação"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 <X size={20} aria-hidden="true" />
               </button>
             </div>
 
-            {/* ConteÃºdo do modal */}
+            {/* Conteúdo do modal */}
             <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
               <p
                 id="excluir-conta-descricao"
                 className="text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base"
               >
-                Tem certeza de que deseja excluir sua conta? Essa aÃ§Ã£o poderÃ¡
-                ser permanente e vocÃª precisarÃ¡ entrar novamente para usar a
+                Tem certeza de que deseja excluir sua conta? Essa ação poderá
+                ser permanente e você precisará entrar novamente para usar a
                 Corujateca, caso volte a se cadastrar.
               </p>
 
@@ -320,8 +320,8 @@ export default function ConfiguracoesFrequent() {
                 />
 
                 <p className="text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm">
-                  Antes de excluir, verifique se existem emprÃ©stimos ou multas
-                  pendentes vinculados Ã  sua conta.
+                  Antes de excluir, verifique se existem empréstimos ou multas
+              pendentes vinculados à sua conta.
                 </p>
               </div>
 
@@ -335,13 +335,13 @@ export default function ConfiguracoesFrequent() {
               )}
             </div>
 
-            {/* AÃ§Ãµes */}
+            {/* Ações */}
             <div className="flex flex-col-reverse gap-3 border-t border-[var(--border-default)] bg-[var(--surface-warm)]/30 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
               <button
                 type="button"
                 onClick={fecharModalExclusao}
                 disabled={excluindoConta}
-                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-button)] border border-[var(--border-default)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -350,7 +350,7 @@ export default function ConfiguracoesFrequent() {
                 type="button"
                 onClick={excluirConta}
                 disabled={excluindoConta}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--status-danger)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--status-danger)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {excluindoConta ? (
                   <>
