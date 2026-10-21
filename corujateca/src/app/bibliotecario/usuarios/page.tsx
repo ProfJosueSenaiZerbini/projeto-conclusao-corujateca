@@ -18,6 +18,9 @@ import {
   X,
   ReceiptText,
 } from "lucide-react";
+import ModalFeedback, {
+  type FeedbackType,
+} from "@/components/ModalFeedback";
 
 type Usuario = {
   id: number;
@@ -50,6 +53,11 @@ const modalClasse =
   "relative my-auto max-h-[calc(100dvh-1.5rem)] w-full min-w-0 max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-[var(--radius-modal)] border border-[var(--border-default)] bg-[var(--surface)] p-4 text-[var(--text-primary)] shadow-[var(--shadow-modal)] sm:max-h-[calc(100dvh-2.5rem)] sm:p-6";
 
 export default function UsuariosBibli() {
+  const [feedback, setFeedback] = useState<{
+    titulo: string;
+    mensagem: string;
+    tipo: FeedbackType;
+  } | null>(null);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [termoPesquisa, setTermoPesquisa] = useState("");
   const [totalUsuarios, setTotalUsuarios] = useState(0);
@@ -128,18 +136,30 @@ export default function UsuariosBibli() {
     e.preventDefault();
 
     if (!novoNome.trim()) {
-      alert("O nome é obrigatório.");
+      setFeedback({
+        titulo: "Verifique os dados",
+        mensagem: "O nome é obrigatório.",
+        tipo: "error",
+      });
       return;
     }
 
     if (!usuarioEmEdicao) {
       if (!novaSenha.trim()) {
-        alert("A senha é obrigatória.");
+        setFeedback({
+          titulo: "Verifique os dados",
+          mensagem: "A senha é obrigatória.",
+          tipo: "error",
+        });
         return;
       }
 
       if (novaSenha.trim().length < 8) {
-        alert("A senha precisa ter no mínimo 8 caracteres!");
+        setFeedback({
+          titulo: "Verifique os dados",
+          mensagem: "A senha precisa ter no mínimo 8 caracteres.",
+          tipo: "error",
+        });
         return;
       }
     }
@@ -174,13 +194,30 @@ export default function UsuariosBibli() {
       if (resposta.ok) {
         fecharModal();
         await carregarUsuarios();
+        setFeedback({
+          titulo: usuarioEmEdicao
+            ? "Cadastro atualizado"
+            : "Frequentador cadastrado",
+          mensagem: usuarioEmEdicao
+            ? "Os dados do frequentador foram atualizados com sucesso."
+            : "O frequentador foi cadastrado com sucesso.",
+          tipo: "success",
+        });
       } else {
         const erro = await resposta.json();
-        alert(erro.erro || "Erro ao salvar os dados do usuário.");
+        setFeedback({
+          titulo: "Não foi possível salvar",
+          mensagem: erro.erro || "Erro ao salvar os dados do usuário.",
+          tipo: "error",
+        });
       }
     } catch (erro) {
       console.error("Erro ao salvar:", erro);
-      alert("Erro de comunicação com o servidor.");
+      setFeedback({
+        titulo: "Erro de comunicação",
+        mensagem: "Não foi possível comunicar com o servidor.",
+        tipo: "error",
+      });
     } finally {
       setCarregando(false);
     }
@@ -225,7 +262,11 @@ export default function UsuariosBibli() {
       const resultado = await resposta.json().catch(() => null);
 
       if (!resposta.ok) {
-        alert(resultado?.erro ?? "Erro ao desativar o frequentador.");
+        setFeedback({
+          titulo: "Não foi possível desativar",
+          mensagem: resultado?.erro ?? "Erro ao desativar o frequentador.",
+          tipo: "error",
+        });
         return;
       }
 
@@ -233,9 +274,18 @@ export default function UsuariosBibli() {
       setUsuarioParaDesativar(null);
 
       await carregarUsuarios();
+      setFeedback({
+        titulo: "Frequentador desativado",
+        mensagem: "O frequentador foi desativado com sucesso.",
+        tipo: "success",
+      });
     } catch (erro) {
       console.error("Erro ao desativar frequentador:", erro);
-      alert("Não foi possível desativar o frequentador.");
+      setFeedback({
+        titulo: "Não foi possível desativar",
+        mensagem: "Ocorreu um erro ao desativar o frequentador.",
+        tipo: "error",
+      });
     } finally {
       setCarregandoDesativacao(false);
     }
@@ -257,7 +307,11 @@ export default function UsuariosBibli() {
       setUsuarioDetalhe(dados);
     } catch (erro) {
       console.error("Erro ao buscar detalhes:", erro);
-      alert("Não foi possível carregar os detalhes do frequentador.");
+      setFeedback({
+        titulo: "Não foi possível carregar",
+        mensagem: "Não foi possível carregar os detalhes do frequentador.",
+        tipo: "error",
+      });
       setDetalheAberto(false);
     } finally {
       setCarregandoDetalhe(false);
@@ -283,7 +337,11 @@ export default function UsuariosBibli() {
       setUsuariosDesativados(dados);
     } catch (erro) {
       console.error("Erro ao carregar usuários desativados:", erro);
-      alert("Não foi possível carregar os usuários desativados.");
+      setFeedback({
+        titulo: "Não foi possível carregar",
+        mensagem: "Não foi possível carregar os usuários desativados.",
+        tipo: "error",
+      });
     }
   }
 
@@ -297,7 +355,11 @@ export default function UsuariosBibli() {
 
   async function reativarFrequentador() {
     if (!usuarioSelecionadoReativar) {
-      alert("Selecione um frequentador.");
+      setFeedback({
+        titulo: "Selecione um frequentador",
+        mensagem: "Escolha um frequentador antes de continuar.",
+        tipo: "error",
+      });
       return;
     }
 
@@ -313,19 +375,31 @@ export default function UsuariosBibli() {
       const resultado = await resposta.json().catch(() => null);
 
       if (!resposta.ok) {
-        alert(resultado?.erro ?? "Erro ao reativar o frequentador.");
+        setFeedback({
+          titulo: "Não foi possível reativar",
+          mensagem: resultado?.erro ?? "Erro ao reativar o frequentador.",
+          tipo: "error",
+        });
         return;
       }
-
-      alert(resultado?.mensagem ?? "Frequentador reativado com sucesso.");
 
       setReativarModalAberto(false);
       setUsuarioSelecionadoReativar("");
 
       await carregarUsuarios();
+      setFeedback({
+        titulo: "Frequentador reativado",
+        mensagem:
+          resultado?.mensagem ?? "Frequentador reativado com sucesso.",
+        tipo: "success",
+      });
     } catch (erro) {
       console.error("Erro ao reativar frequentador:", erro);
-      alert("Não foi possível reativar o frequentador.");
+      setFeedback({
+        titulo: "Não foi possível reativar",
+        mensagem: "Ocorreu um erro ao reativar o frequentador.",
+        tipo: "error",
+      });
     } finally {
       setCarregandoReativacao(false);
     }
@@ -1200,6 +1274,15 @@ export default function UsuariosBibli() {
             </div>
           </section>
         </div>
+      )}
+      {feedback && (
+        <ModalFeedback
+          aberto
+          titulo={feedback.titulo}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          onFechar={() => setFeedback(null)}
+        />
       )}
     </main>
   );

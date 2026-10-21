@@ -23,23 +23,25 @@ export async function DELETE() {
       return NextResponse.json({ erro: "Sessão inválida." }, { status: 401 });
     }
 
-    if (session.role !== "frequentador") {
-      return NextResponse.json(
-        {
-          erro: "Apenas frequentadores podem excluir a própria conta.",
+    if (session.role === "frequentador") {
+      await db.frequentador.update({
+        where: {
+          id_freq: session.id,
         },
-        { status: 403 },
-      );
+        data: {
+          inativo_freq: true,
+        },
+      });
+    } else {
+      await db.bibliotecario.update({
+        where: {
+          id_bibliotecario: session.id,
+        },
+        data: {
+          inativo_bibliotecario: true,
+        },
+      });
     }
-
-    await db.frequentador.update({
-      where: {
-        id_freq: session.id,
-      },
-      data: {
-        inativo_freq: true,
-      },
-    });
 
     const response = NextResponse.json({
       mensagem: "Conta excluída com sucesso.",

@@ -15,6 +15,9 @@ import {
   X,
 } from "lucide-react";
 import CadastrarExemplarModal from "@/app/bibliotecario/acervo/components/CadastrarExemplarModal";
+import ModalFeedback, {
+  type FeedbackType,
+} from "@/components/ModalFeedback";
 import { generos } from "@/lib/generos";
 
 const campoClasse =
@@ -119,6 +122,13 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
   const [livro, setLivro] = useState<Livro | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [feedback, setFeedback] = useState<{
+    titulo: string;
+    mensagem: string;
+    tipo: FeedbackType;
+  } | null>(null);
+  const [recarregarAoFecharFeedback, setRecarregarAoFecharFeedback] =
+    useState(false);
 
   // Estados dos Modais
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
@@ -277,17 +287,27 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       });
 
       if (res.ok) {
-        alert(
-          `Cópia ${inativoAtual ? "reativada" : "desativada"} com sucesso!`,
-        );
-        window.location.reload();
+        setRecarregarAoFecharFeedback(true);
+        setFeedback({
+          titulo: `Cópia ${inativoAtual ? "reativada" : "desativada"}`,
+          mensagem: `A cópia foi ${inativoAtual ? "reativada" : "desativada"} com sucesso.`,
+          tipo: "success",
+        });
       } else {
         const dadosErro = await res.json().catch(() => ({}));
-        alert(dadosErro.erro || `Erro ao ${acao} a cópia.`);
+        setFeedback({
+          titulo: `Não foi possível ${acao}`,
+          mensagem: dadosErro.erro || `Erro ao ${acao} a cópia.`,
+          tipo: "error",
+        });
       }
     } catch (error) {
       console.error(error);
-      alert(`Erro de conexão ao ${acao} a cópia.`);
+      setFeedback({
+        titulo: "Erro de conexão",
+        mensagem: `Erro de conexão ao ${acao} a cópia.`,
+        tipo: "error",
+      });
     }
   }
 
@@ -373,16 +393,28 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
       });
 
       if (res.ok) {
-        alert("Livro atualizado com sucesso!");
         setModalEditarAberto(false);
-        window.location.reload();
+        setRecarregarAoFecharFeedback(true);
+        setFeedback({
+          titulo: "Livro atualizado",
+          mensagem: "As informações do livro foram atualizadas com sucesso.",
+          tipo: "success",
+        });
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(err.erro || "Erro ao atualizar o livro.");
+        setFeedback({
+          titulo: "Não foi possível atualizar",
+          mensagem: err.erro || "Erro ao atualizar o livro.",
+          tipo: "error",
+        });
       }
     } catch (error) {
       console.error(error);
-      alert("Erro de conexão ao atualizar o livro.");
+      setFeedback({
+        titulo: "Erro de conexão",
+        mensagem: "Erro de conexão ao atualizar o livro.",
+        tipo: "error",
+      });
     } finally {
       setSalvandoEdicao(false);
     }
@@ -1134,6 +1166,23 @@ export default function DetalhesLivroBibPage({ params }: PageProps) {
           )}
         </div>
       </section>
+
+      {feedback && (
+        <ModalFeedback
+          aberto
+          titulo={feedback.titulo}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          onFechar={() => {
+            const recarregar = recarregarAoFecharFeedback;
+            setFeedback(null);
+            setRecarregarAoFecharFeedback(false);
+            if (recarregar) {
+              window.location.reload();
+            }
+          }}
+        />
+      )}
     </>
   );
 }

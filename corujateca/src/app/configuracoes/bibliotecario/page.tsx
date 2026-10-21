@@ -4,8 +4,17 @@ import Header from "@/components/Header";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import AtualizarContaModal from "@/app/configuracoes/bibliotecario/components/AtualizarContaModal";
+import ExcluirContaModal from "@/app/configuracoes/bibliotecario/components/ExcluirContaModal";
+import ModalFeedback, {
+  type FeedbackType,
+} from "@/components/ModalFeedback";
 
-import { getSession, saveSession, UserSession } from "@/lib/auth";
+import {
+  clearSession,
+  getSession,
+  saveSession,
+  UserSession,
+} from "@/lib/auth";
 import {
   AlertCircle,
   IdCard,
@@ -24,6 +33,13 @@ export default function ConfiguracoesBibli() {
 
   const [session, setSession] = useState<UserSession | null>(null);
   const [modalAtualizarConta, setModalAtualizarConta] = useState(false);
+  const [modalExcluirConta, setModalExcluirConta] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    titulo: string;
+    mensagem: string;
+    tipo: FeedbackType;
+    aoFechar?: () => void;
+  } | null>(null);
 
   const [ddd, setDdd] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -173,6 +189,7 @@ export default function ConfiguracoesBibli() {
 
                       <button
                         type="button"
+                        onClick={() => setModalExcluirConta(true)}
                         className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--status-danger)]/40 bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--status-danger)] transition-colors hover:bg-[var(--status-danger)]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] cursor-pointer"
                       >
                         <Trash2 size={18} aria-hidden="true" />
@@ -233,8 +250,43 @@ export default function ConfiguracoesBibli() {
 
           setDdd(dados.ddd);
           setTelefone(dados.telefone);
+          setFeedback({
+            titulo: "Conta atualizada",
+            mensagem: "Seus dados foram atualizados com sucesso.",
+            tipo: "success",
+          });
         }}
       />
+
+      <ExcluirContaModal
+        aberto={modalExcluirConta}
+        onFechar={() => setModalExcluirConta(false)}
+        onSucesso={() => {
+          setModalExcluirConta(false);
+          clearSession();
+          setFeedback({
+            titulo: "Conta excluída",
+            mensagem:
+              "Sua conta foi desativada com sucesso. Você será redirecionado para o login.",
+            tipo: "success",
+            aoFechar: () => router.replace("/login"),
+          });
+        }}
+      />
+
+      {feedback && (
+        <ModalFeedback
+          aberto
+          titulo={feedback.titulo}
+          mensagem={feedback.mensagem}
+          tipo={feedback.tipo}
+          onFechar={() => {
+            const acaoAoFechar = feedback.aoFechar;
+            setFeedback(null);
+            acaoAoFechar?.();
+          }}
+        />
+      )}
     </div>
   );
 }
