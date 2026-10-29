@@ -91,9 +91,13 @@ const coresGenero: Record<string, string> = {
   biografias: "var(--color-biographies-memoirs)",
   memórias: "var(--color-biographies-memoirs)",
   memorias: "var(--color-biographies-memoirs)",
+  "biografias e memórias": "var(--color-biographies-memoirs)",
+  "biografias e memorias": "var(--color-biographies-memoirs)",
   thriller: "var(--color-thriller-mystery)",
   mistério: "var(--color-thriller-mystery)",
   misterio: "var(--color-thriller-mystery)",
+  "thriller e mistério": "var(--color-thriller-mystery)",
+  "thriller e misterio": "var(--color-thriller-mystery)",
   "quadrinhos e mangá": "var(--color-comics-manga)",
   "quadrinhos e manga": "var(--color-comics-manga)",
   terror: "var(--color-horror)",
@@ -111,7 +115,7 @@ const coresGenero: Record<string, string> = {
   "autoajuda e desenvolvimento pessoal":
     "var(--color-selfHelp-personal-development)",
   economia: "var(--color-economy)",
-  literatura: "var(--color-literatura)",
+  literatura: "var(--color-literature)",
 };
 
 export default function DetalhesLivroBibPage({ params }: PageProps) {
