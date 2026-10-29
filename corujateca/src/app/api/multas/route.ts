@@ -1,3 +1,4 @@
+
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -7,9 +8,7 @@ import { db } from "@/app/db";
 import { SESSION_COOKIE, decodeSession } from "@/lib/auth";
 
 function formatarData(data: Date | string | null) {
-  if (!data) {
-    return "-";
-  }
+  if (!data) return "-";
 
   const dataObj = new Date(data);
 
@@ -34,9 +33,7 @@ async function obterBibliotecarioAutenticado() {
   const cookieStore = await cookies();
   const valorCookie = cookieStore.get(SESSION_COOKIE)?.value;
 
-  if (!valorCookie) {
-    return null;
-  }
+  if (!valorCookie) return null;
 
   const sessao = decodeSession(valorCookie);
 
@@ -44,7 +41,7 @@ async function obterBibliotecarioAutenticado() {
     return null;
   }
 
-  const bibliotecario = await db.bibliotecario.findFirst({
+  return db.bibliotecario.findFirst({
     where: {
       id_bibliotecario: sessao.id,
       inativo_bibliotecario: false,
@@ -53,8 +50,6 @@ async function obterBibliotecarioAutenticado() {
       id_bibliotecario: true,
     },
   });
-
-  return bibliotecario;
 }
 
 async function concluirMultasVencidas(dataAtual: Date) {
@@ -64,15 +59,17 @@ async function concluirMultasVencidas(dataAtual: Date) {
       tipomulta: "ATRASO",
       dta_termino_multa: { lte: dataAtual },
     },
-    select: { fk_frequentador_id_frequentador: true },
+    select: {
+      fk_frequentador_id_frequentador: true,
+    },
   });
 
-  if (multasVencidas.length === 0) {
-    return;
-  }
+  if (multasVencidas.length === 0) return;
 
   const frequentadoresAfetados = new Set(
-    multasVencidas.map((multa) => multa.fk_frequentador_id_frequentador),
+    multasVencidas.map(
+      (multa) => multa.fk_frequentador_id_frequentador,
+    ),
   );
 
   await db.$transaction(async (tx) => {
@@ -123,78 +120,111 @@ export async function GET(request: Request) {
       ? Number(frequentadorIdParam)
       : undefined;
 
-    const statusNormalizado = status === "PAGA" ? "CANCELADA" : status;
+    if (
+      frequentadorIdParam &&
+      (!Number.isInteger(frequentadorId) || frequentadorId! <= 0)
+    ) {
+      return NextResponse.json(
+        { erro: "Identificador do frequentador inválido." },
+        { status: 400 },
+      );
+    }
+
+    const statusNormalizado =
+      status === "PAGA" ? "CANCELADA" : status;
+
     const tipoNormalizado = tipo || undefined;
 
-    const dataInicio = data ? new Date(`${data}T00:00:00.000Z`) : undefined;
+    const dataInicio = data
+      ? new Date(`${data}T00:00:00.000Z`)
+      : undefined;
+
+    if (data && (!dataInicio || Number.isNaN(dataInicio.getTime()))) {
+      return NextResponse.json(
+        { erro: "Data inválida." },
+        { status: 400 },
+      );
+    }
 
     const dataFim = dataInicio
       ? new Date(dataInicio.getTime() + 24 * 60 * 60 * 1000)
       : undefined;
 
+    // IMPORTANTE:
+    // Sem status selecionado, não aplicamos filtro de situação.
+    // Assim, multas pendentes, concluídas e canceladas são retornadas.
     const filtroStatus: Prisma.multaWhereInput =
-      statusNormalizado === "CONCLUÍDA" || statusNormalizado === "CONCLUIDA"
-        ? {
-            inativo_multa: true,
-            tipomulta: "ATRASO",
-            dta_termino_multa: { lte: dataAtual },
-          }
-        : statusNormalizado === "CANCELADA"
+      !statusNormalizado
+        ? {}
+        : statusNormalizado === "PENDENTE"
           ? {
+            inativo_multa: false,
+          }
+          : statusNormalizado === "CONCLUÍDA" ||
+            statusNormalizado === "CONCLUIDA"
+            ? {
               inativo_multa: true,
-              NOT: {
-                tipomulta: "ATRASO",
-                dta_termino_multa: { lte: dataAtual },
-              },
+              tipomulta: "ATRASO",
+              dta_termino_multa: { lte: dataAtual },
             }
-          : { inativo_multa: false };
+            : statusNormalizado === "CANCELADA"
+              ? {
+                inativo_multa: true,
+                NOT: {
+                  tipomulta: "ATRASO",
+                  dta_termino_multa: { lte: dataAtual },
+                },
+              }
+              : {
+                id_multa: -1,
+              };
 
     const where: Prisma.multaWhereInput = {
       ...filtroStatus,
 
-      ...(frequentadorId
+      ...(frequentadorId !== undefined
         ? {
-            fk_frequentador_id_frequentador: frequentadorId,
-          }
+          fk_frequentador_id_frequentador: frequentadorId,
+        }
         : {}),
 
       ...(usuario
         ? {
-            frequentador: {
-              nome_freq: {
-                contains: usuario,
-                mode: "insensitive",
-              },
+          frequentador: {
+            nome_freq: {
+              contains: usuario,
+              mode: "insensitive",
             },
-          }
+          },
+        }
         : {}),
 
       ...(tipoNormalizado
         ? {
-            tipomulta: {
-              equals: tipoNormalizado,
-              mode: "insensitive",
-            },
-          }
+          tipomulta: {
+            equals: tipoNormalizado,
+            mode: "insensitive",
+          },
+        }
         : {}),
 
       ...(dataInicio && dataFim
         ? {
-            OR: [
-              {
-                dta_inicio_multa: {
-                  gte: dataInicio,
-                  lt: dataFim,
-                },
+          OR: [
+            {
+              dta_inicio_multa: {
+                gte: dataInicio,
+                lt: dataFim,
               },
-              {
-                dta_termino_multa: {
-                  gte: dataInicio,
-                  lt: dataFim,
-                },
+            },
+            {
+              dta_termino_multa: {
+                gte: dataInicio,
+                lt: dataFim,
               },
-            ],
-          }
+            },
+          ],
+        }
         : {}),
     };
 
@@ -207,7 +237,10 @@ export async function GET(request: Request) {
 
       db.frequentador.findMany({
         where: { inativo_freq: false },
-        select: { id_freq: true, nome_freq: true },
+        select: {
+          id_freq: true,
+          nome_freq: true,
+        },
         orderBy: { nome_freq: "asc" },
       }),
 
@@ -226,7 +259,7 @@ export async function GET(request: Request) {
         Math.ceil(
           (new Date(multa.dta_termino_multa).getTime() -
             new Date(multa.dta_inicio_multa).getTime()) /
-            (1000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
         ),
       ),
 
@@ -243,8 +276,9 @@ export async function GET(request: Request) {
     }));
 
     const contarPorTipo = (tipo: string) =>
-      totaisAtivos.filter((multa) => multa.tipomulta.toUpperCase() === tipo)
-        .length;
+      totaisAtivos.filter(
+        (multa) => multa.tipomulta.toUpperCase() === tipo,
+      ).length;
 
     return NextResponse.json({
       multas: multasFormatadas,
@@ -329,7 +363,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       mensagem:
         multa.tipomulta.toUpperCase() === "ATRASO" &&
-        multa.dta_termino_multa <= dataAtual
+          multa.dta_termino_multa <= dataAtual
           ? "Multa concluída com sucesso."
           : "Multa cancelada com sucesso.",
     });
@@ -380,8 +414,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { dta_termino_multa, tipomulta, fk_frequentador_id_frequentador } =
-      body;
+    const {
+      dta_termino_multa,
+      tipomulta,
+      fk_frequentador_id_frequentador,
+    } = body;
 
     const tiposPermitidos = ["ATRASO", "DEPREDAÇÃO", "EXTRAVIO"];
 
@@ -414,7 +451,9 @@ export async function POST(request: Request) {
           : undefined;
 
     const termino = prazoAutomatico
-      ? new Date(inicio.getTime() + prazoAutomatico * 24 * 60 * 60 * 1000)
+      ? new Date(
+        inicio.getTime() + prazoAutomatico * 24 * 60 * 60 * 1000,
+      )
       : terminoInformado;
 
     if (
@@ -452,7 +491,8 @@ export async function POST(request: Request) {
           dta_inicio_multa: inicio,
           dta_termino_multa: termino,
           tipomulta: tipoTratado,
-          fk_bibliotecario_id_bibliotecario: bibliotecario.id_bibliotecario,
+          fk_bibliotecario_id_bibliotecario:
+            bibliotecario.id_bibliotecario,
           fk_frequentador_id_frequentador: frequentadorId,
         },
       }),
