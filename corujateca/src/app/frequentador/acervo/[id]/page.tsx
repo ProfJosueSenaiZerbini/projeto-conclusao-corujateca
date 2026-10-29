@@ -49,6 +49,8 @@ const coresGenero: Record<string, string> = {
   biografias: "var(--color-biographies-memoirs)",
   memórias: "var(--color-biographies-memoirs)",
   memorias: "var(--color-biographies-memoirs)",
+  "biografias e memórias": "var(--color-biographies-memoirs)",
+  "biografias e memorias": "var(--color-biographies-memoirs)",
   thriller: "var(--color-thriller-mystery)",
   mistério: "var(--color-thriller-mystery)",
   misterio: "var(--color-thriller-mystery)",
