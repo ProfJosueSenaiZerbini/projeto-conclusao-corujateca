@@ -81,17 +81,28 @@ As regras abaixo estão implementadas no back-end.
 
 ## Tecnologias
 
-| Tecnologia | Utilização |
-| --- | --- |
-| **Next.js 16** (App Router) | Framework web, páginas e rotas de API |
-| **React 19** | Construção da interface |
-| **TypeScript** | Tipagem e desenvolvimento |
-| **Tailwind CSS 4** | Estilização da interface |
-| **Prisma ORM 7** + `@prisma/adapter-pg` | Acesso ao banco de dados |
-| **PostgreSQL** | Banco de dados (local ou hospedado, como no Neon) |
-| **bcrypt** | Hash de senhas |
-| **lucide-react** | Ícones |
-| **ESLint** | Análise estática do código |
+### Dependências de execução
+
+| Pacote | Versão | Utilização |
+| --- | --- | --- |
+| `next` | 16.3.0 | Framework web (App Router), páginas e rotas de API |
+| `react` / `react-dom` | 19.2.8 | Construção da interface |
+| `prisma` | ^7.9.1 | CLI do Prisma (geração do client e sincronização do banco) |
+| `@prisma/client` | ^7.9.1 | Client usado pelo back-end para acessar o banco |
+| `@prisma/adapter-pg` | ^7.9.1 | Adaptador que conecta o Prisma ao PostgreSQL via `pg` |
+| `bcrypt` | ^6.0.0 | Hash e comparação de senhas |
+| `lucide-react` | ^1.31.0 | Ícones da interface |
+
+### Dependências de desenvolvimento
+
+| Pacote | Versão | Utilização |
+| --- | --- | --- |
+| `typescript` | ^5 | Tipagem e compilação |
+| `tailwindcss` / `@tailwindcss/postcss` | ^4 | Estilização da interface |
+| `eslint` / `eslint-config-next` | ^9 / 16.3.0 | Análise estática e regras do Next.js |
+| `@types/react`, `@types/react-dom`, `@types/node`, `@types/bcrypt` | — | Tipagens para TypeScript |
+
+A lista completa, com todas as versões fixadas, está em `corujateca/package.json` e `corujateca/package-lock.json`.
 
 ---
 
