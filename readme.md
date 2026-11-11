@@ -1,638 +1,329 @@
-# Sistema de Gerenciamento de Biblioteca Física - CorujaTeca
+# CorujaTeca — Sistema de Gerenciamento de Biblioteca Física
 
-O **Corujateca** é um sistema web desenvolvido para auxiliar na gestão de uma biblioteca, permitindo o controle de usuários, livros, empréstimos, devoluções, multas e demais informações relacionadas ao funcionamento do acervo.
+O **CorujaTeca** é um sistema web responsivo para gerenciar bibliotecas físicas escolares. Ele organiza o acervo, controla empréstimos e devoluções, acompanha multas e suspensões e permite que frequentadores consultem o acervo e acompanhem seus próprios empréstimos.
 
-O sistema foi desenvolvido com foco em facilitar o gerenciamento das atividades realizadas pelos bibliotecários e permitir que os frequentadores consultem e acompanhem suas informações.
+O projeto segue o modelo MVC no back-end e foi desenvolvido como trabalho de conclusão do curso Técnico em Desenvolvimento de Sistemas do SENAI Zerbini.
 
 ---
 
 ## Sumário
 
-* [Sobre o projeto](#sobre-o-projeto)
-* [Tecnologias utilizadas](#tecnologias-utilizadas)
+* [Funcionalidades](#funcionalidades)
+* [Regras de negócio](#regras-de-negócio)
+* [Tecnologias](#tecnologias)
+* [Estrutura do repositório](#estrutura-do-repositório)
 * [Pré-requisitos](#pré-requisitos)
-* [Instalação](#instalação)
-* [Configuração do arquivo `.env`](#configuração-do-arquivo-env)
-* [Configuração do banco de dados](#configuração-do-banco-de-dados)
-* [Banco de dados local](#banco-de-dados-local)
-* [Banco de dados remoto/online](#banco-de-dados-remotoonline)
-* [Configuração do Prisma](#configuração-do-prisma)
-* [Atualizando o Prisma Client](#atualizando-o-prisma-client)
-* [Migrations](#migrations)
-* [Executando o projeto](#executando-o-projeto)
+* [Instalação e execução](#instalação-e-execução)
+* [Variáveis de ambiente](#variáveis-de-ambiente)
+* [Banco de dados](#banco-de-dados)
 * [Comandos úteis](#comandos-úteis)
 * [Solução de problemas](#solução-de-problemas)
 * [Equipe](#equipe)
+* [Licença](#licença)
 
 ---
 
-# Sobre o projeto
+## Funcionalidades
 
-O **Corujateca** foi desenvolvido para informatizar o gerenciamento de uma biblioteca, centralizando informações relacionadas ao acervo e aos usuários.
+### Bibliotecário
 
-Entre as principais funcionalidades do sistema estão:
+* Cadastro de livros pelo ISBN, com preenchimento automático de dados por APIs externas (BrasilAPI e Google Books);
+* Cadastro de exemplares (cópias físicas) de cada livro, com status *Disponível*, *Em posse* ou *Danificado*;
+* Registro de empréstimos, com escolha de prazo (7, 15 ou 30 dias) e registro de devoluções, com cálculo automático de atraso;
+* Cadastro de multas (atraso, depredação e extravio) e cancelamento de multas;
+* Cadastro, edição, desativação e reativação de frequentadores e bibliotecários;
+* Painel com resumos, empréstimos do dia e livros mais emprestados.
 
-* Gerenciamento de livros;
-* Gerenciamento de frequentadores;
-* Gerenciamento de bibliotecários;
-* Controle de empréstimos;
-* Controle de devoluções;
-* Gerenciamento de multas;
-* Pesquisa de informações;
-* Visualização de dados do sistema;
-* Controle de acesso de usuários.
+### Frequentador
 
-O sistema possui diferentes áreas de acordo com o tipo de usuário, permitindo que cada perfil tenha acesso às funcionalidades necessárias para suas atividades.
+* Consulta ao acervo com filtros (título, autor, gênero etc.), com visualização de disponibilidade e localização de cada livro;
+* Acompanhamento dos próprios empréstimos, com data de devolução e situação de cada um;
+* Visualização das próprias multas e da situação da conta;
+* Página de ajuda e configurações da conta.
 
----
+### Regras gerais
 
-# Tecnologias utilizadas
-
-O projeto utiliza as seguintes tecnologias:
-
-| Tecnologia       | Utilização                       |
-| ---------------- | -------------------------------- |
-| **Next.js**      | Desenvolvimento do sistema web   |
-| **React**        | Construção da interface          |
-| **TypeScript**   | Tipagem e desenvolvimento        |
-| **Tailwind CSS** | Estilização da interface         |
-| **Prisma ORM**   | Comunicação com o banco de dados |
-| **PostgreSQL**   | Banco de dados                   |
-| **Node.js**      | Ambiente de execução             |
-| **Git**          | Controle de versão               |
+* Acesso separado por perfil (bibliotecário ou frequentador), com proteção de rotas por middleware;
+* Exclusão lógica: usuários, livros e exemplares são marcados como inativos, não apagados, o que preserva o histórico;
+* Senhas armazenadas com hash bcrypt;
+* Recuperação de senha protegida pela senha mestra definida no ambiente.
 
 ---
 
-# Pré-requisitos
+## Regras de negócio
 
-Antes de iniciar a instalação, certifique-se de possuir as seguintes ferramentas instaladas:
+As regras abaixo estão implementadas no back-end.
 
-* **Node.js**
+**Empréstimos**
+
+* Um frequentador pode ter no máximo **2 empréstimos ativos** ao mesmo tempo;
+* Um frequentador com **multa ativa** não pode fazer novos empréstimos;
+* O prazo do empréstimo pode ser de **7, 15 ou 30 dias**;
+* Ao registrar um empréstimo, o exemplar passa a *Em posse*. Na devolução, volta a *Disponível*.
+
+**Atraso e suspensão**
+
+* Ao devolver um livro após o prazo, o sistema gera uma multa do tipo **ATRASO**, com início na data da devolução e duração igual ao número de dias de atraso;
+* Enquanto houver multa de atraso em aberto, o frequentador fica **suspenso** e não pode pegar novos livros;
+* Multas de atraso vencidas são encerradas automaticamente.
+
+**Depredação e extravio**
+
+* Multa de **depredação**: 15 dias de penalidade;
+* Multa de **extravio**: 30 dias de penalidade.
+
+**Cadastros**
+
+* Não é possível cadastrar dois livros com o mesmo ISBN; o ISBN é único no banco;
+* Usuários, livros e exemplares não são apagados fisicamente. Eles são desativados e podem ser reativados.
+
+---
+
+## Tecnologias
+
+| Tecnologia | Utilização |
+| --- | --- |
+| **Next.js 16** (App Router) | Framework web, páginas e rotas de API |
+| **React 19** | Construção da interface |
+| **TypeScript** | Tipagem e desenvolvimento |
+| **Tailwind CSS 4** | Estilização da interface |
+| **Prisma ORM 7** + `@prisma/adapter-pg` | Acesso ao banco de dados |
+| **PostgreSQL** | Banco de dados (local ou hospedado, como no Neon) |
+| **bcrypt** | Hash de senhas |
+| **lucide-react** | Ícones |
+| **ESLint** | Análise estática do código |
+
+---
+
+## Estrutura do repositório
+
+```text
+projeto-conclusao-corujateca/
+├── corujateca/              # Aplicação Next.js (código do sistema)
+│   ├── prisma/
+│   │   └── schema.prisma    # Modelo de dados (referência do banco)
+│   ├── src/
+│   │   ├── app/             # Páginas e rotas de API (App Router)
+│   │   ├── components/      # Componentes reutilizáveis
+│   │   └── lib/             # Autenticação e utilitários
+│   ├── public/images/       # Logos, capas padrão e ilustrações
+│   ├── middleware.ts        # Proteção de rotas por perfil
+│   └── package.json
+├── Docs/                    # Documentação do trabalho
+│   ├── Diagramas/           # Diagramas de casos de uso, classes e modelos
+│   ├── Testes/              # Casos de teste
+│   ├── Wireframes/          # Wireframes das telas
+│   └── Scripts Banco Dados/ # Scripts SQL antigos (ver observação em Banco de dados)
+└── readme.md
+```
+
+---
+
+## APIs utilizadas
+
+### APIs externas
+
+| API | Uso no sistema | Chave necessária |
+| --- | --- | --- |
+| **[BrasilAPI — ISBN](https://brasilapi.com.br/docs#tag/ISBN)** (`/api/isbn/v1/{isbn}`) | Fonte principal para preencher os dados do livro ao cadastrar pelo ISBN | Não |
+| **[Google Books API](https://developers.google.com/books/docs/v1/using)** (`/books/v1/volumes?q=isbn:{isbn}`) | Fonte de contingência, usada quando a BrasilAPI não responde ou não encontra o livro | Não (usa a cota pública) |
+| **Google Fonts** (via `next/font/google`) | Fontes Geist e Geist Mono, baixadas no build | Não |
+
+A consulta pelo ISBN é feita pela rota interna `GET /api/google-books?isbn=...`. Ela tenta a BrasilAPI primeiro e, se falhar, consulta o Google Books. Nenhuma chave de API precisa ser configurada.
+
+### API interna (rotas do Next.js)
+
+O front-end se comunica com o back-end por rotas de API em `corujateca/src/app/api/`, organizadas por recurso:
+
+| Recurso | Rotas principais |
+| --- | --- |
+| Autenticação | `POST /api/auth/login`, `GET/POST /api/auth/logout` |
+| Recuperação de senha | `POST /api/esqueci-senha` |
+| Livros | `GET/POST /api/livros`, `GET/PUT /api/livros/{id}`, `PATCH /api/livros/{id}/desativar`, `PATCH /api/livros/{id}/reativar`, `GET /api/livros/reativar-livros`, `GET /api/livros/quantidade`, `GET /api/livros/mais-emprestados`, `GET /api/livros/genero-semana` |
+| Cadastro de livro | `GET/POST /api/cadastrar-novo-livro` |
+| Exemplares | `GET/POST /api/exemplares`, `PATCH /api/exemplares/{id}/desativar`, `PATCH /api/exemplares/{id}/reativar` |
+| Empréstimos | `GET/POST /api/emprestimos`, `PATCH /api/emprestimos/{id}`, `PATCH /api/emprestimos/{id}/desativar` |
+| Multas | `GET/POST/PATCH /api/multas` |
+| Frequentadores | `GET/POST /api/frequentador`, `GET/PUT/DELETE /api/frequentador/{id}`, `PATCH /api/frequentador/{id}/desativar`, `PATCH /api/frequentador/{id}/reativar`, `GET /api/frequentador/emprestimos-hoje`, `GET /api/frequentador/resumo` |
+| Bibliotecários | `GET/POST /api/bibliotecario`, `POST/PUT /api/bibliotecario/{id}/atualizar`, `PATCH /api/bibliotecario/{id}/desativar`, `PATCH /api/bibliotecario/{id}/reativar`, `GET /api/bibliotecario/emprestimos-hoje`, `GET /api/bibliotecario/resumo` |
+| Conta do usuário logado | `DELETE /api/conta` |
+
+As rotas trabalham com JSON. Algumas verificam a sessão do usuário, como `GET /api/emprestimos`, que só responde a frequentadores autenticados.
+
+---
+
+## Pré-requisitos
+
+* **Node.js 20.9 ou superior** (exigido pelo Next.js 16)
 * **npm**
 * **Git**
-* **PostgreSQL**, caso utilize um banco local
+* **PostgreSQL**, local ou hospedado em algum serviço
 
-Também é necessário possuir acesso a um banco de dados PostgreSQL, seja ele:
-
-* Local;
-* Remoto;
-* Hospedado em algum serviço de banco de dados.
-
-Para verificar se o Node.js está instalado:
+Para verificar as versões instaladas:
 
 ```bash
 node --version
-```
-
-Para verificar o npm:
-
-```bash
 npm --version
-```
-
-Para verificar o Git:
-
-```bash
 git --version
 ```
 
 ---
 
-# Instalação
+## Instalação e execução
 
-## 1. Clonar o repositório
+Todos os comandos abaixo devem ser executados dentro da pasta da aplicação, `corujateca/`.
 
-Primeiramente, clone o repositório do projeto:
-
-```bash
-git clone URL_DO_REPOSITORIO
-```
-
-Entre na pasta do projeto:
+### 1. Clonar o repositório
 
 ```bash
-cd corujateca
+git clone https://github.com/ProfJosueSenaiZerbini/projeto-conclusao-corujateca.git
+cd projeto-conclusao-corujateca/corujateca
 ```
 
-> Substitua `URL_DO_REPOSITORIO` pela URL real do repositório.
-
----
-
-## 2. Instalar as dependências
-
-Execute:
+### 2. Instalar as dependências
 
 ```bash
 npm install
 ```
 
-Esse comando instala todas as dependências necessárias para executar o projeto.
+### 3. Criar o arquivo `.env`
 
----
-
-# Configuração do arquivo `.env`
-
-O projeto utiliza variáveis de ambiente para armazenar informações de configuração, principalmente os dados necessários para conexão com o banco de dados.
-
-Na raiz do projeto, deve existir um arquivo:
-
-```text
-.env
-```
-
-Exemplo:
-
-```env
-DATABASE_URL="postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO"
-```
-
-# Configuração do banco de dados
-
-O Corujateca utiliza **PostgreSQL** como banco de dados e **Prisma ORM** para realizar a comunicação entre a aplicação e o banco.
-
-A conexão é configurada através da variável:
-
-```env
-DATABASE_URL
-```
-
-O formato padrão da URL de conexão é:
-
-```text
-postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO
-```
-
-Exemplo:
-
-```env
-DATABASE_URL="postgresql://postgres:123456@localhost:5432/corujateca"
-```
-
-Os principais componentes são:
-
-| Parte           | Descrição                             |
-| --------------- | ------------------------------------- |
-| `postgresql://` | Indica que o banco utiliza PostgreSQL |
-| `postgres`      | Usuário do banco                      |
-| `123456`        | Senha do banco                        |
-| `localhost`     | Endereço do servidor                  |
-| `5432`          | Porta padrão do PostgreSQL            |
-| `corujateca`    | Nome do banco                         |
-
----
-
-# Banco de dados local
-
-Para utilizar um banco PostgreSQL localmente, primeiro é necessário instalar o PostgreSQL.
-
-Depois de instalado, crie um banco para o projeto.
-
-Exemplo:
-
-```text
-Nome: corujateca
-Usuário: postgres
-Porta: 5432
-```
-
-O `.env` poderá ficar semelhante a:
-
-```env
-DATABASE_URL="postgresql://postgres:SUA_SENHA@localhost:5432/corujateca"
-```
-
-Substitua `SUA_SENHA` pela senha definida durante a instalação do PostgreSQL.
-
-Depois de configurar a conexão, execute:
-
-```bash
-npx prisma generate
-```
-
-E, caso o projeto utilize migrations:
-
-```bash
-npx prisma migrate dev
-```
-
----
-
-# Banco de dados remoto/online
-
-Também é possível utilizar um banco PostgreSQL hospedado remotamente.
-
-Nesse caso, o provedor escolhido fornecerá uma URL de conexão semelhante a:
-
-```text
-postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO
-```
-
-Essa URL deve ser colocada no arquivo `.env`:
-
-```env
-DATABASE_URL="postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO"
-```
-
-### Exemplo
-
-```env
-DATABASE_URL="postgresql://usuario:senha@servidor.exemplo.com:5432/corujateca"
-```
-
-> A URL apresentada acima é apenas um exemplo. Utilize a URL fornecida pelo seu serviço de hospedagem de PostgreSQL.
-
-Após configurar a variável, gere o Prisma Client:
-
-```bash
-npx prisma generate
-```
-
-Caso o banco remoto esteja vazio e o projeto possua migrations:
-
-```bash
-npx prisma migrate deploy
-```
-
----
-
-# Configuração do Prisma
-
-O projeto utiliza o **Prisma ORM** para realizar a comunicação com o PostgreSQL.
-
-O arquivo principal de configuração do schema é:
-
-```text
-prisma/schema.prisma
-```
-
-A configuração do datasource utiliza PostgreSQL:
-
-```prisma
-datasource db {
-  provider = "postgresql"
-}
-```
-
-O Prisma utiliza a variável `DATABASE_URL` definida no `.env` para realizar a conexão com o banco.
-
----
-
-# Atualizando o Prisma Client
-
-Sempre que houver alterações no arquivo:
-
-```text
-prisma/schema.prisma
-```
-
-é necessário atualizar o Prisma Client utilizado pela aplicação.
-
-Execute:
-
-```bash
-npx prisma generate
-```
-
-Esse comando gera/atualiza o Prisma Client com base no schema atual do projeto.
-
-### Exemplo
-
-Se um novo campo for adicionado a um model:
-
-```prisma
-model usuario {
-  id      Int    @id @default(autoincrement())
-  nome    String
-  email   String
-}
-```
-
-Após alterar o schema, execute:
-
-```bash
-npx prisma generate
-```
-
-Dessa forma, o Prisma Client passa a reconhecer as alterações realizadas.
-
----
-
-# Migrations
-
-Quando uma alteração no `schema.prisma` também precisa ser aplicada ao banco de dados, deve ser criada uma migration.
-
-Durante o desenvolvimento, utilize:
-
-```bash
-npx prisma migrate dev --name nome_da_migration
-```
-
-Exemplo:
-
-```bash
-npx prisma migrate dev --name adicionar_email_usuario
-```
-
-Esse comando:
-
-1. Detecta as alterações no schema;
-2. Cria uma migration;
-3. Aplica a alteração ao banco;
-4. Atualiza o Prisma Client.
-
----
-
-## Aplicando migrations em produção
-
-Em ambientes de produção, utilize:
-
-```bash
-npx prisma migrate deploy
-```
-
-Esse comando aplica as migrations existentes que ainda não foram executadas no banco de dados.
-
----
-
-# Fluxo recomendado após alterar o Prisma
-
-Sempre que modificar o:
-
-```text
-prisma/schema.prisma
-```
-
-verifique se a alteração precisa modificar o banco.
-
-### Alteração apenas no Client
-
-Caso seja necessário apenas atualizar o Prisma Client:
-
-```bash
-npx prisma generate
-```
-
-### Alteração estrutural no banco durante desenvolvimento
-
-Utilize:
-
-```bash
-npx prisma migrate dev --name descricao_da_alteracao
-```
-
-### Atualização do banco em produção
-
-Utilize:
-
-```bash
-npx prisma migrate deploy
-```
-
----
-
-# Executando o projeto
-
-Depois de configurar o `.env`, instalar as dependências e preparar o banco de dados, execute:
-
-```bash
-npm run dev
-```
-
-O Next.js iniciará o servidor de desenvolvimento.
-
-Por padrão, o sistema estará disponível em:
-
-```text
-http://localhost:3000
-```
-
-# Comandos úteis
-
-## Instalar dependências
-
-```bash
-npm install
-```
-
-## Executar o projeto
-
-```bash
-npm run dev
-```
-
-## Gerar o Prisma Client
-
-```bash
-npx prisma generate
-```
-
-## Criar uma migration
-
-```bash
-npx prisma migrate dev --name nome_da_migration
-```
-
-## Aplicar migrations em produção
-
-```bash
-npx prisma migrate deploy
-```
-
-## Abrir o Prisma Studio
-
-```bash
-npx prisma studio
-```
-
-O Prisma Studio permite visualizar e manipular os dados do banco através de uma interface gráfica.
-
-## Verificar a versão do Prisma
-
-```bash
-npx prisma --version
-```
-
----
-
-# Solução de problemas
-
-## Erro: `DATABASE_URL não foi definida`
-
-Verifique se existe um arquivo `.env` na raiz do projeto:
-
-```text
-corujateca/
-├── .env
-├── .gitignore
-└── ...
-```
-
-E confirme se ele possui:
-
-```env
-DATABASE_URL="sua_url_de_conexao"
-```
-
-Depois, reinicie o servidor:
-
-```bash
-npm run dev
-```
-
----
-
-## Erro ao conectar ao PostgreSQL
-
-Verifique:
-
-* Se o PostgreSQL está em execução;
-* Se o usuário está correto;
-* Se a senha está correta;
-* Se o nome do banco está correto;
-* Se a porta está correta;
-* Se o servidor remoto permite conexões externas;
-* Se a `DATABASE_URL` está corretamente configurada.
-
----
-
-## Prisma Client desatualizado
-
-Caso a aplicação apresente erros relacionados ao Prisma Client após alterações no `schema.prisma`, execute:
-
-```bash
-npx prisma generate
-```
-
-Se a alteração também modificar a estrutura do banco:
-
-```bash
-npx prisma migrate dev --name atualizacao
-```
-
----
-
-## Banco de dados sem as tabelas
-
-Se o banco ainda não possui as tabelas necessárias, verifique as migrations do projeto.
-
-Durante o desenvolvimento:
-
-```bash
-npx prisma migrate dev
-```
-
-Em produção:
-
-```bash
-npx prisma migrate deploy
-```
-
----
-
-# Segurança
-
-Nunca compartilhe informações sensíveis do banco de dados.
-
-Evite publicar:
-
-```env
-DATABASE_URL="postgresql://usuario:senha@servidor/banco"
-```
-
-em repositórios públicos.
-
-O arquivo `.env` deve permanecer protegido e fora do controle de versão.
-
-Para facilitar a configuração de novos desenvolvedores, recomenda-se disponibilizar um arquivo de exemplo:
-
-```text
-.env.example
-```
-
-Exemplo:
-
-```env
-DATABASE_URL="postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO"
-```
-
-O desenvolvedor deverá copiar o arquivo:
+Copie o arquivo de exemplo e preencha as variáveis (veja [Variáveis de ambiente](#variáveis-de-ambiente)):
 
 ```bash
 cp .env.example .env
 ```
 
-e preencher os valores de acordo com o banco utilizado.
+No Windows (PowerShell), use `Copy-Item .env.example .env`.
 
----
-
-# Fluxo completo de instalação
-
-Para configurar o projeto em uma máquina nova:
-
-```bash
-git clone URL_DO_REPOSITORIO
-cd corujateca
-npm install
-```
-
-Configure o arquivo:
-
-```text
-.env
-```
-
-com:
-
-```env
-DATABASE_URL="SUA_URL_DO_POSTGRESQL"
-```
-
-Depois execute:
+### 4. Gerar o Prisma Client
 
 ```bash
 npx prisma generate
 ```
 
-Para ambiente de desenvolvimento com migrations:
+### 5. Criar as tabelas no banco
+
+O projeto ainda não possui a pasta de migrations. Para criar as tabelas a partir do `schema.prisma`, use:
 
 ```bash
-npx prisma migrate dev
+npx prisma db push
 ```
 
-Por fim:
+### 6. Iniciar o servidor de desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-O sistema estará disponível em:
+O sistema ficará disponível em **http://localhost:3000**.
 
-```text
-http://localhost:3000
+---
+
+## Variáveis de ambiente
+
+O arquivo `.env` fica na pasta `corujateca/` e não deve ser versionado (ele já está listado no `.gitignore`). Use o `.env.example` como modelo.
+
+| Variável | Obrigatória | Descrição |
+| --- | --- | --- |
+| `DATABASE_URL` | Sim | URL de conexão com o PostgreSQL |
+| `MASTER_SECRET` | Sim | Senha mestra usada no cadastro de bibliotecários e na recuperação de senha |
+
+Exemplo:
+
+```env
+DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/NOME_DO_BANCO"
+MASTER_SECRET="uma-senha-forte-so-do-administrador"
 ```
 
----
-
-# Equipe
-
-Projeto desenvolvido por:
-
-**Corujateca — Sistema de Gestão de Biblioteca**
-
-Desenvolvido como projeto acadêmico do curso Técnico em Desenvolvimento de Sistemas.
-
-## Nome dos integrantes
-
-- Alexandra Marques Santos Pereira 
-- Enzo Henrique Barbino de Sousa 
-- Maria Luiza Dias Brito da Silva 
-- Rogério Malto Giardini Dos Anjos 
-- Stephanny Borrozzino 
+> Não compartilhe o `.env` nem publique `DATABASE_URL` ou `MASTER_SECRET` em repositórios públicos. Se uma credencial já foi publicada, troque-a no provedor do banco.
 
 ---
 
-# Licença
+## Banco de dados
 
-Este projeto foi desenvolvido para fins acadêmicos.
+O sistema usa **PostgreSQL** com **Prisma**. O arquivo `corujateca/prisma/schema.prisma` é a referência oficial da estrutura do banco.
 
-Consulte os responsáveis pelo projeto antes de utilizar, modificar ou distribuir o sistema para outras finalidades.
+| Tabela | Finalidade |
+| --- | --- |
+| `bibliotecario` | Usuários com perfil de bibliotecário |
+| `frequentador` | Usuários frequentadores, com flag de suspensão |
+| `livro` | Dados bibliográficos, identificados por ISBN único |
+| `exemplar` | Cada unidade física de um livro, com status |
+| `emprestimo` | Empréstimos, com data prevista e data real de devolução |
+| `multa` | Multas aplicadas a frequentadores |
+| `tel_bibliotecario` / `tel_freq` | Telefones dos usuários |
+
+Os status de exemplar são `Em posse`, `Disponível` e `Danificado`.
+
+> **Observação:** a pasta `Docs/Scripts Banco Dados/` contém um script SQL em **MySQL** criado nas fases iniciais do projeto. Ele não corresponde ao modelo atual, que é PostgreSQL com Prisma. Para criar o banco, use `npx prisma db push`, conforme descrito acima.
+
+### Alterando o modelo de dados
+
+Sempre que o `schema.prisma` for alterado, atualize o Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+Para aplicar a alteração no banco durante o desenvolvimento:
+
+```bash
+npx prisma db push
+```
+
+Se o projeto passar a usar migrations versionadas, substitua o comando acima por `npx prisma migrate dev --name descricao_da_alteracao`.
+
+---
+
+## Comandos úteis
+
+| Comando | Função |
+| --- | --- |
+| `npm install` | Instala as dependências |
+| `npm run dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | Gera a versão de produção |
+| `npm start` | Executa a versão de produção (após o `build`) |
+| `npm run lint` | Executa o ESLint |
+| `npx prisma generate` | Gera o Prisma Client |
+| `npx prisma db push` | Sincroniza o banco com o `schema.prisma` |
+| `npx prisma studio` | Abre a interface gráfica para visualizar os dados |
+
+---
+
+## Solução de problemas
+
+**Erro: `DATABASE_URL não foi definida no arquivo .env`**
+Confirme que o arquivo `.env` está dentro da pasta `corujateca/` e que a variável está preenchida. Depois, reinicie o `npm run dev`.
+
+**Erro ao conectar ao PostgreSQL**
+Verifique se o servidor está em execução, se usuário, senha, porta e nome do banco estão corretos e, no caso de banco remoto, se o provedor permite conexões externas.
+
+**Erro relacionado ao Prisma Client**
+Execute `npx prisma generate` e reinicie o servidor. Se a estrutura do banco também mudou, execute `npx prisma db push`.
+
+**Erro: `MASTER_SECRET não foi configurada`**
+Defina a variável `MASTER_SECRET` no `.env` e reinicie o servidor. Sem ela, o cadastro de bibliotecários e a recuperação de senha não funcionam.
+
+**Tabelas não encontradas**
+O banco está vazio. Execute `npx prisma db push` para criar as tabelas.
+
+---
+
+## Equipe
+
+Projeto desenvolvido como trabalho de conclusão do curso Técnico em Desenvolvimento de Sistemas.
+
+* Alexandra Marques Santos Pereira
+* Enzo Henrique Barbino de Sousa
+* Maria Luiza Dias Brito da Silva
+* Rogério Malto Giardini dos Anjos
+* Stephanny Borrozzino
+
+Product Owner: Josué Rosário. Scrum Master: Stephanny Borrozzino.
+
+---
+
+## Licença
+
+Este projeto foi desenvolvido para fins acadêmicos. Consulte os responsáveis pelo projeto antes de utilizar, modificar ou distribuir o sistema para outras finalidades.
