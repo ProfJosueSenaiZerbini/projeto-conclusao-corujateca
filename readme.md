@@ -199,13 +199,36 @@ npm install
 
 ### 3. Criar o arquivo `.env`
 
-Copie o arquivo de exemplo e preencha as variáveis (veja [Variáveis de ambiente](#variáveis-de-ambiente)):
+Crie o arquivo `.env` dentro da pasta `corujateca/` e preencha as variáveis de ambiente (veja [Variáveis de ambiente](#variáveis-de-ambiente)). Escolha uma das opções abaixo:
+
+**Opção 1: copiar o arquivo de exemplo pelo terminal**
+
+No Linux ou macOS:
 
 ```bash
 cp .env.example .env
 ```
 
-No Windows (PowerShell), use `Copy-Item .env.example .env`.
+No Windows (PowerShell):
+
+```powershell
+Copy-Item .env.example .env
+```
+
+**Opção 2: renomear o arquivo de exemplo**
+
+Renomeie o arquivo `.env.example` para `.env`, pelo explorador de arquivos ou pelo editor de código.
+
+**Opção 3: criar o arquivo manualmente**
+
+Crie um novo arquivo chamado `.env` na pasta `corujateca/` e cole o conteúdo abaixo, substituindo os valores pelos seus:
+
+```env
+DATABASE_URL="postgresql://USUARIO:SENHA@HOST:5432/NOME_DO_BANCO"
+MASTER_SECRET="uma-senha-forte-so-do-administrador"
+```
+
+> Após criar o arquivo, preencha `DATABASE_URL` e `MASTER_SECRET` com valores reais. O `.env` não deve ser enviado ao GitHub.
 
 ### 4. Gerar o Prisma Client
 
